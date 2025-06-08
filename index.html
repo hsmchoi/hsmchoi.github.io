@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>가사 암기 전문 도우미</title>
+  <title>Pro-Vocal Tools</title>
   <script src="https://cdn.tailwindcss.com"></script>
   <script src="https://unpkg.com/react@18/umd/react.development.js"></script>
   <script src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
@@ -41,83 +41,172 @@
       font-size: 1.25rem;
       line-height: 2.5rem;
     }
-    .slider-track {
-      width: 100%;
-      height: 8px;
-      background: #4A4A4A;
-      border-radius: 5px;
+    .slider-thumb::-webkit-slider-thumb {
+        -webkit-appearance: none;
+        appearance: none;
+        width: 20px;
+        height: 20px;
+        background: #4CAF50;
+        border-radius: 50%;
+        cursor: pointer;
+    }
+    .slider-thumb::-moz-range-thumb {
+        width: 20px;
+        height: 20px;
+        background: #4CAF50;
+        border-radius: 50%;
+        cursor: pointer;
+    }
+    .tool-card {
+      background-color: #2C2C2C;
+      transition: transform 0.3s ease, box-shadow 0.3s ease;
+    }
+    .tool-card:hover {
+      transform: translateY(-10px);
+      box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.3), 0 10px 10px -5px rgba(0, 0, 0, 0.1);
     }
   </style>
 </head>
 <body class="pro-mode-bg">
   <div id="root"></div>
 
-  <script type="text/babel">
-    const { useState, useEffect, useMemo } = React;
+  <!-- Firebase SDK -->
+  <script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
+    import { getAuth, signInAnonymously, signInWithCustomToken, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+    import { getFirestore, doc, onSnapshot, setDoc, setLogLevel } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+    window.firebase = {
+        initializeApp,
+        getAuth,
+        signInAnonymously,
+        signInWithCustomToken,
+        onAuthStateChanged,
+        getFirestore,
+        doc,
+        onSnapshot,
+        setDoc,
+        setLogLevel
+    };
+  </script>
 
-    function App() {
+  <!-- React App -->
+  <script type="text/babel">
+    const { useState, useEffect, useMemo, useCallback } = React;
+
+    // --- Lyrics Memorization App Component ---
+    // This is the component from the previous version, now modularized.
+    function LyricsApp({ onNavigate }) {
+      const [db, setDb] = useState(null);
+      const [userId, setUserId] = useState(null);
+      const [isAuthReady, setIsAuthReady] = useState(false);
       const [lyrics, setLyrics] = useState('');
       const [savedLyrics, setSavedLyrics] = useState('');
-      const [mode, setMode] = useState('full'); // full | blank | first
+      const [mode, setMode] = useState('full');
       const [blankDifficulty, setBlankDifficulty] = useState(0.3);
       const [isLoading, setIsLoading] = useState(true);
       const [toast, setToast] = useState({ show: false, message: '' });
 
       useEffect(() => {
-        const saved = localStorage.getItem("lyrics") || '';
-        const savedMode = localStorage.getItem("mode") || 'full';
-        const savedDifficulty = parseFloat(localStorage.getItem("blankDifficulty")) || 0.3;
-        setLyrics(saved);
-        setSavedLyrics(saved);
-        setMode(savedMode);
-        setBlankDifficulty(savedDifficulty);
-        setIsLoading(false);
+        const firebaseConfig = typeof __firebase_config !== 'undefined' 
+            ? JSON.parse(__firebase_config) 
+            : { apiKey: "DEMO", authDomain: "DEMO", projectId: "DEMO" };
+
+        const app = window.firebase.initializeApp(firebaseConfig);
+        const auth = window.firebase.getAuth(app);
+        const firestore = window.firebase.getFirestore(app);
+        
+        window.firebase.setLogLevel('debug');
+        setDb(firestore);
+
+        const unsubscribe = window.firebase.onAuthStateChanged(auth, async (user) => {
+          if (user) {
+            setUserId(user.uid);
+            setIsAuthReady(true);
+          } else {
+            try {
+              const token = typeof __initial_auth_token !== 'undefined' ? __initial_auth_token : null;
+              if (token) {
+                await window.firebase.signInWithCustomToken(auth, token);
+              } else {
+                await window.firebase.signInAnonymously(auth);
+              }
+            } catch (error) {
+              console.error("Authentication failed:", error);
+              setIsLoading(false);
+            }
+          }
+        });
+
+        return () => unsubscribe();
       }, []);
 
-      const handleSave = () => {
-        localStorage.setItem("lyrics", lyrics);
-        localStorage.setItem("mode", mode);
-        localStorage.setItem("blankDifficulty", blankDifficulty);
-        setSavedLyrics(lyrics);
-        setToast({ show: true, message: '가사가 성공적으로 저장되었습니다!' });
-      };
+      useEffect(() => {
+        if (!isAuthReady || !db || !userId) return;
 
+        const appId = typeof __app_id !== 'undefined' ? __app_id : 'default-app-id';
+        const docRef = window.firebase.doc(db, 'artifacts', appId, 'users', userId, 'userData', 'lyrics');
+
+        const unsubscribe = window.firebase.onSnapshot(docRef, (docSnap) => {
+          if (docSnap.exists()) {
+            const data = docSnap.data();
+            setLyrics(data.lyrics || '');
+            setSavedLyrics(data.lyrics || '');
+            setMode(data.mode || 'full');
+            setBlankDifficulty(data.blankDifficulty || 0.3);
+          } else {
+            console.log("No lyrics document found for user.");
+          }
+          setIsLoading(false);
+        });
+
+        return () => unsubscribe();
+      }, [isAuthReady, db, userId]);
+
+      const updateFirestoreData = useCallback(async (dataToUpdate) => {
+        if (!db || !userId) return;
+        const appId = typeof __app_id !== 'undefined' ? __app_id : 'default-app-id';
+        const docRef = window.firebase.doc(db, 'artifacts', appId, 'users', userId, 'userData', 'lyrics');
+        try {
+          await window.firebase.setDoc(docRef, dataToUpdate, { merge: true });
+        } catch (error) {
+          console.error("Error updating document: ", error);
+          setToast({ show: true, message: '오류: 데이터를 저장하지 못했습니다.' });
+        }
+      }, [db, userId]);
+
+      const handleSave = () => {
+        updateFirestoreData({ lyrics });
+        setSavedLyrics(lyrics);
+        setToast({ show: true, message: '가사가 성공적으로 저장 및 동기화되었습니다!' });
+      };
+      
       const handleModeChange = (newMode) => {
         setMode(newMode);
-        localStorage.setItem("mode", newMode);
+        updateFirestoreData({ mode: newMode });
       };
 
       const handleDifficultyChange = (e) => {
         const newDifficulty = parseFloat(e.target.value);
         setBlankDifficulty(newDifficulty);
-        localStorage.setItem("blankDifficulty", newDifficulty);
+        updateFirestoreData({ blankDifficulty: newDifficulty });
       };
 
       const processedLyrics = useMemo(() => {
-        if (!savedLyrics) return "가사를 입력하고 저장 버튼을 눌러주세요.";
-
-        const lines = savedLyrics.split('\n');
-
-        if (mode === 'full') {
-          return savedLyrics;
-        }
-
+        if (!savedLyrics) return "가사를 입력하고 '저장 및 연습 시작' 버튼을 눌러주세요.";
+        if (mode === 'full') return savedLyrics;
         if (mode === 'first') {
           return savedLyrics.replace(/[가-힣a-zA-Z0-9]+/g, (match) => {
             return match[0] + '＿'.repeat(match.length > 1 ? match.length - 1 : 0);
           });
         }
-
         if (mode === 'blank') {
-          return lines.map(line =>
+          return savedLyrics.split('\n').map(line =>
             line.split(/(\s+)/).map(word => {
               if (word.trim() === '') return word;
-              const isBlank = Math.random() < blankDifficulty;
-              return isBlank ? '＿'.repeat(word.length) : word;
+              return Math.random() < blankDifficulty ? '＿'.repeat(word.length) : word;
             }).join('')
           ).join('\n');
         }
-
         return savedLyrics;
       }, [savedLyrics, mode, blankDifficulty]);
 
@@ -127,96 +216,119 @@
           return () => clearTimeout(timer);
         }
       }, [toast]);
-
+      
       if (isLoading) {
         return (
           <div className="flex justify-center items-center h-screen">
-            <i className="fas fa-spinner fa-spin fa-3x"></i>
+            <i className="fas fa-spinner fa-spin fa-3x text-green-400"></i>
+            <p className="ml-4 text-xl">데이터를 불러오는 중...</p>
           </div>
         );
       }
 
       return (
-        <div className="min-h-screen p-4 sm:p-6 md:p-8 flex flex-col items-center">
-          {toast.show && (
-            <div className="fixed top-5 right-5 bg-green-500 text-white py-2 px-4 rounded-lg shadow-lg z-50 animate-pulse">
-              {toast.message}
+        <div className="w-full max-w-4xl mx-auto">
+          <header className="text-center mb-8 flex items-center justify-between">
+            <button onClick={() => onNavigate('home')} className="pro-mode-btn px-4 py-2 rounded-lg hover:bg-green-600">
+                <i className="fas fa-arrow-left mr-2"></i>홈으로
+            </button>
+            <h1 className="text-3xl sm:text-4xl font-bold text-white tracking-tight">
+              <i className="fas fa-microphone-alt mr-3 text-green-400"></i>
+              가사 암기 전문 도우미
+            </h1>
+            <div className="w-24"></div> {/* Placeholder for balance */}
+          </header>
+          <main className="pro-mode-card rounded-xl shadow-2xl p-4 sm:p-6 md:p-8">
+            <div className="mb-6">
+              <label htmlFor="lyrics-input" className="block text-lg font-semibold mb-2 text-green-300">가사 입력</label>
+              <textarea id="lyrics-input" value={lyrics} onChange={(e) => setLyrics(e.target.value)} placeholder="여기에 노래 가사를 붙여넣으세요. 실시간으로 동기화됩니다." className="w-full h-48 p-4 pro-mode-input rounded-lg focus:ring-2 focus:ring-green-400 focus:outline-none transition resize-none"></textarea>
+              <button onClick={handleSave} className="w-full mt-4 py-3 font-bold text-lg rounded-lg pro-mode-btn hover:bg-green-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-gray-800 focus:ring-white flex items-center justify-center">
+                <i className="fas fa-sync-alt mr-2"></i>가사 저장 및 연습 시작
+              </button>
             </div>
-          )}
-
-          <div className="w-full max-w-4xl mx-auto">
-            <header className="text-center mb-8">
-              <h1 className="text-3xl sm:text-4xl font-bold text-white tracking-tight">
-                <i className="fas fa-microphone-alt mr-3 text-green-400"></i>
-                가사 암기 전문 도우미
-              </h1>
-              <p className="text-gray-400 mt-2">프로페셔널을 위한 최고의 연습 파트너</p>
-            </header>
-
-            <main className="pro-mode-card rounded-xl shadow-2xl p-4 sm:p-6 md:p-8">
-              <div className="mb-6">
-                <label htmlFor="lyrics-input" className="block text-lg font-semibold mb-2 text-green-300">
-                  가사 입력
-                </label>
-                <textarea
-                  id="lyrics-input"
-                  value={lyrics}
-                  onChange={(e) => setLyrics(e.target.value)}
-                  placeholder="여기에 노래 가사를 붙여넣으세요. (예: 1절, 2절, 후렴 등)"
-                  className="w-full h-48 p-4 pro-mode-input rounded-lg focus:ring-2 focus:ring-green-400 focus:outline-none transition resize-none"
-                ></textarea>
-                <button
-                  onClick={handleSave}
-                  className="w-full mt-4 py-3 font-bold text-lg rounded-lg pro-mode-btn hover:bg-green-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-gray-800 focus:ring-white flex items-center justify-center"
-                >
-                  <i className="fas fa-save mr-2"></i>
-                  가사 저장 및 연습 시작
-                </button>
-              </div>
-
-              <div className="mb-6 p-4 bg-gray-900/50 rounded-lg">
-                <div className="flex flex-col sm:flex-row justify-between items-center gap-4">
-                  <div className="flex space-x-2 sm:space-x-3" role="group">
-                    <button onClick={() => handleModeChange('full')} className={`px-4 py-2 rounded-md font-semibold ${mode === 'full' ? 'pro-mode-btn-active' : 'pro-mode-btn'}`}>
-                      <i className="fas fa-eye mr-2"></i>전체 보기
-                    </button>
-                    <button onClick={() => handleModeChange('blank')} className={`px-4 py-2 rounded-md font-semibold ${mode === 'blank' ? 'pro-mode-btn-active' : 'pro-mode-btn'}`}>
-                      <i className="fas fa-edit mr-2"></i>빈칸 채우기
-                    </button>
-                    <button onClick={() => handleModeChange('first')} className={`px-4 py-2 rounded-md font-semibold ${mode === 'first' ? 'pro-mode-btn-active' : 'pro-mode-btn'}`}>
-                      <i className="fas fa-font mr-2"></i>첫 글자 보기
-                    </button>
+            <div className="mb-6 p-4 bg-gray-900/50 rounded-lg">
+              <div className="flex flex-col sm:flex-row justify-between items-center gap-4">
+                <div className="flex space-x-2 sm:space-x-3" role="group">
+                  <button onClick={() => handleModeChange('full')} className={`px-4 py-2 rounded-md font-semibold ${mode === 'full' ? 'pro-mode-btn-active' : 'pro-mode-btn'}`}><i className="fas fa-eye mr-2"></i>전체 보기</button>
+                  <button onClick={() => handleModeChange('blank')} className={`px-4 py-2 rounded-md font-semibold ${mode === 'blank' ? 'pro-mode-btn-active' : 'pro-mode-btn'}`}><i className="fas fa-edit mr-2"></i>빈칸 채우기</button>
+                  <button onClick={() => handleModeChange('first')} className={`px-4 py-2 rounded-md font-semibold ${mode === 'first' ? 'pro-mode-btn-active' : 'pro-mode-btn'}`}><i className="fas fa-font mr-2"></i>첫 글자 보기</button>
+                </div>
+                {mode === 'blank' && (
+                  <div className="w-full sm:w-auto flex items-center gap-3 text-sm">
+                    <span className="text-gray-300">쉬움</span>
+                    <input type="range" min="0.1" max="0.9" step="0.05" value={blankDifficulty} onChange={handleDifficultyChange} className="w-32 h-2 bg-gray-700 rounded-lg appearance-none cursor-pointer slider-thumb" />
+                    <span className="text-gray-300">어려움</span>
                   </div>
-                  {mode === 'blank' && (
-                    <div className="w-full sm:w-auto flex items-center gap-3 text-sm">
-                      <span className="text-gray-300">쉬움</span>
-                      <input
-                        type="range"
-                        min="0.1"
-                        max="0.9"
-                        step="0.05"
-                        value={blankDifficulty}
-                        onChange={handleDifficultyChange}
-                        className="w-32 h-2 bg-gray-700 rounded-lg appearance-none cursor-pointer slider-track"
-                      />
-                      <span className="text-gray-300">어려움</span>
-                    </div>
-                  )}
-                </div>
+                )}
               </div>
-
-              <div>
-                <h2 className="text-xl font-semibold mb-4 text-green-300">연습중인 가사</h2>
-                <div className="p-6 bg-black/30 rounded-lg min-h-[300px] lyrics-display">
-                  {processedLyrics}
+            </div>
+            <div>
+              <h2 className="text-xl font-semibold mb-4 text-green-300">연습중인 가사</h2>
+              <div className="p-6 bg-black/30 rounded-lg min-h-[300px] lyrics-display">{processedLyrics}</div>
+            </div>
+          </main>
+        </div>
+      );
+    }
+    
+    // --- Home Page Component ---
+    function HomePage({ onNavigate }) {
+      return (
+        <div className="w-full max-w-4xl mx-auto">
+          <header className="text-center mb-12">
+            <h1 className="text-4xl sm:text-5xl font-bold text-white tracking-tight">
+              <i className="fas fa-tools mr-4 text-green-400"></i>
+              Pro-Vocal Tools
+            </h1>
+            <p className="text-gray-400 mt-3 text-lg">프로페셔널을 위한 모든 도구</p>
+          </header>
+          <main>
+            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-8">
+                {/* Lyrics Memorization Tool Card */}
+                <div 
+                    className="tool-card rounded-xl shadow-2xl p-6 flex flex-col items-center justify-center text-center cursor-pointer aspect-square"
+                    onClick={() => onNavigate('lyrics-helper')}
+                >
+                    <i className="fas fa-microphone-alt text-6xl text-green-400 mb-4"></i>
+                    <h2 className="text-xl font-bold text-white">가사 암기 전문 도우미</h2>
+                    <p className="text-gray-400 mt-2 text-sm">완벽한 무대를 위한 필수 연습 도구</p>
                 </div>
-              </div>
-            </main>
+                
+                {/* Placeholder for future tools */}
+                <div className="tool-card bg-gray-800/50 rounded-xl shadow-lg p-6 flex flex-col items-center justify-center text-center aspect-square border-2 border-dashed border-gray-600">
+                    <i className="fas fa-plus text-5xl text-gray-500 mb-4"></i>
+                    <h2 className="text-xl font-bold text-gray-400">다음 기능 준비중</h2>
+                </div>
+            </div>
+          </main>
+        </div>
+      );
+    }
 
-            <footer className="text-center mt-8 text-gray-500 text-sm">
-              <p>ⓒ 2024 Pro-Vocal Tools. All rights reserved.</p>
-            </footer>
-          </div>
+    // --- Main App Component (Router) ---
+    function App() {
+      const [currentPage, setCurrentPage] = useState('home');
+
+      const navigate = (page) => {
+        setCurrentPage(page);
+      };
+
+      const renderPage = () => {
+        switch (currentPage) {
+          case 'lyrics-helper':
+            return <LyricsApp onNavigate={navigate} />;
+          case 'home':
+          default:
+            return <HomePage onNavigate={navigate} />;
+        }
+      };
+
+      return (
+        <div className="min-h-screen p-4 sm:p-6 md:p-8 flex flex-col items-center justify-center">
+          {renderPage()}
+          <footer className="text-center mt-12 text-gray-500 text-sm">
+            <p>© 2024 Pro-Vocal Tools. All rights reserved.</p>
+          </footer>
         </div>
       );
     }
