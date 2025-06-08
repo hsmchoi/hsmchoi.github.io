@@ -16,47 +16,18 @@
       background-color: #121212;
       color: #E0E0E0;
     }
-    .pro-mode-bg { background-color: #1E1E1E; }
     .pro-mode-card { background-color: #2C2C2C; }
     .pro-mode-input {
       background-color: #1E1E1E;
       border-color: #4A4A4A;
       color: #E0E0E0;
     }
-    .pro-mode-input::placeholder { color: #6B6B6B; }
     .pro-mode-btn {
       background-color: #3E3E3E;
       color: #FFFFFF;
       transition: background-color 0.3s;
     }
     .pro-mode-btn:hover { background-color: #5A5A5A; }
-    .pro-mode-btn-active {
-      background-color: #4CAF50;
-      color: white;
-      box-shadow: 0 0 10px #4CAF50;
-    }
-    .lyrics-display {
-      white-space: pre-wrap;
-      word-wrap: break-word;
-      font-size: 1.25rem;
-      line-height: 2.5rem;
-    }
-    .slider-thumb::-webkit-slider-thumb {
-        -webkit-appearance: none;
-        appearance: none;
-        width: 20px;
-        height: 20px;
-        background: #4CAF50;
-        border-radius: 50%;
-        cursor: pointer;
-    }
-    .slider-thumb::-moz-range-thumb {
-        width: 20px;
-        height: 20px;
-        background: #4CAF50;
-        border-radius: 50%;
-        cursor: pointer;
-    }
     .tool-card {
       background-color: #2C2C2C;
       transition: transform 0.3s ease, box-shadow 0.3s ease;
@@ -65,239 +36,635 @@
       transform: translateY(-10px);
       box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.3), 0 10px 10px -5px rgba(0, 0, 0, 0.1);
     }
+    .lyrics-line {
+        transition: color 0.3s, transform 0.3s;
+        padding: 0.25rem 0.5rem;
+        border-radius: 0.5rem;
+        transform: scale(1);
+    }
+    .lyrics-line.current {
+        color: white;
+        transform: scale(1.05);
+    }
+    .lyrics-line.next {
+        color: #a7f3d0; /* emerald-200 */
+    }
+     .lyrics-line.past {
+        color: #6b7280; /* gray-500 */
+    }
+    .highlight-char {
+        background-color: #4CAF50;
+        color: white;
+        padding: 0 0.1rem;
+        border-radius: 0.2rem;
+    }
+    .slider-thumb::-webkit-slider-thumb {
+        -webkit-appearance: none; appearance: none;
+        width: 20px; height: 20px;
+        background: #4CAF50; border-radius: 50%;
+        cursor: pointer;
+    }
+    .breath-countdown {
+        position: absolute;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%);
+        font-size: 10rem;
+        font-weight: bold;
+        color: rgba(236, 72, 153, 0.5); /* pink-500 with opacity */
+        z-index: 10;
+        pointer-events: none;
+        animation: pop-in 0.5s forwards;
+    }
+    @keyframes pop-in {
+        0% { transform: translate(-50%, -50%) scale(0.5); opacity: 0; }
+        100% { transform: translate(-50%, -50%) scale(1); opacity: 0.5; }
+    }
+     .toast-notification {
+        position: fixed;
+        top: 20px;
+        right: 20px;
+        background-color: #4CAF50;
+        color: white;
+        padding: 1rem;
+        border-radius: 0.5rem;
+        box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+        z-index: 1000;
+        animation: fadeInOut 3s forwards;
+    }
+    @keyframes fadeInOut {
+        0%, 100% { opacity: 0; transform: translateY(-20px); }
+        10%, 90% { opacity: 1; transform: translateY(0); }
+    }
   </style>
 </head>
 <body class="pro-mode-bg">
   <div id="root"></div>
 
-  <!-- Firebase SDK -->
-  <script type="module">
-    import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
-    import { getAuth, signInAnonymously, signInWithCustomToken, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
-    import { getFirestore, doc, onSnapshot, setDoc, setLogLevel } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
-    window.firebase = {
-        initializeApp,
-        getAuth,
-        signInAnonymously,
-        signInWithCustomToken,
-        onAuthStateChanged,
-        getFirestore,
-        doc,
-        onSnapshot,
-        setDoc,
-        setLogLevel
-    };
-  </script>
-
   <!-- React App -->
   <script type="text/babel">
-    const { useState, useEffect, useMemo, useCallback } = React;
+    const { useState, useEffect, useMemo, useCallback, useRef } = React;
 
-    // --- Lyrics Memorization App Component ---
-    // This is the component from the previous version, now modularized.
+    // --- Lyrics Memorization Component ---
     function LyricsApp({ onNavigate }) {
-      const [db, setDb] = useState(null);
-      const [userId, setUserId] = useState(null);
-      const [isAuthReady, setIsAuthReady] = useState(false);
-      const [lyrics, setLyrics] = useState('');
-      const [savedLyrics, setSavedLyrics] = useState('');
-      const [mode, setMode] = useState('full');
-      const [blankDifficulty, setBlankDifficulty] = useState(0.3);
-      const [isLoading, setIsLoading] = useState(true);
-      const [toast, setToast] = useState({ show: false, message: '' });
+        const [lyrics, setLyrics] = useState("");
+        const [mode, setMode] = useState('full'); // full, blank, first
+        const [blankDifficulty, setBlankDifficulty] = useState(0.3);
 
-      useEffect(() => {
-        const firebaseConfig = typeof __firebase_config !== 'undefined' 
-            ? JSON.parse(__firebase_config) 
-            : { apiKey: "DEMO", authDomain: "DEMO", projectId: "DEMO" };
-
-        const app = window.firebase.initializeApp(firebaseConfig);
-        const auth = window.firebase.getAuth(app);
-        const firestore = window.firebase.getFirestore(app);
-        
-        window.firebase.setLogLevel('debug');
-        setDb(firestore);
-
-        const unsubscribe = window.firebase.onAuthStateChanged(auth, async (user) => {
-          if (user) {
-            setUserId(user.uid);
-            setIsAuthReady(true);
-          } else {
-            try {
-              const token = typeof __initial_auth_token !== 'undefined' ? __initial_auth_token : null;
-              if (token) {
-                await window.firebase.signInWithCustomToken(auth, token);
-              } else {
-                await window.firebase.signInAnonymously(auth);
-              }
-            } catch (error) {
-              console.error("Authentication failed:", error);
-              setIsLoading(false);
+        const processedLyrics = useMemo(() => {
+            if (!lyrics) return "가사를 입력해주세요.";
+            if (mode === 'full') return lyrics;
+            if (mode === 'first') {
+                return lyrics.replace(/[가-힣a-zA-Z0-9]+/g, (match) => {
+                    return match[0] + '＿'.repeat(match.length > 1 ? match.length - 1 : 0);
+                });
             }
-          }
-        });
+            if (mode === 'blank') {
+                return lyrics.split('\n').map(line =>
+                    line.split(/(\s+)/).map(word => {
+                        if (word.trim() === '') return word;
+                        return Math.random() < blankDifficulty ? '＿'.repeat(word.length) : word;
+                    }).join('')
+                ).join('\n');
+            }
+        }, [lyrics, mode, blankDifficulty]);
 
-        return () => unsubscribe();
-      }, []);
-
-      useEffect(() => {
-        if (!isAuthReady || !db || !userId) return;
-
-        const appId = typeof __app_id !== 'undefined' ? __app_id : 'default-app-id';
-        const docRef = window.firebase.doc(db, 'artifacts', appId, 'users', userId, 'userData', 'lyrics');
-
-        const unsubscribe = window.firebase.onSnapshot(docRef, (docSnap) => {
-          if (docSnap.exists()) {
-            const data = docSnap.data();
-            setLyrics(data.lyrics || '');
-            setSavedLyrics(data.lyrics || '');
-            setMode(data.mode || 'full');
-            setBlankDifficulty(data.blankDifficulty || 0.3);
-          } else {
-            console.log("No lyrics document found for user.");
-          }
-          setIsLoading(false);
-        });
-
-        return () => unsubscribe();
-      }, [isAuthReady, db, userId]);
-
-      const updateFirestoreData = useCallback(async (dataToUpdate) => {
-        if (!db || !userId) return;
-        const appId = typeof __app_id !== 'undefined' ? __app_id : 'default-app-id';
-        const docRef = window.firebase.doc(db, 'artifacts', appId, 'users', userId, 'userData', 'lyrics');
-        try {
-          await window.firebase.setDoc(docRef, dataToUpdate, { merge: true });
-        } catch (error) {
-          console.error("Error updating document: ", error);
-          setToast({ show: true, message: '오류: 데이터를 저장하지 못했습니다.' });
-        }
-      }, [db, userId]);
-
-      const handleSave = () => {
-        updateFirestoreData({ lyrics });
-        setSavedLyrics(lyrics);
-        setToast({ show: true, message: '가사가 성공적으로 저장 및 동기화되었습니다!' });
-      };
-      
-      const handleModeChange = (newMode) => {
-        setMode(newMode);
-        updateFirestoreData({ mode: newMode });
-      };
-
-      const handleDifficultyChange = (e) => {
-        const newDifficulty = parseFloat(e.target.value);
-        setBlankDifficulty(newDifficulty);
-        updateFirestoreData({ blankDifficulty: newDifficulty });
-      };
-
-      const processedLyrics = useMemo(() => {
-        if (!savedLyrics) return "가사를 입력하고 '저장 및 연습 시작' 버튼을 눌러주세요.";
-        if (mode === 'full') return savedLyrics;
-        if (mode === 'first') {
-          return savedLyrics.replace(/[가-힣a-zA-Z0-9]+/g, (match) => {
-            return match[0] + '＿'.repeat(match.length > 1 ? match.length - 1 : 0);
-          });
-        }
-        if (mode === 'blank') {
-          return savedLyrics.split('\n').map(line =>
-            line.split(/(\s+)/).map(word => {
-              if (word.trim() === '') return word;
-              return Math.random() < blankDifficulty ? '＿'.repeat(word.length) : word;
-            }).join('')
-          ).join('\n');
-        }
-        return savedLyrics;
-      }, [savedLyrics, mode, blankDifficulty]);
-
-      useEffect(() => {
-        if (toast.show) {
-          const timer = setTimeout(() => setToast({ show: false, message: '' }), 3000);
-          return () => clearTimeout(timer);
-        }
-      }, [toast]);
-      
-      if (isLoading) {
         return (
-          <div className="flex justify-center items-center h-screen">
-            <i className="fas fa-spinner fa-spin fa-3x text-green-400"></i>
-            <p className="ml-4 text-xl">데이터를 불러오는 중...</p>
-          </div>
+            <div className="w-full max-w-4xl mx-auto">
+                 <header className="text-center mb-8 flex items-center justify-between">
+                    <button onClick={() => onNavigate('home')} className="pro-mode-btn px-4 py-2 rounded-lg hover:bg-red-600"><i className="fas fa-arrow-left mr-2"></i>홈으로</button>
+                    <h1 className="text-3xl sm:text-4xl font-bold text-white tracking-tight"><i className="fas fa-microphone-alt mr-3 text-green-400"></i>가사 암기 도우미</h1>
+                    <div className="w-24"></div>
+                </header>
+                <main className="pro-mode-card rounded-xl shadow-2xl p-8">
+                    <div className="mb-6">
+                        <label className="block text-lg font-semibold mb-2 text-green-300">가사 입력</label>
+                        <textarea value={lyrics} onChange={(e) => setLyrics(e.target.value)} placeholder="이곳에 연습할 가사를 입력하세요." className="w-full h-48 p-4 pro-mode-input rounded-lg resize-none"></textarea>
+                    </div>
+                     <div className="mb-6 p-4 bg-gray-900/50 rounded-lg">
+                        <div className="flex flex-col sm:flex-row justify-between items-center gap-4">
+                            <div className="flex space-x-2 sm:space-x-3" role="group">
+                                <button onClick={() => setMode('full')} className={`px-4 py-2 rounded-md font-semibold ${mode === 'full' ? 'bg-green-600' : 'pro-mode-btn'}`}>전체 보기</button>
+                                <button onClick={() => setMode('blank')} className={`px-4 py-2 rounded-md font-semibold ${mode === 'blank' ? 'bg-green-600' : 'pro-mode-btn'}`}>빈칸 채우기</button>
+                                <button onClick={() => setMode('first')} className={`px-4 py-2 rounded-md font-semibold ${mode === 'first' ? 'bg-green-600' : 'pro-mode-btn'}`}>첫 글자 보기</button>
+                            </div>
+                            {mode === 'blank' && (
+                                <div className="w-full sm:w-auto flex items-center gap-3 text-sm">
+                                    <span className="text-gray-300">쉬움</span>
+                                    <input type="range" min="0.1" max="0.9" step="0.05" value={blankDifficulty} onChange={(e) => setBlankDifficulty(parseFloat(e.target.value))} className="w-32 h-2 bg-gray-700 rounded-lg appearance-none cursor-pointer slider-thumb" />
+                                    <span className="text-gray-300">어려움</span>
+                                </div>
+                            )}
+                        </div>
+                    </div>
+                    <div className="p-6 bg-black/30 rounded-lg min-h-[300px] whitespace-pre-wrap text-2xl leading-loose">
+                        {processedLyrics}
+                    </div>
+                </main>
+            </div>
         );
-      }
-
-      return (
-        <div className="w-full max-w-4xl mx-auto">
-          <header className="text-center mb-8 flex items-center justify-between">
-            <button onClick={() => onNavigate('home')} className="pro-mode-btn px-4 py-2 rounded-lg hover:bg-green-600">
-                <i className="fas fa-arrow-left mr-2"></i>홈으로
-            </button>
-            <h1 className="text-3xl sm:text-4xl font-bold text-white tracking-tight">
-              <i className="fas fa-microphone-alt mr-3 text-green-400"></i>
-              가사 암기 전문 도우미
-            </h1>
-            <div className="w-24"></div> {/* Placeholder for balance */}
-          </header>
-          <main className="pro-mode-card rounded-xl shadow-2xl p-4 sm:p-6 md:p-8">
-            <div className="mb-6">
-              <label htmlFor="lyrics-input" className="block text-lg font-semibold mb-2 text-green-300">가사 입력</label>
-              <textarea id="lyrics-input" value={lyrics} onChange={(e) => setLyrics(e.target.value)} placeholder="여기에 노래 가사를 붙여넣으세요. 실시간으로 동기화됩니다." className="w-full h-48 p-4 pro-mode-input rounded-lg focus:ring-2 focus:ring-green-400 focus:outline-none transition resize-none"></textarea>
-              <button onClick={handleSave} className="w-full mt-4 py-3 font-bold text-lg rounded-lg pro-mode-btn hover:bg-green-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-gray-800 focus:ring-white flex items-center justify-center">
-                <i className="fas fa-sync-alt mr-2"></i>가사 저장 및 연습 시작
-              </button>
-            </div>
-            <div className="mb-6 p-4 bg-gray-900/50 rounded-lg">
-              <div className="flex flex-col sm:flex-row justify-between items-center gap-4">
-                <div className="flex space-x-2 sm:space-x-3" role="group">
-                  <button onClick={() => handleModeChange('full')} className={`px-4 py-2 rounded-md font-semibold ${mode === 'full' ? 'pro-mode-btn-active' : 'pro-mode-btn'}`}><i className="fas fa-eye mr-2"></i>전체 보기</button>
-                  <button onClick={() => handleModeChange('blank')} className={`px-4 py-2 rounded-md font-semibold ${mode === 'blank' ? 'pro-mode-btn-active' : 'pro-mode-btn'}`}><i className="fas fa-edit mr-2"></i>빈칸 채우기</button>
-                  <button onClick={() => handleModeChange('first')} className={`px-4 py-2 rounded-md font-semibold ${mode === 'first' ? 'pro-mode-btn-active' : 'pro-mode-btn'}`}><i className="fas fa-font mr-2"></i>첫 글자 보기</button>
-                </div>
-                {mode === 'blank' && (
-                  <div className="w-full sm:w-auto flex items-center gap-3 text-sm">
-                    <span className="text-gray-300">쉬움</span>
-                    <input type="range" min="0.1" max="0.9" step="0.05" value={blankDifficulty} onChange={handleDifficultyChange} className="w-32 h-2 bg-gray-700 rounded-lg appearance-none cursor-pointer slider-thumb" />
-                    <span className="text-gray-300">어려움</span>
-                  </div>
-                )}
-              </div>
-            </div>
-            <div>
-              <h2 className="text-xl font-semibold mb-4 text-green-300">연습중인 가사</h2>
-              <div className="p-6 bg-black/30 rounded-lg min-h-[300px] lyrics-display">{processedLyrics}</div>
-            </div>
-          </main>
-        </div>
-      );
     }
     
-    // --- Home Page Component ---
+    // --- Breath Analyzer Component ---
+    function BreathAnalyzerApp({ onNavigate }) {
+        const [step, setStep] = useState('input');
+        const [lyrics, setLyrics] = useState("");
+        const [timedLines, setTimedLines] = useState([]);
+        const [breathMarks, setBreathMarks] = useState([]);
+        const [isPlaying, setIsPlaying] = useState(false);
+        const [elapsedTime, setElapsedTime] = useState(0);
+        const [currentTimingLine, setCurrentTimingLine] = useState(0);
+        const [finalLyrics, setFinalLyrics] = useState('');
+        const [bpm, setBpm] = useState(120);
+        const [avgBpm, setAvgBpm] = useState(null);
+        const [isMetronomePlaying, setIsMetronomePlaying] = useState(false);
+        const [toastMessage, setToastMessage] = useState('');
+
+        const timerRef = useRef(null);
+        const metronomeTimerRef = useRef(null);
+        const audioContextRef = useRef(null);
+        const startTimeRef = useRef(null);
+        const fileInputRef = useRef(null);
+        const activeLineRef = useRef(null);
+        
+        const lyricsLines = useMemo(() => lyrics.split('\n').filter(line => line.trim() !== ''), [lyrics]);
+
+        const formatTime = (ms) => {
+            const minutes = Math.floor(ms / 60000);
+            const seconds = Math.floor((ms % 60000) / 1000);
+            const milliseconds = Math.floor((ms % 1000) / 10);
+            return `${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}.${String(milliseconds).padStart(2, '0')}`;
+        };
+
+        useEffect(() => {
+            if (toastMessage) {
+                const timer = setTimeout(() => setToastMessage(''), 3000);
+                return () => clearTimeout(timer);
+            }
+        }, [toastMessage]);
+
+        useEffect(() => {
+            if (isPlaying) {
+                startTimeRef.current = Date.now() - elapsedTime;
+                timerRef.current = requestAnimationFrame(animate);
+            } else { cancelAnimationFrame(timerRef.current); }
+            return () => cancelAnimationFrame(timerRef.current);
+        }, [isPlaying]);
+        
+        useEffect(() => {
+            if (activeLineRef.current) {
+                activeLineRef.current.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            }
+        }, [currentTimingLine, isPlaying]);
+
+        const animate = () => {
+            setElapsedTime(Date.now() - startTimeRef.current);
+            timerRef.current = requestAnimationFrame(animate);
+        };
+
+        const handleReset = () => {
+            setIsPlaying(false); setIsMetronomePlaying(false);
+            setElapsedTime(0); setStep('input');
+            setLyrics(''); setTimedLines([]); setBreathMarks([]);
+            setCurrentTimingLine(0); setAvgBpm(null); setBpm(120);
+        };
+
+        const handleReady = () => lyrics.trim() ? setStep('ready') : alert("분석을 시작하려면 가사를 입력해주세요.");
+        const handleStartTiming = () => { setStep('timing'); setIsPlaying(true); };
+
+        const calculateAndSetBPM = (totalDuration, lines) => {
+            const totalBeats = lines.length * 4;
+            if (totalDuration > 0 && totalBeats > 0) {
+                const calculatedBpm = Math.round((totalBeats / totalDuration) * 60000);
+                setAvgBpm(calculatedBpm); setBpm(calculatedBpm);
+            }
+        };
+
+        const handleMarkLineEnd = () => {
+            const newTimedLine = { text: lyricsLines[currentTimingLine], endTime: elapsedTime };
+            const updatedTimedLines = [...timedLines, newTimedLine];
+            setTimedLines(updatedTimedLines);
+            if (currentTimingLine + 1 >= lyricsLines.length) {
+                setIsPlaying(false);
+                calculateAndSetBPM(elapsedTime, updatedTimedLines);
+                setStep('breathing'); setElapsedTime(0);
+            } else {
+                setCurrentTimingLine(prev => prev + 1);
+            }
+        };
+
+        const handleRecordBreath = () => {
+             if (!isPlaying) return;
+            let lineStartTime = 0;
+            for(let i=0; i<timedLines.length; i++) {
+                const line = timedLines[i];
+                if(elapsedTime <= line.endTime) {
+                    const lineDuration = line.endTime - lineStartTime;
+                    const progressInLine = lineDuration > 0 ? (elapsedTime - lineStartTime) / lineDuration : 1;
+                    const charIndex = Math.floor(progressInLine * line.text.length);
+                    if (!breathMarks.some(m => m.lineIndex === i && m.charIndex === charIndex)) {
+                        setBreathMarks(prev => [...prev, { time: elapsedTime, lineIndex: i, charIndex }].sort((a, b) => a.time - b.time));
+                    }
+                    return;
+                }
+                lineStartTime = line.endTime;
+            }
+        };
+
+        useEffect(() => {
+            const generateFinalText = () => lyricsLines.map((line, lineIndex) => {
+                const breathsInLine = breathMarks.filter(m => m.lineIndex === lineIndex).map(m => m.charIndex).sort((a,b) => b-a);
+                let lineWithBreaths = line;
+                breathsInLine.forEach(charIndex => {
+                    lineWithBreaths = `${lineWithBreaths.slice(0, charIndex + 1)}^${lineWithBreaths.slice(charIndex + 1)}`;
+                });
+                return lineWithBreaths;
+            }).join('\n');
+            setFinalLyrics(generateFinalText());
+        }, [lyricsLines, breathMarks]);
+        
+        const renderKaraokeLyrics = () => {
+            let lineStartTime = 0;
+            for(let i=0; i < timedLines.length; i++) {
+                 const line = timedLines[i];
+                 if(elapsedTime <= line.endTime) {
+                    const lineDuration = line.endTime - lineStartTime;
+                    const progressInLine = lineDuration > 0 ? (elapsedTime - lineStartTime) / lineDuration : 1;
+                    const highlightUpTo = Math.floor(progressInLine * line.text.length);
+                    return lyricsLines.map((text, idx) => (
+                        <p key={idx} ref={idx === i ? activeLineRef : null} className={`lyrics-line text-2xl my-2 ${idx === i ? 'text-white' : 'text-gray-500'}`}>
+                            {idx === i ? (<><span className="highlight-char">{text.substring(0, highlightUpTo)}</span><span>{text.substring(highlightUpTo)}</span></>) : text }
+                        </p>
+                    ));
+                 }
+                 lineStartTime = line.endTime;
+            }
+            if (timedLines.length > 0 && elapsedTime > timedLines[timedLines.length - 1].endTime) {
+                 if (isPlaying) setIsPlaying(false);
+                 return <p className="lyrics-line text-2xl my-2 text-green-400">분석 완료!</p>;
+            }
+            return null;
+        };
+        
+        const playBeep = useCallback(() => {
+            if (!audioContextRef.current) return;
+            const context = audioContextRef.current;
+            const oscillator = context.createOscillator();
+            const gainNode = context.createGain();
+            oscillator.frequency.setValueAtTime(880, context.currentTime);
+            gainNode.gain.setValueAtTime(0.5, context.currentTime);
+            gainNode.gain.exponentialRampToValueAtTime(0.0001, context.currentTime + 0.05);
+            oscillator.connect(gainNode); gainNode.connect(context.destination);
+            oscillator.start(context.currentTime); oscillator.stop(context.currentTime + 0.05);
+        }, []);
+
+        useEffect(() => {
+            if (isMetronomePlaying) {
+                if (!audioContextRef.current) audioContextRef.current = new (window.AudioContext || window.webkitAudioContext)();
+                if (audioContextRef.current.state === 'suspended') audioContextRef.current.resume();
+                clearInterval(metronomeTimerRef.current);
+                metronomeTimerRef.current = setInterval(playBeep, (60 / bpm) * 1000);
+            } else {
+                clearInterval(metronomeTimerRef.current);
+            }
+            return () => clearInterval(metronomeTimerRef.current);
+        }, [isMetronomePlaying, bpm, playBeep]);
+
+        const handleExport = () => {
+            const data = { lyrics, timedLines, breathMarks, avgBpm };
+            const jsonString = `data:text/json;charset=utf-8,${encodeURIComponent(JSON.stringify(data, null, 2))}`;
+            const link = document.createElement("a");
+            link.href = jsonString; link.download = "breath-analysis.json";
+            link.click();
+        };
+
+        const handleFileImport = (event) => {
+            const file = event.target.files[0]; if (!file) return;
+            const reader = new FileReader();
+            reader.onload = (e) => {
+                try {
+                    const data = JSON.parse(e.target.result);
+                    if (data.lyrics && data.timedLines) {
+                        setLyrics(data.lyrics); setTimedLines(data.timedLines);
+                        setBreathMarks(data.breathMarks || []);
+                        if (data.avgBpm) { 
+                            setAvgBpm(data.avgBpm); 
+                            setBpm(data.avgBpm);
+                            setToastMessage(`분석 파일에서 감지된 평균 ${data.avgBpm} BPM을 메트로놈에 자동 설정했습니다.`);
+                        }
+                        setStep('breathing');
+                    } else alert("잘못된 파일 형식입니다.");
+                } catch (error) { alert("파일을 읽는 중 오류가 발생했습니다."); }
+            };
+            reader.readAsText(file);
+        };
+        
+        return (
+             <div className="w-full max-w-4xl mx-auto">
+                {toastMessage && <div className="toast-notification">{toastMessage}</div>}
+                 <header className="text-center mb-8 flex items-center justify-between">
+                    <button onClick={() => step === 'input' ? onNavigate('home') : handleReset()} className="pro-mode-btn px-4 py-2 rounded-lg hover:bg-red-600"><i className={`fas ${step === 'input' ? 'fa-arrow-left' : 'fa-undo'} mr-2`}></i>{step === 'input' ? '홈으로' : '초기화'}</button>
+                    <h1 className="text-3xl sm:text-4xl font-bold text-white tracking-tight"><i className="fas fa-chart-line mr-3 text-green-400"></i>호흡 분석기</h1>
+                    <div className="w-24"></div>
+                </header>
+                {step === 'input' && (
+                    <main className="pro-mode-card rounded-xl shadow-2xl p-8 flex flex-col items-center gap-6">
+                        <label className="w-full text-lg font-semibold mb-2 text-green-300">1단계: 분석할 노래 가사 입력</label>
+                        <textarea value={lyrics} onChange={(e) => setLyrics(e.target.value)} placeholder="이곳에 가사를 붙여넣으세요." className="w-full h-64 p-4 pro-mode-input rounded-lg"></textarea>
+                        <div className="w-full grid grid-cols-2 gap-4">
+                            <input type="file" ref={fileInputRef} onChange={handleFileImport} accept=".json" className="hidden" />
+                            <button onClick={() => fileInputRef.current.click()} className="w-full py-3 font-bold text-lg rounded-lg pro-mode-btn bg-gray-500 hover:bg-gray-600"><i className="fas fa-upload mr-2"></i> 파일 불러오기</button>
+                            <button onClick={handleReady} disabled={!lyrics.trim()} className="w-full py-3 font-bold text-lg rounded-lg pro-mode-btn bg-green-600 hover:bg-green-700 disabled:bg-gray-500">준비 완료</button>
+                        </div>
+                    </main>
+                )}
+                {step === 'ready' && (
+                     <main className="pro-mode-card rounded-xl shadow-2xl p-8">
+                        <h2 className="text-xl font-semibold mb-2 text-amber-300">준비 단계</h2>
+                        <div className="h-64 overflow-y-auto bg-black/30 p-4 rounded-lg mb-6">{lyricsLines.map((line, index) => (<p key={index} className="text-xl my-1">{line}</p>))}</div>
+                        <button onClick={handleStartTiming} className="w-full py-4 font-bold text-xl rounded-lg pro-mode-btn bg-green-500 hover:bg-green-600"><i className="fas fa-play mr-2"></i>타이밍 기록 시작</button>
+                    </main>
+                )}
+                {step === 'timing' && (
+                     <main className="pro-mode-card rounded-xl shadow-2xl p-8">
+                        <h2 className="text-xl font-semibold mb-2 text-amber-300">2단계: 문장 타이밍 기록</h2>
+                        <p className="font-mono text-5xl text-white my-4 text-center">{formatTime(elapsedTime)}</p>
+                        <div className="h-64 overflow-y-auto bg-black/30 p-4 rounded-lg mb-6">{lyricsLines.map((line, index) => (<p key={index} ref={index === currentTimingLine ? activeLineRef : null} className={`lyrics-line text-xl my-1 ${index === currentTimingLine ? 'timing-active' : ''}`}>{line}</p>))}</div>
+                        <button onClick={handleMarkLineEnd} className="w-full py-4 font-bold text-xl rounded-lg pro-mode-btn bg-amber-500 hover:bg-amber-600"><i className="fas fa-stopwatch mr-2"></i>"{lyricsLines[currentTimingLine]?.substring(0,10)}..." 라인 종료 기록</button>
+                    </main>
+                )}
+                {step === 'breathing' && (
+                    <div className="grid md:grid-cols-2 gap-8">
+                        <main className="pro-mode-card rounded-xl shadow-2xl p-8">
+                             <h2 className="text-xl font-semibold mb-2 text-cyan-300">3단계: 호흡 위치 기록</h2>
+                             <p className="font-mono text-5xl text-white my-4 text-center">{formatTime(elapsedTime)}</p>
+                             <div className="h-64 overflow-y-auto bg-black/30 p-4 rounded-lg mb-6">{renderKaraokeLyrics()}</div>
+                             <div className="flex gap-4">
+                                <button onClick={() => setIsPlaying(!isPlaying)} className={`w-1/2 py-3 font-bold text-lg rounded-lg pro-mode-btn ${isPlaying ? 'bg-yellow-500 hover:bg-yellow-600' : 'bg-green-600 hover:bg-green-700'}`}>{isPlaying ? '일시정지' : '재생'}</button>
+                                <button onClick={handleRecordBreath} disabled={!isPlaying} className="w-1/2 py-3 font-bold text-lg rounded-lg pro-mode-btn bg-cyan-600 hover:bg-cyan-500 disabled:bg-gray-500"><i className="fas fa-lungs mr-2"></i>호흡 기록</button>
+                            </div>
+                        </main>
+                        <aside className="pro-mode-card rounded-xl shadow-2xl p-8 flex flex-col">
+                             <h2 className="text-xl font-semibold mb-2 text-green-300">최종 결과 (수정 가능)</h2>
+                             <textarea value={finalLyrics} onChange={(e) => setFinalLyrics(e.target.value)} className="w-full flex-grow p-4 pro-mode-input rounded-lg resize-none"></textarea>
+                             <div className="mt-4">
+                                <h3 className="text-lg font-semibold mb-2 text-white">메트로놈</h3>
+                                <div className="flex items-center gap-4">
+                                    <button onClick={()=> setIsMetronomePlaying(!isMetronomePlaying)} className="w-16 h-12 text-2xl rounded-lg pro-mode-btn">{isMetronomePlaying ? <i className="fas fa-pause"></i> : <i className="fas fa-play"></i>}</button>
+                                    <div className="flex-grow">
+                                        <input type="range" min="40" max="220" value={bpm} onChange={(e) => setBpm(Number(e.target.value))} className="w-full h-2 bg-gray-700 rounded-lg appearance-none cursor-pointer slider-thumb" />
+                                        <div className="text-center mt-1 text-white">{bpm} BPM {avgBpm && `(자동: ${avgBpm})`}</div>
+                                    </div>
+                                </div>
+                             </div>
+                             <button onClick={handleExport} className="w-full mt-4 py-3 font-bold text-lg rounded-lg pro-mode-btn bg-blue-600 hover:bg-blue-700"><i className="fas fa-download mr-2"></i> 분석 파일 내보내기</button>
+                        </aside>
+                    </div>
+                )}
+            </div>
+        );
+    }
+
+    // --- Song Practice Component ---
+    function SongPracticeApp({ onNavigate }) {
+        const [step, setStep] = useState('import');
+        const [lyrics, setLyrics] = useState("");
+        const [timedLines, setTimedLines] = useState([]);
+        const [breathMarks, setBreathMarks] = useState([]);
+        const [isPlaying, setIsPlaying] = useState(false);
+        const [elapsedTime, setElapsedTime] = useState(0);
+        const [bpm, setBpm] = useState(120);
+        const [avgBpm, setAvgBpm] = useState(null);
+        const [isMetronomePlaying, setIsMetronomePlaying] = useState(false);
+        const [breathCountdown, setBreathCountdown] = useState(null);
+
+        const timerRef = useRef(null);
+        const metronomeTimerRef = useRef(null);
+        const audioContextRef = useRef(null);
+        const startTimeRef = useRef(null);
+        const fileInputRef = useRef(null);
+        const lyricsContainerRef = useRef(null);
+
+        const lyricsLines = useMemo(() => lyrics.split('\n').filter(line => line.trim() !== ''), [lyrics]);
+        
+        const finalLyrics = useMemo(() => {
+             return lyricsLines.map((line, lineIndex) => {
+                const breathsInLine = (breathMarks || []).filter(m => m.lineIndex === lineIndex).map(m => m.charIndex).sort((a,b) => b-a);
+                let lineWithBreaths = line;
+                breathsInLine.forEach(charIndex => {
+                    lineWithBreaths = `${lineWithBreaths.slice(0, charIndex + 1)}^${lineWithBreaths.slice(charIndex + 1)}`;
+                });
+                return lineWithBreaths;
+            }).join('\n');
+        }, [lyricsLines, breathMarks]);
+
+        const allBreathTimes = useMemo(() => (breathMarks || []).map(mark => mark.time).sort((a, b) => a - b), [breathMarks]);
+        const totalBreathCount = allBreathTimes.length;
+
+        const passedBreathCount = useMemo(() => {
+            return allBreathTimes.filter(time => time < elapsedTime).length;
+        }, [allBreathTimes, elapsedTime]);
+
+        const formatTime = (ms) => {
+            const minutes = Math.floor(ms / 60000);
+            const seconds = Math.floor((ms % 60000) / 1000);
+            return `${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}`;
+        };
+        
+        const handleReset = () => {
+            setStep('import'); setLyrics(""); setTimedLines([]); setBreathMarks([]);
+            setIsPlaying(false); setElapsedTime(0);
+            setBpm(120); setAvgBpm(null); setIsMetronomePlaying(false);
+            if (metronomeTimerRef.current) clearInterval(metronomeTimerRef.current);
+        };
+
+        useEffect(() => {
+            if (isPlaying) {
+                startTimeRef.current = Date.now() - elapsedTime;
+                timerRef.current = requestAnimationFrame(animate);
+            } else { cancelAnimationFrame(timerRef.current); }
+            return () => cancelAnimationFrame(timerRef.current);
+        }, [isPlaying]);
+
+        const animate = () => {
+            const newElapsedTime = Date.now() - startTimeRef.current;
+            setElapsedTime(newElapsedTime);
+            
+            const nextBreathTime = allBreathTimes.find(time => time > newElapsedTime);
+            if (nextBreathTime) {
+                const timeToBreath = nextBreathTime - newElapsedTime;
+                if (timeToBreath <= 3000 && timeToBreath > 2000) setBreathCountdown(3);
+                else if (timeToBreath <= 2000 && timeToBreath > 1000) setBreathCountdown(2);
+                else if (timeToBreath <= 1000 && timeToBreath > 0) setBreathCountdown(1);
+                else setBreathCountdown(null);
+            } else {
+                setBreathCountdown(null);
+            }
+
+            timerRef.current = requestAnimationFrame(animate);
+        };
+
+        const currentLineIndex = useMemo(() => {
+            if (!timedLines || timedLines.length === 0) return -1;
+            for(let i=0; i < timedLines.length; i++) {
+                if(elapsedTime <= timedLines[i].endTime) {
+                    return i;
+                }
+            }
+            return -1;
+        }, [elapsedTime, timedLines]);
+        
+        useEffect(() => {
+            if (currentLineIndex !== -1 && lyricsContainerRef.current) {
+                const activeElement = lyricsContainerRef.current.children[currentLineIndex];
+                if (activeElement) {
+                    activeElement.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                }
+            }
+        }, [currentLineIndex]);
+        
+        const handleFileImport = (event) => {
+            const file = event.target.files[0]; if (!file) return;
+            const reader = new FileReader();
+            reader.onload = (e) => {
+                try {
+                    const data = JSON.parse(e.target.result);
+                    if (data.lyrics && data.timedLines) {
+                        setLyrics(data.lyrics); setTimedLines(data.timedLines);
+                        setBreathMarks(data.breathMarks || []);
+                        if (data.avgBpm) { setAvgBpm(data.avgBpm); setBpm(data.avgBpm); }
+                        setStep('practice');
+                    } else alert("잘못된 파일 형식입니다.");
+                } catch (error) { alert("파일을 읽는 중 오류가 발생했습니다."); }
+            };
+            reader.readAsText(file);
+        };
+
+        const renderKaraokeLyrics = () => {
+            let lineStartTime = 0;
+            if (currentLineIndex > 0) {
+                 lineStartTime = timedLines[currentLineIndex - 1].endTime;
+            }
+
+            if (currentLineIndex === -1 && timedLines.length > 0 && elapsedTime > timedLines[timedLines.length - 1].endTime) {
+                 if (isPlaying) { setIsPlaying(false); setIsMetronomePlaying(false); }
+                 return <p className="lyrics-line text-2xl my-2 text-green-400 text-center">연습 완료!</p>;
+            }
+
+            return lyricsLines.map((text, idx) => {
+                let className = 'lyrics-line text-xl my-2 past';
+                if (idx === currentLineIndex) className = 'lyrics-line text-2xl my-2 current';
+                else if (idx === currentLineIndex + 1) className = 'lyrics-line text-xl my-2 next';
+                
+                if(idx === currentLineIndex) {
+                    const lineDuration = timedLines[idx].endTime - lineStartTime;
+                    const progressInLine = lineDuration > 0 ? (elapsedTime - lineStartTime) / lineDuration : 1;
+                    const highlightUpTo = Math.floor(progressInLine * text.length);
+                    return (
+                        <p key={idx} className={className}>
+                            <span className="highlight-char">{text.substring(0, highlightUpTo)}</span>
+                            <span>{text.substring(highlightUpTo)}</span>
+                        </p>
+                    )
+                }
+                return <p key={idx} className={className}>{text}</p>;
+            });
+        };
+
+        const playBeep = useCallback(() => { /* ... metronome beep logic ... */ }, []);
+        useEffect(() => { /* ... metronome timer logic ... */ }, [isMetronomePlaying, bpm, playBeep]);
+
+        const handleResetPractice = () => {
+            setIsPlaying(false);
+            setIsMetronomePlaying(false);
+            setElapsedTime(0);
+        }
+
+        if (step === 'import') {
+            return (
+                <div className="w-full max-w-2xl mx-auto">
+                    <header className="text-center mb-8 flex items-center justify-between">
+                         <button onClick={() => onNavigate('home')} className="pro-mode-btn px-4 py-2 rounded-lg hover:bg-red-600"><i className="fas fa-arrow-left mr-2"></i>홈으로</button>
+                         <h1 className="text-3xl sm:text-4xl font-bold text-white tracking-tight"><i className="fas fa-music mr-3 text-green-400"></i>노래 연습</h1>
+                         <div className="w-24"></div>
+                    </header>
+                    <main className="pro-mode-card rounded-xl shadow-2xl p-8 flex flex-col items-center gap-6 text-center">
+                        <i className="fas fa-upload text-6xl text-gray-500 mb-4"></i>
+                        <h2 className="text-2xl font-bold">연습 파일 불러오기</h2>
+                        <p className="text-gray-400">호흡 분석기에서 내보낸 `.json` 파일을 불러와 연습을 시작하세요.</p>
+                        <input type="file" ref={fileInputRef} onChange={handleFileImport} accept=".json" className="hidden" />
+                        <button onClick={() => fileInputRef.current.click()} className="w-full max-w-xs mt-4 py-3 font-bold text-lg rounded-lg pro-mode-btn bg-green-600 hover:bg-green-700">파일 선택</button>
+                    </main>
+                </div>
+            );
+        }
+
+        return (
+            <div className="w-full max-w-4xl mx-auto">
+                 <header className="text-center mb-8 flex items-center justify-between">
+                    <button onClick={handleReset} className="pro-mode-btn px-4 py-2 rounded-lg hover:bg-red-600"><i className="fas fa-undo mr-2"></i>파일 다시 선택</button>
+                    <h1 className="text-3xl sm:text-4xl font-bold text-white tracking-tight"><i className="fas fa-music mr-3 text-green-400"></i>노래 연습</h1>
+                    <button onClick={handleResetPractice} className="pro-mode-btn px-4 py-2 rounded-lg hover:bg-yellow-600"><i className="fas fa-redo mr-2"></i>다시하기</button>
+                </header>
+                <div className="grid md:grid-cols-2 gap-8">
+                    <main className="pro-mode-card rounded-xl shadow-2xl p-8 relative">
+                         {breathCountdown && <div className="breath-countdown">{breathCountdown}</div>}
+                         <div className="flex justify-between items-center mb-4">
+                            <p className="font-mono text-5xl text-white text-left">{formatTime(elapsedTime)}</p>
+                            <div className="text-right">
+                                <p className="text-lg text-gray-400">남은 호흡</p>
+                                <p className="text-3xl font-bold text-cyan-400">{totalBreathCount - passedBreathCount} / {totalBreathCount}</p>
+                            </div>
+                         </div>
+                         <div ref={lyricsContainerRef} className="h-72 overflow-y-auto bg-black/30 p-4 rounded-lg mb-6">{renderKaraokeLyrics()}</div>
+                         <div className="flex items-center gap-4">
+                            <button onClick={()=> { setIsPlaying(!isPlaying); if(!isPlaying) {setIsMetronomePlaying(true)} else {setIsMetronomePlaying(false)} }} className="w-full py-3 font-bold text-lg rounded-lg pro-mode-btn bg-green-600 hover:bg-green-700">{isPlaying ? '일시정지' : '연습 시작'}</button>
+                         </div>
+                         <div className="mt-4">
+                            <h3 className="text-lg font-semibold mb-2 text-white">메트로놈</h3>
+                            <div className="flex items-center gap-4">
+                               <button onClick={()=> setIsMetronomePlaying(!isMetronomePlaying)} className="w-16 h-12 text-2xl rounded-lg pro-mode-btn">{isMetronomePlaying ? <i className="fas fa-pause"></i> : <i className="fas fa-play"></i>}</button>
+                                <div className="flex-grow">
+                                    <input type="range" min="40" max="220" value={bpm} onChange={(e) => setBpm(Number(e.target.value))} className="w-full h-2 bg-gray-700 rounded-lg appearance-none cursor-pointer slider-thumb" />
+                                    <div className="text-center mt-1 text-white">{bpm} BPM {avgBpm && `(자동: ${avgBpm})`}</div>
+                                </div>
+                            </div>
+                         </div>
+                    </main>
+                    <aside className="pro-mode-card rounded-xl shadow-2xl p-8 flex flex-col">
+                         <h2 className="text-xl font-semibold mb-2 text-green-300">전체 가사 (호흡 포함)</h2>
+                         <div className="w-full flex-grow p-4 bg-black/30 rounded-lg resize-none whitespace-pre-wrap overflow-y-auto">
+                            {finalLyrics}
+                         </div>
+                    </aside>
+                </div>
+            </div>
+        );
+    }
+    
     function HomePage({ onNavigate }) {
       return (
         <div className="w-full max-w-4xl mx-auto">
           <header className="text-center mb-12">
-            <h1 className="text-4xl sm:text-5xl font-bold text-white tracking-tight">
-              <i className="fas fa-tools mr-4 text-green-400"></i>
-              Pro-Vocal Tools
-            </h1>
+            <h1 className="text-4xl sm:text-5xl font-bold text-white tracking-tight"><i className="fas fa-tools mr-4 text-green-400"></i>Pro-Vocal Tools</h1>
             <p className="text-gray-400 mt-3 text-lg">프로페셔널을 위한 모든 도구</p>
           </header>
           <main>
-            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-8">
-                {/* Lyrics Memorization Tool Card */}
-                <div 
-                    className="tool-card rounded-xl shadow-2xl p-6 flex flex-col items-center justify-center text-center cursor-pointer aspect-square"
-                    onClick={() => onNavigate('lyrics-helper')}
-                >
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8">
+                <div className="tool-card rounded-xl shadow-2xl p-6 flex flex-col items-center justify-center text-center cursor-pointer aspect-square" onClick={() => onNavigate('lyrics-helper')}>
                     <i className="fas fa-microphone-alt text-6xl text-green-400 mb-4"></i>
-                    <h2 className="text-xl font-bold text-white">가사 암기 전문 도우미</h2>
+                    <h2 className="text-xl font-bold text-white">가사 암기 도우미</h2>
                     <p className="text-gray-400 mt-2 text-sm">완벽한 무대를 위한 필수 연습 도구</p>
                 </div>
-                
-                {/* Placeholder for future tools */}
-                <div className="tool-card bg-gray-800/50 rounded-xl shadow-lg p-6 flex flex-col items-center justify-center text-center aspect-square border-2 border-dashed border-gray-600">
-                    <i className="fas fa-plus text-5xl text-gray-500 mb-4"></i>
-                    <h2 className="text-xl font-bold text-gray-400">다음 기능 준비중</h2>
+                <div className="tool-card rounded-xl shadow-2xl p-6 flex flex-col items-center justify-center text-center cursor-pointer aspect-square" onClick={() => onNavigate('breath-analyzer')}>
+                    <i className="fas fa-chart-line text-6xl text-green-400 mb-4"></i>
+                    <h2 className="text-xl font-bold text-white">호흡 분석기</h2>
+                    <p className="text-gray-400 mt-2 text-sm">호흡 타이밍을 기록하고 분석합니다.</p>
+                </div>
+                <div className="tool-card rounded-xl shadow-2xl p-6 flex flex-col items-center justify-center text-center cursor-pointer aspect-square" onClick={() => onNavigate('song-practice')}>
+                    <i className="fas fa-music text-6xl text-green-400 mb-4"></i>
+                    <h2 className="text-xl font-bold text-white">노래 연습</h2>
+                    <p className="text-gray-400 mt-2 text-sm">분석 파일을 기반으로 노래를 연습합니다.</p>
                 </div>
             </div>
           </main>
@@ -305,30 +672,22 @@
       );
     }
 
-    // --- Main App Component (Router) ---
     function App() {
       const [currentPage, setCurrentPage] = useState('home');
-
-      const navigate = (page) => {
-        setCurrentPage(page);
-      };
-
+      const navigate = (page) => setCurrentPage(page);
       const renderPage = () => {
         switch (currentPage) {
-          case 'lyrics-helper':
-            return <LyricsApp onNavigate={navigate} />;
-          case 'home':
-          default:
-            return <HomePage onNavigate={navigate} />;
+          case 'lyrics-helper': return <LyricsApp onNavigate={navigate} />;
+          case 'breath-analyzer': return <BreathAnalyzerApp onNavigate={navigate} />;
+          case 'song-practice': return <SongPracticeApp onNavigate={navigate} />;
+          default: return <HomePage onNavigate={navigate} />;
         }
       };
 
       return (
         <div className="min-h-screen p-4 sm:p-6 md:p-8 flex flex-col items-center justify-center">
           {renderPage()}
-          <footer className="text-center mt-12 text-gray-500 text-sm">
-            <p>© 2024 Pro-Vocal Tools. All rights reserved.</p>
-          </footer>
+          <footer className="text-center mt-12 text-gray-500 text-sm"><p>© 2024 Pro-Vocal Tools. All rights reserved.</p></footer>
         </div>
       );
     }
