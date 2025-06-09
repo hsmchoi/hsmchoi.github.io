@@ -22,6 +22,7 @@
       border-color: #4A4A4A;
       color: #E0E0E0;
     }
+    .pro-mode-input::placeholder { color: #6B6B6B; }
     .pro-mode-btn {
       background-color: #3E3E3E;
       color: #FFFFFF;
@@ -709,7 +710,7 @@
                         if (sentence.includes(keyword) && !usedSentences.has(sentence)) {
                              newQuiz.push({
                                  type: 'fill',
-                                 questionHTML: sentence.replace(new RegExp(keyword, 'g'), `<span class="font-bold text-blue-600">[ 빈칸 ]</span>`),
+                                 questionHTML: sentence.replace(new RegExp(keyword, 'g'), `<span class="font-bold text-blue-400">[ 빈칸 ]</span>`),
                                  answer: keyword,
                                  userAnswer: ''
                              });
@@ -795,83 +796,84 @@
         };
 
         return (
-             <div className="w-full max-w-4xl mx-auto learner-card rounded-xl shadow-lg p-6 md:p-8 learner-body">
-                <header className="text-center mb-6">
-                    <h1 className="text-3xl sm:text-4xl font-bold text-gray-800">강의노트 맞춤형 학습기</h1>
-                    <p className="text-gray-600 mt-2">강의 내용을 요약하고, 원하는 키워드를 선택해 맞춤형 문제를 풀고, 오답까지 관리하세요.</p>
+             <div className="w-full max-w-4xl mx-auto">
+                <header className="text-center mb-8 flex items-center justify-between">
+                    <button onClick={() => onNavigate('utilities_home')} className="pro-mode-btn px-4 py-2 rounded-lg hover:bg-gray-600"><i className="fas fa-arrow-left mr-2"></i>뒤로</button>
+                    <h1 className="text-3xl sm:text-4xl font-bold text-white tracking-tight"><i className="fas fa-book-reader mr-3 text-blue-400"></i>강의노트 학습기</h1>
+                     <div className="w-24"></div>
                 </header>
-                
-                <div className="mb-6">
-                    <textarea value={notes} onChange={(e) => setNotes(e.target.value)} className="w-full h-32 p-4 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500" placeholder="이곳에 강의 내용을 붙여넣으세요..."></textarea>
-                </div>
-                
-                <div className="flex flex-wrap justify-center items-center gap-4 mb-6">
-                    <button onClick={() => onNavigate('utilities_home')} className="bg-gray-500 hover:bg-gray-600 text-white font-bold py-3 px-6 rounded-lg shadow-md"><i className="fas fa-arrow-left mr-2"></i>뒤로</button>
-                    <button onClick={processLecture} className="bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 px-6 rounded-lg shadow-md">분석 및 생성</button>
-                    <input type="file" ref={fileInputRef} onChange={importIncorrectNotes} accept=".json" className="hidden" />
-                    <button onClick={() => fileInputRef.current.click()} className="bg-purple-600 hover:bg-purple-700 text-white font-bold py-3 px-6 rounded-lg shadow-md">오답노트 불러오기</button>
-                    <button onClick={clearAll} className="bg-red-500 hover:bg-red-600 text-white font-bold py-3 px-6 rounded-lg shadow-md">초기화</button>
-                </div>
-                
-                <div className="border-b border-gray-200 mb-4">
-                    <nav className="flex space-x-2" aria-label="Tabs">
-                        <button onClick={() => setActiveTab('summary')} className={`learner-tab font-semibold px-4 py-2 text-sm rounded-t-lg border-b-2 border-transparent ${activeTab === 'summary' ? 'active' : ''}`}>요약</button>
-                        <button onClick={() => setActiveTab('keyword')} className={`learner-tab font-semibold px-4 py-2 text-sm rounded-t-lg border-b-2 border-transparent ${activeTab === 'keyword' ? 'active' : ''}`}>키워드 선택</button>
-                        <button onClick={() => setActiveTab('quiz')} className={`learner-tab font-semibold px-4 py-2 text-sm rounded-t-lg border-b-2 border-transparent ${activeTab === 'quiz' ? 'active' : ''}`}>연습 문제</button>
-                        <button onClick={() => setActiveTab('note')} className={`learner-tab font-semibold px-4 py-2 text-sm rounded-t-lg border-b-2 border-transparent ${activeTab === 'note' ? 'active' : ''}`}>오답노트</button>
-                    </nav>
-                </div>
-                
-                <div className="w-full h-[500px] bg-gray-50 border-2 border-dashed border-gray-300 rounded-lg p-4 overflow-y-auto">
-                    {activeTab === 'summary' && (summary ? <div className="prose max-w-none">{summary.map((line, i) => {
-                        if(line.type === 'li') return <li key={i}>{line.content}</li>;
-                        if(line.type === 'h3') return <h3 key={i} className="font-bold mt-4 mb-2">{line.content}</h3>;
-                        return <p key={i}>{line.content}</p>;
-                    })}</div> : <div className="flex items-center justify-center h-full text-gray-400">정리된 내용이 여기에 표시됩니다.</div>)}
+                <main className="pro-mode-card rounded-xl shadow-2xl p-6 md:p-8">
+                    <div className="mb-6">
+                        <textarea value={notes} onChange={(e) => setNotes(e.target.value)} className="w-full h-32 p-4 border border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 pro-mode-input" placeholder="이곳에 강의 내용을 붙여넣으세요..."></textarea>
+                    </div>
                     
-                    {activeTab === 'keyword' && (keywords.length > 0 ? (
-                        <div>
-                             <h3 className='font-bold mb-4 text-lg'>학습할 키워드를 선택하세요 (빈도순)</h3>
-                             <div className='grid grid-cols-2 md:grid-cols-3 gap-x-8 gap-y-2'>
-                                {keywords.map(([word, count]) => (
-                                    <div key={word}>
-                                        <input type="checkbox" id={`cb-${word}`} checked={selectedKeywords.has(word)} onChange={() => handleKeywordToggle(word)} />
-                                        <label htmlFor={`cb-${word}`} className="ml-2 cursor-pointer">{word} ({count}회)</label>
+                    <div className="flex flex-wrap justify-center items-center gap-4 mb-6">
+                        <button onClick={processLecture} className="bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 px-6 rounded-lg shadow-md">분석 및 생성</button>
+                        <input type="file" ref={fileInputRef} onChange={importIncorrectNotes} accept=".json" className="hidden" />
+                        <button onClick={() => fileInputRef.current.click()} className="bg-purple-600 hover:bg-purple-700 text-white font-bold py-3 px-6 rounded-lg shadow-md">오답노트 불러오기</button>
+                        <button onClick={clearAll} className="bg-red-500 hover:bg-red-600 text-white font-bold py-3 px-6 rounded-lg shadow-md">초기화</button>
+                    </div>
+                    
+                    <div className="border-b border-gray-700 mb-4">
+                        <nav className="flex space-x-2" aria-label="Tabs">
+                            <button onClick={() => setActiveTab('summary')} className={`learner-tab pro-mode-btn font-semibold px-4 py-2 text-sm rounded-t-lg border-b-2 border-transparent ${activeTab === 'summary' ? 'active bg-blue-600' : ''}`}>요약</button>
+                            <button onClick={() => setActiveTab('keyword')} className={`learner-tab pro-mode-btn font-semibold px-4 py-2 text-sm rounded-t-lg border-b-2 border-transparent ${activeTab === 'keyword' ? 'active bg-blue-600' : ''}`}>키워드 선택</button>
+                            <button onClick={() => setActiveTab('quiz')} className={`learner-tab pro-mode-btn font-semibold px-4 py-2 text-sm rounded-t-lg border-b-2 border-transparent ${activeTab === 'quiz' ? 'active bg-blue-600' : ''}`}>연습 문제</button>
+                            <button onClick={() => setActiveTab('note')} className={`learner-tab pro-mode-btn font-semibold px-4 py-2 text-sm rounded-t-lg border-b-2 border-transparent ${activeTab === 'note' ? 'active bg-blue-600' : ''}`}>오답노트</button>
+                        </nav>
+                    </div>
+                    
+                    <div className="w-full h-[500px] bg-black/30 border-2 border-dashed border-gray-700 rounded-lg p-4 overflow-y-auto">
+                        {activeTab === 'summary' && (summary ? <div className="prose prose-invert max-w-none">{summary.map((line, i) => {
+                            if(line.type === 'li') return <li key={i}>{line.content}</li>;
+                            if(line.type === 'h3') return <h3 key={i} className="font-bold mt-4 mb-2 text-blue-300">{line.content}</h3>;
+                            return <p key={i}>{line.content}</p>;
+                        })}</div> : <div className="flex items-center justify-center h-full text-gray-400">정리된 내용이 여기에 표시됩니다.</div>)}
+                        
+                        {activeTab === 'keyword' && (keywords.length > 0 ? (
+                            <div>
+                                 <h3 className='font-bold mb-4 text-lg text-blue-300'>학습할 키워드를 선택하세요 (빈도순)</h3>
+                                 <div className='grid grid-cols-2 md:grid-cols-3 gap-x-8 gap-y-2'>
+                                    {keywords.map(([word, count]) => (
+                                        <div key={word} className="flex items-center">
+                                            <input type="checkbox" id={`cb-${word}`} checked={selectedKeywords.has(word)} onChange={() => handleKeywordToggle(word)} className="w-4 h-4 text-blue-600 bg-gray-700 border-gray-600 rounded focus:ring-blue-600"/>
+                                            <label htmlFor={`cb-${word}`} className="ml-2 cursor-pointer">{word} ({count}회)</label>
+                                        </div>
+                                    ))}
+                                 </div>
+                                 <button onClick={() => generateQuiz(false)} className='mt-8 w-full bg-green-600 hover:bg-green-700 text-white font-bold py-3 rounded-lg shadow-md'>선택한 단어로 연습문제 만들기</button>
+                            </div>
+                        ) : <div className="flex items-center justify-center h-full text-gray-400">키워드 목록이 여기에 표시됩니다.</div>)}
+                        
+                        {activeTab === 'quiz' && (quiz.length > 0 ? (
+                            <div ref={quizContainerRef}>
+                                {quiz.map((q, i) => (
+                                    <div key={i} className="mb-4 p-4 bg-gray-800 rounded-md shadow-sm">
+                                        <p className="mb-2" dangerouslySetInnerHTML={{ __html: q.questionHTML }}></p>
+                                        <input type="text" value={q.userAnswer} onChange={(e) => handleQuizAnswerChange(i, e.target.value)} className="mt-1 block w-full px-3 py-2 pro-mode-input border border-gray-600 rounded-md text-sm shadow-sm"/>
                                     </div>
                                 ))}
-                             </div>
-                             <button onClick={() => generateQuiz(false)} className='mt-8 w-full bg-green-600 hover:bg-green-700 text-white font-bold py-3 rounded-lg shadow-md'>선택한 단어로 연습문제 만들기</button>
-                        </div>
-                    ) : <div className="flex items-center justify-center h-full text-gray-400">키워드 목록이 여기에 표시됩니다.</div>)}
-                    
-                    {activeTab === 'quiz' && (quiz.length > 0 ? (
-                        <div ref={quizContainerRef}>
-                            {quiz.map((q, i) => (
-                                <div key={i} className="mb-4 p-4 bg-white rounded-md shadow-sm">
-                                    <p className="mb-2" dangerouslySetInnerHTML={{ __html: q.questionHTML }}></p>
-                                    <input type="text" value={q.userAnswer} onChange={(e) => handleQuizAnswerChange(i, e.target.value)} className="mt-1 block w-full px-3 py-2 bg-white border border-slate-300 rounded-md text-sm shadow-sm"/>
-                                </div>
-                            ))}
-                            <button onClick={gradeQuiz} className="w-full mt-8 bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-3 rounded-lg shadow-md">채점하기</button>
-                        </div>
-                    ) : <div className="flex items-center justify-center h-full text-gray-400">키워드를 선택하고 문제 생성 버튼을 누르세요.</div>)}
-
-                    {activeTab === 'note' && (incorrectNotes.length > 0 ? (
-                        <div>
-                             <div className="flex gap-4 mb-4">
-                                <button onClick={reviewIncorrectProblems} className="bg-blue-500 hover:bg-blue-600 text-white font-bold py-2 px-4 rounded-lg">틀린 문제 다시 풀기</button>
-                                <button onClick={exportIncorrectNotes} className="bg-green-500 hover:bg-green-600 text-white font-bold py-2 px-4 rounded-lg">오답노트 내보내기</button>
+                                <button onClick={gradeQuiz} className="w-full mt-8 bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-3 rounded-lg shadow-md">채점하기</button>
                             </div>
-                            {incorrectNotes.map((q, i) => (
-                                 <div key={i} className="mb-4 p-4 bg-white rounded-md shadow-sm">
-                                    <p className="mb-2" dangerouslySetInnerHTML={{ __html: q.questionHTML }}></p>
-                                    <p className="text-sm text-red-600">나의 오답: {q.userAnswer || '미입력'}</p>
-                                    <p className="text-sm text-green-600">정답: {q.answer}</p>
+                        ) : <div className="flex items-center justify-center h-full text-gray-400">키워드를 선택하고 문제 생성 버튼을 누르세요.</div>)}
+
+                        {activeTab === 'note' && (incorrectNotes.length > 0 ? (
+                            <div>
+                                 <div className="flex gap-4 mb-4">
+                                    <button onClick={reviewIncorrectProblems} className="bg-blue-500 hover:bg-blue-600 text-white font-bold py-2 px-4 rounded-lg">틀린 문제 다시 풀기</button>
+                                    <button onClick={exportIncorrectNotes} className="bg-green-500 hover:bg-green-600 text-white font-bold py-2 px-4 rounded-lg">오답노트 내보내기</button>
                                 </div>
-                            ))}
-                        </div>
-                    ) : <div className="flex items-center justify-center h-full text-gray-400">채점 후 틀린 문제가 여기에 표시됩니다.</div>)}
-                </div>
+                                {incorrectNotes.map((q, i) => (
+                                     <div key={i} className="mb-4 p-4 bg-gray-800 rounded-md shadow-sm">
+                                        <p className="mb-2" dangerouslySetInnerHTML={{ __html: q.questionHTML }}></p>
+                                        <p className="text-sm text-red-400">나의 오답: {q.userAnswer || '미입력'}</p>
+                                        <p className="text-sm text-green-400">정답: {q.answer}</p>
+                                    </div>
+                                ))}
+                            </div>
+                        ) : <div className="flex items-center justify-center h-full text-gray-400">채점 후 틀린 문제가 여기에 표시됩니다.</div>)}
+                    </div>
+                </main>
             </div>
         );
     }
