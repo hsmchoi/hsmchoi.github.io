@@ -3,13 +3,11 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>황금비 패턴 기억 게임</title>
+    <title>패턴 기억 게임</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/tone/14.7.77/Tone.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
     <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;700&display=swap" rel="stylesheet">
     <style>
-        /* 기본 단위: u = 4px, 기본 폰트 크기: S = 16px */
         body {
             font-family: 'Noto Sans KR', sans-serif;
             -webkit-tap-highlight-color: transparent;
@@ -17,57 +15,55 @@
         .game-board {
             display: grid;
             grid-template-columns: repeat(2, 1fr);
-            /* 간격: 20px (u * 5, 피보나치) */
-            gap: 1.25rem; /* 20px */
+            gap: 1.5rem; /* 24px */
             width: 100%;
             max-width: 400px;
             aspect-ratio: 1 / 1;
         }
         .game-button {
-            /* border-radius: 12px (u * 3, 피보나치) */
-            border-radius: 0.75rem; /* 12px */
+            border-radius: 1rem; /* 16px */
             cursor: pointer;
             transition: transform 0.1s ease, box-shadow 0.2s ease, background-color 0.2s ease;
             box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
         }
         .game-button:active {
-            transform: scale(0.96);
+            transform: scale(0.95);
         }
         .game-button.active {
-            transform: scale(1.03);
-            box-shadow: 0 0 25px 3px var(--glow-color);
-            filter: brightness(1.25);
+            transform: scale(1.05);
+            box-shadow: 0 0 20px 5px var(--glow-color);
+            filter: brightness(1.2);
         }
         .disabled {
             pointer-events: none;
-            opacity: 0.6;
+            opacity: 0.7;
         }
     </style>
 </head>
-<body class="bg-slate-100 flex flex-col items-center justify-center min-h-screen p-4">
+<body class="bg-stone-100 flex flex-col items-center justify-center min-h-screen p-4">
 
-    <div class="w-full max-w-lg text-center">
-        <h1 class="text-[42px] font-bold text-slate-800 mb-5 leading-tight">패턴 기억 게임</h1>
-        <p class="text-slate-600 text-base mb-8">빛나는 순서를 기억하고 따라하며, 당신의 뇌를 훈련하세요.</p>
+    <div class="w-full max-w-md text-center">
+        <h1 class="text-4xl font-bold text-stone-800 mb-2">패턴 기억 게임</h1>
+        <p class="text-stone-600 mb-6">집중력을 기르고, 뇌를 훈련하세요. 빛나는 순서를 기억하고 따라 해보세요.</p>
 
-        <div id="game-container" class="bg-white p-8 rounded-[20px] shadow-xl">
-            <div class="flex justify-between items-center mb-5">
-                <div id="level-display" class="text-base font-bold text-slate-700">레벨: 0</div>
-                <button id="start-btn" class="bg-teal-600 hover:bg-teal-700 text-white font-bold py-3 px-5 rounded-lg transition-colors shadow-md hover:shadow-lg">시작</button>
+        <div id="game-container" class="bg-white p-6 rounded-2xl shadow-lg">
+            <div class="flex justify-between items-center mb-6">
+                <div id="level-display" class="text-xl font-bold text-stone-700">레벨: 0</div>
+                <button id="start-btn" class="bg-teal-600 hover:bg-teal-700 text-white font-bold py-2 px-6 rounded-lg transition-colors">시작</button>
             </div>
 
             <div class="game-board mx-auto">
-                <div id="button-0" class="game-button bg-rose-400" style="--glow-color: rgba(251, 113, 133, 0.7);"></div>
-                <div id="button-1" class="game-button bg-sky-400" style="--glow-color: rgba(56, 189, 248, 0.7);"></div>
-                <div id="button-2" class="game-button bg-amber-400" style="--glow-color: rgba(251, 191, 36, 0.7);"></div>
-                <div id="button-3" class="game-button bg-emerald-400" style="--glow-color: rgba(52, 211, 153, 0.7);"></div>
+                <div id="button-0" class="game-button bg-red-400" style="--glow-color: rgba(248, 113, 113, 0.7);"></div>
+                <div id="button-1" class="game-button bg-blue-400" style="--glow-color: rgba(96, 165, 250, 0.7);"></div>
+                <div id="button-2" class="game-button bg-yellow-400" style="--glow-color: rgba(250, 204, 21, 0.7);"></div>
+                <div id="button-3" class="game-button bg-green-400" style="--glow-color: rgba(74, 222, 128, 0.7);"></div>
             </div>
             
-            <div id="message-display" class="mt-5 text-base font-medium text-slate-500 h-6"></div>
+            <div id="message-display" class="mt-6 text-lg font-medium text-stone-500 h-7"></div>
         </div>
         
-        <footer class="mt-8 text-sm text-slate-500">
-            <p>황금비율 원칙에 따라 새롭게 디자인되었습니다.</p>
+        <footer class="mt-8 text-sm text-stone-500">
+            <p>이 게임은 '도파민 항상성 복원 프로토콜'의 원칙에 따라 설계되었습니다.</p>
         </footer>
     </div>
 
@@ -83,6 +79,7 @@
         let isPlayerTurn = false;
         let synth;
 
+        // Initialize Tone.js synth
         function createSynth() {
             if (!synth) {
                 synth = new Tone.Synth({
@@ -96,6 +93,7 @@
 
         startBtn.addEventListener('click', () => {
             createSynth();
+            // Start audio context on user interaction
             if (Tone.context.state !== 'running') {
                 Tone.context.resume();
             }
@@ -114,7 +112,6 @@
             gamePattern = [];
             level = 0;
             startBtn.classList.add('disabled');
-            startBtn.textContent = '시작';
             messageDisplay.textContent = '';
             nextLevel();
         }
@@ -134,22 +131,17 @@
         function playPattern() {
             messageDisplay.textContent = '패턴을 기억하세요...';
             let delay = 0;
-            // 동적 난이도: 레벨마다 10ms씩 빨라짐 (최소 200ms)
-            const baseSpeed = 700;
-            const speedDecrement = 10;
-            const patternInterval = Math.max(200, baseSpeed - (level * speedDecrement));
-            
-            gamePattern.forEach((buttonId) => {
+            gamePattern.forEach((buttonId, index) => {
                 setTimeout(() => {
                     activateButton(buttonId);
                 }, delay);
-                delay += patternInterval;
+                delay += 700; // Time between flashes
             });
 
             setTimeout(() => {
                 isPlayerTurn = true;
                 messageDisplay.textContent = '당신 차례입니다!';
-            }, delay + 100); // 플레이어 턴 전에 약간의 여유 시간 추가
+            }, delay);
         }
 
         function activateButton(id) {
@@ -158,7 +150,7 @@
             synth.triggerAttackRelease(notes[id], '8n');
             setTimeout(() => {
                 button.classList.remove('active');
-            }, 300);
+            }, 350); // Flash duration
         }
 
         function playerTurn(id) {
@@ -174,36 +166,22 @@
             }
 
             if (playerPattern.length === gamePattern.length) {
-                if (isPlayerTurn) {
+                if (isPlayerTurn) { // Ensure we don't trigger next level multiple times
                     isPlayerTurn = false;
                     messageDisplay.textContent = '성공!';
-                    
-                    // 특수 효과: 5 레벨마다 색종이 효과
-                    if (level > 0 && level % 5 === 0) {
-                        showConfetti();
-                    }
-                    
-                    setTimeout(nextLevel, 1200); // 다음 레벨까지 시간 증가
+                    setTimeout(nextLevel, 1000);
                 }
             }
         }
 
         function gameOver() {
-            messageDisplay.textContent = `게임 오버! 최종 레벨: ${level > 0 ? level : 0}`;
+            messageDisplay.textContent = `게임 오버! 최종 레벨: ${level - 1}`;
             startBtn.classList.remove('disabled');
             startBtn.textContent = '다시 시작';
             isPlayerTurn = false;
+            // Play a dissonant chord for game over
             const dissonantSynth = new Tone.PolySynth(Tone.Synth).toDestination();
             dissonantSynth.triggerAttackRelease(['C3', 'C#3'], '4n');
-        }
-
-        // 색종이 효과 함수
-        function showConfetti() {
-            confetti({
-                particleCount: 150,
-                spread: 90,
-                origin: { y: 0.6 }
-            });
         }
     </script>
 </body>
