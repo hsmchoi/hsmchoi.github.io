@@ -3,29 +3,28 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>황금비 패턴 기억 게임 ver.02</title>
+    <title>도전! 패턴 기억 게임</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/tone/14.7.77/Tone.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
     <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;700&display=swap" rel="stylesheet">
     <style>
-        /* 기본 단위: u = 4px, 기본 폰트 크기: S = 16px */
         body {
             font-family: 'Noto Sans KR', sans-serif;
             -webkit-tap-highlight-color: transparent;
+            overflow: hidden; /* 화면 흔들림 시 스크롤바 방지 */
         }
         .game-board {
             display: grid;
             grid-template-columns: repeat(2, 1fr);
-            /* 간격: 20px (u * 5, 피보나치) */
-            gap: 1.25rem; /* 20px */
+            gap: 1.25rem;
             width: 100%;
             max-width: 400px;
             aspect-ratio: 1 / 1;
+            transition: transform 0.1s ease-in-out;
         }
         .game-button {
-            /* border-radius: 12px (u * 3, 피보나치) */
-            border-radius: 0.75rem; /* 12px */
+            border-radius: 0.75rem;
             cursor: pointer;
             transition: transform 0.1s ease, box-shadow 0.2s ease, background-color 0.2s ease;
             box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
@@ -42,18 +41,53 @@
             pointer-events: none;
             opacity: 0.6;
         }
+        /* 화면 흔들림 애니메이션 */
+        @keyframes shake {
+            0%, 100% { transform: translateX(0); }
+            25% { transform: translateX(-3px); }
+            75% { transform: translateX(3px); }
+        }
+        .shake {
+            animation: shake 0.2s ease-in-out;
+        }
+        /* 게임오버 플래시 애니메이션 */
+        @keyframes gameOverFlash {
+            0%, 100% { background-color: #f1f5f9; } /* bg-slate-100 */
+            50% { background-color: #fee2e2; } /* bg-rose-100 */
+        }
+        .game-over-flash {
+            animation: gameOverFlash 0.4s ease-in-out;
+        }
+        /* 레벨업 애니메이션 */
+        @keyframes levelUp {
+            0%, 100% { 
+                transform: scale(1); 
+                color: #334155; /* text-slate-700 */
+            }
+            50% { 
+                transform: scale(1.3); 
+                color: #10b981; /* text-emerald-500 */
+            }
+        }
+        .level-up {
+            animation: levelUp 0.5s ease-in-out;
+        }
     </style>
 </head>
 <body class="bg-slate-100 flex flex-col items-center justify-center min-h-screen p-4">
 
     <div class="w-full max-w-lg text-center">
-        <h1 class="text-[42px] font-bold text-slate-800 mb-5 leading-tight">패턴 기억 게임</h1>
-        <p class="text-slate-600 text-base mb-8">빛나는 순서를 기억하고 따라하며, 당신의 뇌를 훈련하세요.</p>
+        <h1 class="text-4xl md:text-5xl font-bold text-slate-800 mb-4 leading-tight">도전! 패턴 기억 게임</h1>
+        <p class="text-slate-600 text-base mb-6">최고 기록에 도전하고, 당신의 한계를 시험하세요!</p>
 
-        <div id="game-container" class="bg-white p-8 rounded-[20px] shadow-xl">
+        <div id="game-container" class="bg-white p-6 md:p-8 rounded-2xl shadow-xl">
             <div class="flex justify-between items-center mb-5">
-                <div id="level-display" class="text-base font-bold text-slate-700">레벨: 0</div>
-                <button id="start-btn" class="bg-teal-600 hover:bg-teal-700 text-white font-bold py-3 px-5 rounded-lg transition-colors shadow-md hover:shadow-lg">시작</button>
+                <div class="text-lg font-bold text-slate-700">
+                    <span id="level-display">레벨: 0</span>
+                </div>
+                <div class="text-lg font-bold text-teal-600">
+                    <span id="highscore-display">최고 기록: 0</span>
+                </div>
             </div>
 
             <div class="game-board mx-auto">
@@ -64,41 +98,63 @@
             </div>
             
             <div id="message-display" class="mt-5 text-base font-medium text-slate-500 h-6"></div>
+            <button id="start-btn" class="w-full mt-6 bg-teal-600 hover:bg-teal-700 text-white font-bold py-3 px-5 rounded-lg transition-all duration-200 shadow-md hover:shadow-lg">게임 시작</button>
         </div>
-        
-        <footer class="mt-8 text-sm text-slate-500">
-            <p>황금비율 원칙에 따라 새롭게 디자인되었습니다.</p>
-        </footer>
     </div>
 
     <script>
+        // DOM 요소
         const startBtn = document.getElementById('start-btn');
         const levelDisplay = document.getElementById('level-display');
+        const highscoreDisplay = document.getElementById('highscore-display');
         const messageDisplay = document.getElementById('message-display');
         const gameButtons = document.querySelectorAll('.game-button');
+        const gameBoard = document.querySelector('.game-board');
+        const body = document.body;
 
+        // 게임 상태 변수
         let gamePattern = [];
         let playerPattern = [];
         let level = 0;
+        let highscore = 0;
         let isPlayerTurn = false;
-        let synth;
+        let combo = 0;
 
-        function createSynth() {
-            if (!synth) {
-                synth = new Tone.Synth({
-                    oscillator: { type: 'sine' },
-                    envelope: { attack: 0.005, decay: 0.1, sustain: 0.3, release: 1 }
-                }).toDestination();
+        // 오디오 신디사이저
+        let synth, successSynth, errorSynth;
+        
+        const sleep = ms => new Promise(res => setTimeout(res, ms));
+
+        // 초기화 함수
+        document.addEventListener('DOMContentLoaded', () => {
+            loadHighScore();
+            setupSynths();
+        });
+
+        function setupSynths() {
+            synth = new Tone.Synth({ oscillator: { type: 'sine' }, envelope: { attack: 0.005, decay: 0.1, sustain: 0.3, release: 1 } }).toDestination();
+            successSynth = new Tone.Synth({ oscillator: { type: 'triangle' }, envelope: { attack: 0.01, decay: 0.2, sustain: 0.2, release: 0.2 } }).toDestination();
+            errorSynth = new Tone.PolySynth(Tone.Synth, { oscillator: { type: 'square' }, envelope: { attack: 0.01, decay: 0.4, sustain: 0, release: 0.4 } }).toDestination();
+        }
+
+        function loadHighScore() {
+            highscore = localStorage.getItem('patternGameHighScore') || 0;
+            highscoreDisplay.textContent = `최고 기록: ${highscore}`;
+        }
+
+        function saveHighScore() {
+            if (level - 1 > highscore) {
+                highscore = level - 1;
+                localStorage.setItem('patternGameHighScore', highscore);
+                highscoreDisplay.textContent = `최고 기록: ${highscore}`;
+                messageDisplay.textContent = '최고 기록 경신!';
+                showConfetti(true); // 더 화려한 색종이 효과
             }
         }
 
-        const notes = ['C4', 'E4', 'G4', 'A4'];
-
-        startBtn.addEventListener('click', () => {
-            createSynth();
-            if (Tone.context.state !== 'running') {
-                Tone.context.resume();
-            }
+        // 이벤트 리스너
+        startBtn.addEventListener('click', async () => {
+            await Tone.start();
             startGame();
         });
 
@@ -109,18 +165,21 @@
                 playerTurn(clickedButtonId);
             });
         });
-
+        
+        // 게임 로직
         function startGame() {
-            gamePattern = [];
+            gamePattern = []; // 게임 시작 시에만 패턴 초기화
             level = 0;
             startBtn.classList.add('disabled');
-            startBtn.textContent = '시작';
-            messageDisplay.textContent = '';
+            startBtn.textContent = '게임 진행 중...';
             nextLevel();
         }
 
         function nextLevel() {
+            // --- 여기가 수정된 부분 ---
+            // gamePattern = []; // <- 이 줄을 삭제하여 패턴이 누적되도록 수정
             playerPattern = [];
+            combo = 0;
             level++;
             levelDisplay.textContent = `레벨: ${level}`;
             isPlayerTurn = false;
@@ -136,28 +195,20 @@
                 const nextButton = choices[Math.floor(Math.random() * choices.length)];
                 gamePattern.push(nextButton);
             }
-
             playPattern();
         }
 
         function playPattern() {
             messageDisplay.textContent = '패턴을 기억하세요...';
             let delay = 0;
-            
-            // --- 여기가 수정된 부분 ---
-            // 4 레벨 단위로 속도 증가
-            const baseSpeed = 700; // 시작 속도 (ms)
-            const speedDecrementPerTier = 80; // 단계별 속도 감소량 (ms)
-            const minSpeed = 150; // 최대 속도 (ms)
-            const speedLevel = Math.floor((level - 1) / 4); // 4 레벨마다 1씩 증가
-            
+            const baseSpeed = 700;
+            const speedDecrementPerTier = 80;
+            const minSpeed = 150;
+            const speedLevel = Math.floor((level - 1) / 4);
             const patternInterval = Math.max(minSpeed, baseSpeed - (speedLevel * speedDecrementPerTier));
-            // --- 수정 끝 ---
             
             gamePattern.forEach((buttonId) => {
-                setTimeout(() => {
-                    activateButton(buttonId);
-                }, delay);
+                setTimeout(() => activateButton(buttonId, false), delay);
                 delay += patternInterval;
             });
 
@@ -167,17 +218,8 @@
             }, delay + 100);
         }
 
-        function activateButton(id) {
-            const button = document.getElementById(`button-${id}`);
-            button.classList.add('active');
-            synth.triggerAttackRelease(notes[id], '8n');
-            setTimeout(() => {
-                button.classList.remove('active');
-            }, 300);
-        }
-
         function playerTurn(id) {
-            activateButton(id);
+            activateButton(id, true);
             playerPattern.push(id);
             checkAnswer(playerPattern.length - 1);
         }
@@ -188,37 +230,75 @@
                 return;
             }
 
+            combo++;
+            const comboMessages = ["좋아요!", "계속하세요!", "완벽해요!", "엄청나요!", "신들렸군요!"];
+            messageDisplay.textContent = comboMessages[Math.min(combo - 1, comboMessages.length - 1)];
+
             if (playerPattern.length === gamePattern.length) {
-                if (isPlayerTurn) {
-                    isPlayerTurn = false;
-                    messageDisplay.textContent = '성공!';
-                    
-                    if (level > 0 && level % 5 === 0) {
-                        showConfetti();
-                    }
-                    
-                    setTimeout(nextLevel, 1200);
-                }
+                isPlayerTurn = false; // 즉시 플레이어 입력 방지
+                levelClearSequence(); // 성공 시퀀스 시작
             }
+        }
+        
+        async function levelClearSequence() {
+            await sleep(350); 
+
+            messageDisplay.textContent = '성공!';
+            successSynth.triggerAttackRelease('C5', '8n');
+            gameBoard.classList.add('shake');
+            setTimeout(() => gameBoard.classList.remove('shake'), 200);
+
+            if (level > 0 && level % 5 === 0) showConfetti(false);
+            
+            await sleep(600);
+            levelDisplay.classList.add('level-up');
+            
+            await sleep(500);
+            levelDisplay.classList.remove('level-up');
+
+            nextLevel();
         }
 
         function gameOver() {
             const finalLevel = level > 0 ? level - 1 : 0;
-            messageDisplay.textContent = `게임 오버! 최종 레벨: ${finalLevel}`;
+            saveHighScore();
+            if (messageDisplay.textContent !== '최고 기록 경신!') {
+                 messageDisplay.textContent = `게임 오버! 최종 레벨: ${finalLevel}`;
+            }
+           
+            errorSynth.triggerAttackRelease(['C3', 'C#3'], '4n');
+            body.classList.add('game-over-flash');
+            setTimeout(() => body.classList.remove('game-over-flash'), 400);
 
             startBtn.classList.remove('disabled');
             startBtn.textContent = '다시 시작';
             isPlayerTurn = false;
-            const dissonantSynth = new Tone.PolySynth(Tone.Synth).toDestination();
-            dissonantSynth.triggerAttackRelease(['C3', 'C#3'], '4n');
         }
 
-        function showConfetti() {
-            confetti({
-                particleCount: 150,
-                spread: 90,
-                origin: { y: 0.6 }
-            });
+        // 시각/청각 효과
+        const notes = ['C4', 'E4', 'G4', 'A4'];
+        function activateButton(id, isPlayer) {
+            const button = document.getElementById(`button-${id}`);
+            button.classList.add('active');
+            if (isPlayer) {
+                const note = Tone.Frequency(notes[id]).transpose(combo * 1);
+                synth.triggerAttackRelease(note, '8n');
+            } else {
+                synth.triggerAttackRelease(notes[id], '8n');
+            }
+           
+            setTimeout(() => button.classList.remove('active'), 300);
+        }
+
+        function showConfetti(isHighScore) {
+            const options = {
+                particleCount: isHighScore ? 250 : 150,
+                spread: isHighScore ? 120 : 90,
+                origin: { y: 0.6 },
+                gravity: 0.8,
+                ticks: 300
+            };
+            confetti(options);
         }
     </script>
 </body>
