@@ -12,7 +12,7 @@
         body {
             font-family: 'Noto Sans KR', sans-serif;
             -webkit-tap-highlight-color: transparent;
-            overflow: hidden; /* 화면 흔들림 시 스크롤바 방지 */
+            overflow: hidden;
         }
         .game-board {
             display: grid;
@@ -41,33 +41,44 @@
             pointer-events: none;
             opacity: 0.6;
         }
-        /* 화면 흔들림 애니메이션 */
-        @keyframes shake {
+        /* 좌우 흔들림 (노말모드 성공) */
+        @keyframes shake-horizontal {
             0%, 100% { transform: translateX(0); }
             25% { transform: translateX(-3px); }
             75% { transform: translateX(3px); }
         }
-        .shake {
-            animation: shake 0.2s ease-in-out;
+        .shake-horizontal {
+            animation: shake-horizontal 0.2s ease-in-out;
         }
-        /* 게임오버 플래시 애니메이션 */
+        /* 상하 흔들림 (하드모드 성공) */
+        @keyframes shake-vertical {
+            0%, 100% { transform: translateY(0); }
+            25% { transform: translateY(-3px); }
+            75% { transform: translateY(3px); }
+        }
+        .shake-vertical {
+            animation: shake-vertical 0.2s ease-in-out;
+        }
+        /* 성공 플래시 (하드모드) */
+        @keyframes success-flash {
+            0%, 100% { background-color: #f1f5f9; } /* bg-slate-100 */
+            50% { background-color: #dcfce7; } /* bg-green-100 */
+        }
+        .success-flash {
+            animation: success-flash 0.4s ease-in-out;
+        }
+        /* 실패 플래시 (모든 모드) - 더 붉게 수정 */
         @keyframes gameOverFlash {
             0%, 100% { background-color: #f1f5f9; } /* bg-slate-100 */
-            50% { background-color: #fee2e2; } /* bg-rose-100 */
+            50% { background-color: #fecaca; } /* bg-red-200 */
         }
         .game-over-flash {
             animation: gameOverFlash 0.4s ease-in-out;
         }
         /* 레벨업 애니메이션 */
         @keyframes levelUp {
-            0%, 100% { 
-                transform: scale(1); 
-                color: #334155; /* text-slate-700 */
-            }
-            50% { 
-                transform: scale(1.3); 
-                color: #10b981; /* text-emerald-500 */
-            }
+            0%, 100% { transform: scale(1); color: #334155; }
+            50% { transform: scale(1.3); color: #10b981; }
         }
         .level-up {
             animation: levelUp 0.5s ease-in-out;
@@ -78,32 +89,48 @@
 
     <div class="w-full max-w-lg text-center">
         <h1 class="text-4xl md:text-5xl font-bold text-slate-800 mb-4 leading-tight">도전! 패턴 기억 게임</h1>
-        <p class="text-slate-600 text-base mb-6">최고 기록에 도전하고, 당신의 한계를 시험하세요!</p>
-
-        <div id="game-container" class="bg-white p-6 md:p-8 rounded-2xl shadow-xl">
-            <div class="flex justify-between items-center mb-5">
-                <div class="text-lg font-bold text-slate-700">
-                    <span id="level-display">레벨: 0</span>
-                </div>
-                <div class="text-lg font-bold text-teal-600">
-                    <span id="highscore-display">최고 기록: 0</span>
-                </div>
+        
+        <!-- 모드 선택 화면 -->
+        <div id="mode-selection">
+            <p class="text-slate-600 text-base mb-6">플레이할 모드를 선택하세요.</p>
+            <div class="flex flex-col sm:flex-row justify-center gap-4 mt-8">
+                <button id="normal-mode-btn" class="w-full sm:w-auto text-lg font-bold py-4 px-8 bg-sky-500 hover:bg-sky-600 text-white rounded-lg shadow-lg transition-transform transform hover:scale-105">노말 모드</button>
+                <button id="hard-mode-btn" class="w-full sm:w-auto text-lg font-bold py-4 px-8 bg-rose-500 hover:bg-rose-600 text-white rounded-lg shadow-lg transition-transform transform hover:scale-105">하드 모드</button>
             </div>
+        </div>
 
-            <div class="game-board mx-auto">
-                <div id="button-0" class="game-button bg-rose-400" style="--glow-color: rgba(251, 113, 133, 0.7);"></div>
-                <div id="button-1" class="game-button bg-sky-400" style="--glow-color: rgba(56, 189, 248, 0.7);"></div>
-                <div id="button-2" class="game-button bg-amber-400" style="--glow-color: rgba(251, 191, 36, 0.7);"></div>
-                <div id="button-3" class="game-button bg-emerald-400" style="--glow-color: rgba(52, 211, 153, 0.7);"></div>
+        <!-- 게임 화면 (초기 숨김) -->
+        <div id="game-wrapper" class="hidden">
+            <p class="text-slate-600 text-base mb-6">최고 기록에 도전하고, 당신의 한계를 시험하세요!</p>
+            <div id="game-container" class="bg-white p-6 md:p-8 rounded-2xl shadow-xl">
+                <div class="flex justify-between items-center mb-5">
+                    <div class="text-lg font-bold text-slate-700">
+                        <span id="level-display">레벨: 0</span>
+                    </div>
+                    <div class="text-lg font-bold text-teal-600">
+                        <span id="highscore-display">최고 기록: 0</span>
+                    </div>
+                </div>
+
+                <div class="game-board mx-auto">
+                    <div id="button-0" class="game-button bg-rose-400" style="--glow-color: rgba(251, 113, 133, 0.7);"></div>
+                    <div id="button-1" class="game-button bg-sky-400" style="--glow-color: rgba(56, 189, 248, 0.7);"></div>
+                    <div id="button-2" class="game-button bg-amber-400" style="--glow-color: rgba(251, 191, 36, 0.7);"></div>
+                    <div id="button-3" class="game-button bg-emerald-400" style="--glow-color: rgba(52, 211, 153, 0.7);"></div>
+                </div>
+                
+                <div id="message-display" class="mt-5 text-base font-medium text-slate-500 h-6"></div>
+                <button id="start-btn" class="w-full mt-6 bg-teal-600 hover:bg-teal-700 text-white font-bold py-3 px-5 rounded-lg transition-all duration-200 shadow-md hover:shadow-lg">게임 시작</button>
             </div>
-            
-            <div id="message-display" class="mt-5 text-base font-medium text-slate-500 h-6"></div>
-            <button id="start-btn" class="w-full mt-6 bg-teal-600 hover:bg-teal-700 text-white font-bold py-3 px-5 rounded-lg transition-all duration-200 shadow-md hover:shadow-lg">게임 시작</button>
         </div>
     </div>
 
     <script>
         // DOM 요소
+        const modeSelection = document.getElementById('mode-selection');
+        const gameWrapper = document.getElementById('game-wrapper');
+        const normalModeBtn = document.getElementById('normal-mode-btn');
+        const hardModeBtn = document.getElementById('hard-mode-btn');
         const startBtn = document.getElementById('start-btn');
         const levelDisplay = document.getElementById('level-display');
         const highscoreDisplay = document.getElementById('highscore-display');
@@ -113,10 +140,11 @@
         const body = document.body;
 
         // 게임 상태 변수
+        let gameMode = 'normal';
         let gamePattern = [];
         let playerPattern = [];
         let level = 0;
-        let highscore = 0;
+        let highscore = { normal: 0, hard: 0 };
         let isPlayerTurn = false;
         let combo = 0;
 
@@ -138,21 +166,35 @@
         }
 
         function loadHighScore() {
-            highscore = localStorage.getItem('patternGameHighScore') || 0;
-            highscoreDisplay.textContent = `최고 기록: ${highscore}`;
+            highscore.normal = localStorage.getItem('patternGameHighScore_normal') || 0;
+            highscore.hard = localStorage.getItem('patternGameHighScore_hard') || 0;
+        }
+
+        function updateHighScoreDisplay() {
+            highscoreDisplay.textContent = `최고 기록: ${highscore[gameMode]}`;
         }
 
         function saveHighScore() {
-            if (level - 1 > highscore) {
-                highscore = level - 1;
-                localStorage.setItem('patternGameHighScore', highscore);
-                highscoreDisplay.textContent = `최고 기록: ${highscore}`;
+            const finalLevel = level > 0 ? level - 1 : 0;
+            if (finalLevel > highscore[gameMode]) {
+                highscore[gameMode] = finalLevel;
+                localStorage.setItem(`patternGameHighScore_${gameMode}`, finalLevel);
                 messageDisplay.textContent = '최고 기록 경신!';
-                showConfetti(true); // 더 화려한 색종이 효과
+                showConfetti(true);
             }
         }
 
         // 이벤트 리스너
+        normalModeBtn.addEventListener('click', () => selectMode('normal'));
+        hardModeBtn.addEventListener('click', () => selectMode('hard'));
+        
+        function selectMode(mode) {
+            gameMode = mode;
+            modeSelection.classList.add('hidden');
+            gameWrapper.classList.remove('hidden');
+            updateHighScoreDisplay();
+        }
+
         startBtn.addEventListener('click', async () => {
             await Tone.start();
             startGame();
@@ -168,7 +210,7 @@
         
         // 게임 로직
         function startGame() {
-            gamePattern = []; // 게임 시작 시에만 패턴 초기화
+            gamePattern = [];
             level = 0;
             startBtn.classList.add('disabled');
             startBtn.textContent = '게임 진행 중...';
@@ -176,8 +218,6 @@
         }
 
         function nextLevel() {
-            // --- 여기가 수정된 부분 ---
-            // gamePattern = []; // <- 이 줄을 삭제하여 패턴이 누적되도록 수정
             playerPattern = [];
             combo = 0;
             level++;
@@ -186,14 +226,28 @@
             
             const patternsToAdd = Math.floor((level - 1) / 5) + 1;
 
-            for (let i = 0; i < patternsToAdd; i++) {
-                let choices = [0, 1, 2, 3];
-                if (gamePattern.length > 0) {
-                    const lastButton = gamePattern[gamePattern.length - 1];
-                    choices = choices.filter(choice => choice !== lastButton);
+            if (gameMode === 'hard') {
+                const newPatternLength = gamePattern.length + patternsToAdd;
+                gamePattern = []; // 하드모드는 매번 패턴을 새로 생성
+                for (let i = 0; i < newPatternLength; i++) {
+                    let choices = [0, 1, 2, 3];
+                    if (gamePattern.length > 0) {
+                        const lastButton = gamePattern[gamePattern.length - 1];
+                        choices = choices.filter(choice => choice !== lastButton);
+                    }
+                    const nextButton = choices[Math.floor(Math.random() * choices.length)];
+                    gamePattern.push(nextButton);
                 }
-                const nextButton = choices[Math.floor(Math.random() * choices.length)];
-                gamePattern.push(nextButton);
+            } else { // 노말모드는 패턴 누적
+                for (let i = 0; i < patternsToAdd; i++) {
+                    let choices = [0, 1, 2, 3];
+                    if (gamePattern.length > 0) {
+                        const lastButton = gamePattern[gamePattern.length - 1];
+                        choices = choices.filter(choice => choice !== lastButton);
+                    }
+                    const nextButton = choices[Math.floor(Math.random() * choices.length)];
+                    gamePattern.push(nextButton);
+                }
             }
             playPattern();
         }
@@ -235,24 +289,32 @@
             messageDisplay.textContent = comboMessages[Math.min(combo - 1, comboMessages.length - 1)];
 
             if (playerPattern.length === gamePattern.length) {
-                isPlayerTurn = false; // 즉시 플레이어 입력 방지
-                levelClearSequence(); // 성공 시퀀스 시작
+                isPlayerTurn = false;
+                levelClearSequence();
             }
         }
         
         async function levelClearSequence() {
             await sleep(350); 
-
             messageDisplay.textContent = '성공!';
             successSynth.triggerAttackRelease('C5', '8n');
-            gameBoard.classList.add('shake');
-            setTimeout(() => gameBoard.classList.remove('shake'), 200);
+
+            if (gameMode === 'hard') {
+                body.classList.add('success-flash');
+                gameBoard.classList.add('shake-vertical');
+                setTimeout(() => {
+                    body.classList.remove('success-flash');
+                    gameBoard.classList.remove('shake-vertical');
+                }, 400);
+            } else {
+                gameBoard.classList.add('shake-horizontal');
+                setTimeout(() => gameBoard.classList.remove('shake-horizontal'), 200);
+            }
 
             if (level > 0 && level % 5 === 0) showConfetti(false);
             
             await sleep(600);
             levelDisplay.classList.add('level-up');
-            
             await sleep(500);
             levelDisplay.classList.remove('level-up');
 
@@ -260,9 +322,9 @@
         }
 
         function gameOver() {
-            const finalLevel = level > 0 ? level - 1 : 0;
             saveHighScore();
             if (messageDisplay.textContent !== '최고 기록 경신!') {
+                 const finalLevel = level > 0 ? level - 1 : 0;
                  messageDisplay.textContent = `게임 오버! 최종 레벨: ${finalLevel}`;
             }
            
@@ -275,7 +337,6 @@
             isPlayerTurn = false;
         }
 
-        // 시각/청각 효과
         const notes = ['C4', 'E4', 'G4', 'A4'];
         function activateButton(id, isPlayer) {
             const button = document.getElementById(`button-${id}`);
@@ -286,19 +347,17 @@
             } else {
                 synth.triggerAttackRelease(notes[id], '8n');
             }
-           
             setTimeout(() => button.classList.remove('active'), 300);
         }
 
         function showConfetti(isHighScore) {
-            const options = {
+            confetti({
                 particleCount: isHighScore ? 250 : 150,
                 spread: isHighScore ? 120 : 90,
                 origin: { y: 0.6 },
                 gravity: 0.8,
                 ticks: 300
-            };
-            confetti(options);
+            });
         }
     </script>
 </body>
