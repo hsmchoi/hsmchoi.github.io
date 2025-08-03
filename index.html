@@ -125,8 +125,21 @@
             levelDisplay.textContent = `레벨: ${level}`;
             isPlayerTurn = false;
             
-            const nextButton = Math.floor(Math.random() * 4);
-            gamePattern.push(nextButton);
+            // --- 여기가 수정된 부분 ---
+            // 레벨에 따라 추가할 패턴 개수 계산 (1-5: 1개, 6-10: 2개 등)
+            const patternsToAdd = Math.floor((level - 1) / 5) + 1;
+
+            for (let i = 0; i < patternsToAdd; i++) {
+                let choices = [0, 1, 2, 3];
+                // 직전 버튼과 다른 버튼을 선택하는 로직
+                if (gamePattern.length > 0) {
+                    const lastButton = gamePattern[gamePattern.length - 1];
+                    choices = choices.filter(choice => choice !== lastButton);
+                }
+                const nextButton = choices[Math.floor(Math.random() * choices.length)];
+                gamePattern.push(nextButton);
+            }
+            // --- 수정 끝 ---
 
             playPattern();
         }
@@ -134,7 +147,6 @@
         function playPattern() {
             messageDisplay.textContent = '패턴을 기억하세요...';
             let delay = 0;
-            // 동적 난이도: 레벨마다 10ms씩 빨라짐 (최소 200ms)
             const baseSpeed = 700;
             const speedDecrement = 10;
             const patternInterval = Math.max(200, baseSpeed - (level * speedDecrement));
@@ -149,7 +161,7 @@
             setTimeout(() => {
                 isPlayerTurn = true;
                 messageDisplay.textContent = '당신 차례입니다!';
-            }, delay + 100); // 플레이어 턴 전에 약간의 여유 시간 추가
+            }, delay + 100);
         }
 
         function activateButton(id) {
@@ -178,18 +190,22 @@
                     isPlayerTurn = false;
                     messageDisplay.textContent = '성공!';
                     
-                    // 특수 효과: 5 레벨마다 색종이 효과
                     if (level > 0 && level % 5 === 0) {
                         showConfetti();
                     }
                     
-                    setTimeout(nextLevel, 1200); // 다음 레벨까지 시간 증가
+                    setTimeout(nextLevel, 1200);
                 }
             }
         }
 
         function gameOver() {
-            messageDisplay.textContent = `게임 오버! 최종 레벨: ${level > 0 ? level : 0}`;
+            // --- 여기가 수정된 부분 ---
+            // 최종 점수를 마지막으로 '성공한' 레벨로 표시
+            const finalLevel = level > 0 ? level - 1 : 0;
+            messageDisplay.textContent = `게임 오버! 최종 레벨: ${finalLevel}`;
+            // --- 수정 끝 ---
+
             startBtn.classList.remove('disabled');
             startBtn.textContent = '다시 시작';
             isPlayerTurn = false;
@@ -197,7 +213,6 @@
             dissonantSynth.triggerAttackRelease(['C3', 'C#3'], '4n');
         }
 
-        // 색종이 효과 함수
         function showConfetti() {
             confetti({
                 particleCount: 150,
