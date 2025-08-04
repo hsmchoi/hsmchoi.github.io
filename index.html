@@ -9,82 +9,15 @@
     <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
     <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;700&display=swap" rel="stylesheet">
     <style>
-        :root {
-            --bg-primary: #f1f5f9; --bg-secondary: #ffffff; --text-primary: #1e293b; --text-secondary: #475569;
-            --text-highlight: #0f766e; --success-flash-bg: #dcfce7; --fail-flash-bg: #fecaca;
-            --overlay-bg: rgba(0, 0, 0, 0.5); --overlay-shape: #ffffff;
-        }
-        .dark {
-            --bg-primary: #0f172a; --bg-secondary: #1e293b; --text-primary: #e2e8f0; --text-secondary: #94a3b8;
-            --text-highlight: #2dd4bf; --success-flash-bg: #15803d; --fail-flash-bg: #b91c1c;
-            --overlay-bg: rgba(0, 0, 0, 0.7); --overlay-shape: #e2e8f0;
-        }
-        body {
-            font-family: 'Noto Sans KR', sans-serif; -webkit-tap-highlight-color: transparent; overflow: hidden;
-            background-color: var(--bg-primary); color: var(--text-primary); transition: background-color 0.3s ease, color 0.3s ease;
-        }
-        #game-container, #dashboard-modal { background-color: var(--bg-secondary); transition: background-color 0.3s ease; }
-        .text-secondary { color: var(--text-secondary); }
-        .text-highlight { color: var(--text-highlight); }
-        .game-board {
-            position: relative; display: grid; grid-template-columns: repeat(2, 1fr); gap: 1.25rem;
-            width: 100%; max-width: 400px; aspect-ratio: 1 / 1;
-            transition: transform 1.5s, opacity 0.3s, filter 0.8s ease-in-out; transform-style: preserve-3d;
-        }
-        .game-button {
-            position: relative; border-radius: 0.75rem; cursor: pointer;
-            transition: transform 0.1s ease, box-shadow 0.2s ease, background-color 0.5s ease;
-            box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
-        }
-        .game-button:active { transform: scale(0.96); }
-        .game-button.active { transform: scale(1.03); filter: brightness(1.25); }
-        .disabled { pointer-events: none; opacity: 0.6; }
-        
-        @keyframes shake-vertical { 0%, 100% { transform: translateY(0); } 25% { transform: translateY(-3px); } 75% { transform: translateY(3px); } }
-        .shake-vertical { animation: shake-vertical 0.2s ease-in-out; }
-        @keyframes success-flash { 0%, 100% { background-color: var(--bg-primary); } 50% { background-color: var(--success-flash-bg); } }
-        .success-flash { animation: success-flash 0.4s ease-in-out; }
-        @keyframes gameOverFlash { 0%, 100% { background-color: var(--bg-primary); } 50% { background-color: var(--fail-flash-bg); } }
-        .game-over-flash { animation: gameOverFlash 0.4s ease-in-out; }
-        @keyframes levelUp { 0%, 100% { transform: scale(1); } 50% { transform: scale(1.3); color: #fde047; } }
-        .level-up { animation: levelUp 0.5s ease-in-out; }
-        @keyframes shrink-out { from { transform: scale(1); opacity: 0.7; } to { transform: scale(0); opacity: 0; } }
-        .shrinking-circle { animation: shrink-out 1.5s cubic-bezier(0.7, 0, 0.3, 1) forwards; }
-        @keyframes pulse { 0% { filter: brightness(1.2); } 100% { filter: brightness(1); } }
-        .pulse { animation: pulse 0.4s ease-in-out; }
-        .cube-rotate { transform: rotateY(180deg); }
-        .inverted { filter: invert(1); }
-        @keyframes get-ready-pulse { 0%, 100% { background-color: var(--bg-secondary); } 50% { background-color: var(--bg-primary); } }
-        .get-ready-pulse { animation: get-ready-pulse 1.5s ease-in-out; }
-        #countdown-overlay { background-color: var(--overlay-bg); pointer-events: none; }
-        #countdown-shape { width: 80%; padding-bottom: 80%; border-radius: 50%; border: 6px solid var(--overlay-shape); }
-        .computer-turn { opacity: 0.7; }
-        .answer-number {
-            position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%);
-            font-size: 3rem; font-weight: bold; color: white; text-shadow: 0 0 5px black;
-            pointer-events: none; opacity: 0; transition: opacity 0.2s ease-in-out;
-        }
-        .answer-number.visible { opacity: 1; }
-        #title-header {
-            transition: max-height 0.5s ease-in-out, opacity 0.3s ease-in-out, margin-bottom 0.5s ease-in-out;
-            max-height: 200px; opacity: 1; overflow: hidden;
-        }
-        #game-wrapper { transition: transform 0.5s ease-in-out; transform-origin: top; }
-        #highscore-display { transition: opacity 0.5s ease-in-out; }
-        .game-started #title-header { max-height: 0; opacity: 0; margin-bottom: 0 !important; }
-        .game-started #game-wrapper { transform: scale(1.05); }
-        .game-started #highscore-display { opacity: 0; }
-        #dashboard-modal { z-index: 50; }
-        #dashboard-modal-content { max-height: 70vh; }
+        :root{--bg-primary:#f1f5f9;--bg-secondary:#fff;--text-primary:#1e293b;--text-secondary:#475569;--text-highlight:#0f766e;--success-flash-bg:#dcfce7;--fail-flash-bg:#fecaca;--overlay-bg:rgba(0,0,0,.5);--overlay-shape:#fff;--pulsing-indicator-start:#0f766e;--pulsing-indicator-end:#134e4a}.dark{--bg-primary:#0f172a;--bg-secondary:#1e293b;--text-primary:#e2e8f0;--text-secondary:#94a3b8;--text-highlight:#2dd4bf;--success-flash-bg:#15803d;--fail-flash-bg:#b91c1c;--overlay-bg:rgba(0,0,0,.7);--overlay-shape:#e2e8f0;--pulsing-indicator-start:#134e4a;--pulsing-indicator-end:#0f766e}body{font-family:'Noto Sans KR',sans-serif;-webkit-tap-highlight-color:transparent;overflow:hidden;background-color:var(--bg-primary);color:var(--text-primary);transition:background-color .3s ease,color .3s ease}#game-container{position:relative;background-color:var(--bg-secondary);transition:background-color .3s ease;perspective:1000px}.text-secondary{color:var(--text-secondary)}.text-highlight{color:var(--text-highlight)}.game-board{position:relative;display:grid;grid-template-columns:repeat(2,1fr);gap:1.25rem;width:100%;max-width:400px;aspect-ratio:1 / 1;transition:transform 1.5s,opacity .3s,filter .8s ease-in-out;transform-style:preserve-3d}.game-button{position:relative;border-radius:.75rem;cursor:pointer;transition:transform .1s ease,box-shadow .2s ease,background-color .5s ease,filter .2s ease-in-out,opacity .2s ease-in-out;box-shadow:0 4px 6px -1px #0000001a,0 2px 4px -2px #0000001a}.game-button:active{transform:scale(.96)}.game-button.active{transform:scale(1.03);filter:brightness(1.25)}.disabled{pointer-events:none}@keyframes shake-vertical{0%,100%{transform:translateY(0)}25%{transform:translateY(-3px)}75%{transform:translateY(3px)}}.shake-vertical{animation:shake-vertical .2s ease-in-out}@keyframes success-flash{0%,100%{background-color:var(--bg-primary)}50%{background-color:var(--success-flash-bg)}}.success-flash{animation:success-flash .4s ease-in-out}@keyframes gameOverFlash{0%,100%{background-color:var(--bg-primary)}50%{background-color:var(--fail-flash-bg)}}.game-over-flash{animation:gameOverFlash .4s ease-in-out}@keyframes levelUp{0%,100%{transform:scale(1)}50%{transform:scale(1.3);color:#fde047}}.level-up{animation:levelUp .5s ease-in-out}@keyframes shrink-out{from{transform:scale(1);opacity:.7}to{transform:scale(0);opacity:0}}.shrinking-circle{animation:shrink-out 1.5s cubic-bezier(.7,0,.3,1) forwards}@keyframes pulse{0%{filter:brightness(1.2)}100%{filter:brightness(1)}}.pulse{animation:pulse .4s ease-in-out}.cube-rotate{transform:rotateY(180deg)}.inverted{filter:invert(1)}@keyframes get-ready-pulse{0%,100%{background-color:var(--bg-secondary)}50%{background-color:var(--bg-primary)}}.get-ready-pulse{animation:get-ready-pulse 1.5s ease-in-out}@keyframes pulsing-indicator{0%{background-color:var(--pulsing-indicator-start)}50%{background-color:var(--pulsing-indicator-end)}100%{background-color:var(--pulsing-indicator-start)}}#in-progress-indicator{animation:pulsing-indicator 2s infinite ease-in-out}#countdown-overlay{background-color:var(--overlay-bg);pointer-events:none}#countdown-shape{width:80%;padding-bottom:80%;border-radius:50%;border:6px solid var(--overlay-shape)}.desaturated{filter:saturate(40%);opacity:.6}.answer-number{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);font-size:3rem;font-weight:700;color:#fff;text-shadow:0 0 5px #000;pointer-events:none;opacity:0;transition:opacity .2s ease-in-out}.answer-number.visible{opacity:1}#title-header{transition:max-height .5s ease-in-out,opacity .3s ease-in-out,margin-bottom .5s ease-in-out;max-height:200px;opacity:1;overflow:hidden}#game-wrapper{transition:transform .5s ease-in-out;transform-origin:top}.game-started #title-header{max-height:0;opacity:0;margin-bottom:0!important}.game-started #game-wrapper{transform:scale(1.05)}@keyframes announcer-float{0%,100%{transform:translateY(0)}50%{transform:translateY(-10px)}}#announcer{animation:announcer-float 3s ease-in-out infinite}@keyframes dot-appear{from{transform:scale(.5) translateY(10px);opacity:0}to{transform:scale(1) translateY(0);opacity:1}}@keyframes wave-float{0%,100%{transform:translateY(0)}50%{transform:translateY(-6px)}}.pattern-char{width:1rem;height:1rem;opacity:0;animation:wave-float 2s ease-in-out infinite,dot-appear .5s cubic-bezier(.25,.46,.45,.94) forwards;transform-origin:bottom center;display:inline-block;vertical-align:middle}.pattern-char-body{fill:var(--text-highlight)}.pattern-char-eye{fill:#0f172a}@keyframes text-focus-in{0%{filter:blur(12px);opacity:0}100%{filter:blur(0);opacity:1}}.text-focus-in{animation:text-focus-in 1s cubic-bezier(.55,.085,.68,.53) both}@keyframes text-fade-in{from{opacity:0}to{opacity:1}}.text-fade-in{animation:text-fade-in 1.2s cubic-bezier(.39,.575,.565,1) .5s both}
     </style>
 </head>
 <body class="flex flex-col items-center justify-center min-h-screen p-4">
 
     <div id="main-container" class="w-full max-w-lg text-center relative">
-        <div class="absolute top-0 right-4 mt-2 z-10 flex items-center gap-2"> <!-- Changed from right-0 and pr-2 to right-4 -->
-            <!-- 도전 로그 버튼 -->
+        <div class="absolute top-0 right-0 mt-2 mr-2 z-10 flex items-center space-x-2">
             <button id="dashboard-btn" class="p-2 rounded-full focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-slate-500" aria-label="Show challenge log">
-                <svg class="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"></path></svg>
+                <svg class="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"></path></svg>
             </button>
             <button id="bgm-toggle" class="p-2 rounded-full focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-slate-500" aria-label="Toggle background music">
                 <svg id="bgm-on-icon" class="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.536 8.464a5 5 0 010 7.072m2.828-9.9a9 9 0 010 12.728M5.586 15H4a1 1 0 01-1-1v-4a1 1 0 011-1h1.586l4.707-4.707C10.923 3.663 12 4.109 12 5v14c0 .891-1.077 1.337-1.707.707L5.586 15z"></path></svg>
@@ -103,7 +36,13 @@
         
         <div id="game-wrapper">
             <div id="game-container" class="p-6 md:p-8 rounded-2xl shadow-xl">
-                <div class="flex justify-center items-center mb-5 h-7">
+                <div class="flex justify-center items-center mb-5 h-7 space-x-4">
+                    <div id="basecamp-display" class="text-lg font-bold text-secondary flex items-center gap-2 hidden">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+                            <path fill-rule="evenodd" d="M3 6a3 3 0 013-3h10a1 1 0 01.8 1.6L14.25 8l2.55 3.4A1 1 0 0116 13H6a1 1 0 01-1-1V6z" clip-rule="evenodd" />
+                        </svg>
+                        <span>캠프: 0</span>
+                    </div>
                     <div class="text-lg font-bold text-highlight">
                         <span id="highscore-display">최고 기록: 0</span>
                     </div>
@@ -132,9 +71,8 @@
         </div>
     </div>
 
-    <!-- 도전 로그 대시보드 모달 -->
-    <div id="dashboard-modal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center hidden">
-        <div id="dashboard-modal-content" class="p-6 md:p-8 rounded-2xl shadow-xl w-full max-w-lg mx-4">
+    <div id="dashboard-modal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center hidden z-20">
+        <div class="p-6 md:p-8 rounded-2xl shadow-xl w-full max-w-lg mx-4 bg-white dark:bg-slate-800 text-slate-800 dark:text-slate-200">
             <div class="flex justify-between items-center mb-4">
                 <h2 class="text-2xl font-bold">도전 로그</h2>
                 <button id="close-dashboard-btn" class="p-2 rounded-full hover:bg-gray-200 dark:hover:bg-gray-700">
@@ -142,654 +80,70 @@
                 </button>
             </div>
             <div id="log-chart-container" class="w-full h-40 mb-4"></div>
-            <div id="log-list" class="overflow-y-auto pr-2" style="max-height: 40vh;">
-                <!-- 로그 항목이 여기에 추가됩니다. -->
-            </div>
+            <div id="log-list" class="overflow-y-auto pr-2" style="max-height: 40vh;"></div>
             <button id="clear-log-btn" class="w-full mt-4 bg-rose-500 hover:bg-rose-600 text-white font-bold py-2 px-4 rounded-lg">기록 삭제</button>
         </div>
     </div>
 
+    <div id="rest-stage-modal" class="fixed inset-0 bg-black bg-opacity-70 flex items-center justify-center hidden z-20">
+        <div class="p-8 rounded-2xl shadow-xl w-full max-w-sm mx-4 bg-slate-800 text-slate-200 text-center">
+            <div id="announcer" class="w-24 h-24 mx-auto mb-4">
+                <svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
+                    <path d="M50 90C27.9 90 10 72.1 10 50S27.9 10 50 10s40 17.9 40 40-17.9 40-40 40z" fill="#2dd4bf"/>
+                    <circle cx="38" cy="45" r="5" fill="#0f172a"/>
+                    <circle cx="62" cy="45" r="5" fill="#0f172a"/>
+                    <path d="M35 65q15 10 30 0" stroke="#0f172a" stroke-width="4" fill="none" stroke-linecap="round"/>
+                </svg>
+            </div>
+            <h2 class="text-2xl font-bold mb-2 text-focus-in">베이스캠프 도착!</h2>
+            <p class="text-slate-400 mb-4 text-fade-in">다음 베이스캠프까지의 여정입니다.</p>
+            <p id="rest-timer-display" class="text-xs text-slate-500 mb-4 text-fade-in" style="animation-delay: 0.7s;"></p>
+            <div id="rest-level-guide" class="space-y-3 my-6"></div>
+            <button id="rest-continue-btn" class="w-full bg-teal-500 hover:bg-teal-600 text-white font-bold py-3 px-5 rounded-lg transition-all duration-200">계속하기</button>
+        </div>
+    </div>
+
     <script>
-        // 개발자 도구 감지 및 차단 (완벽하지 않음)
-        (function() {
-            let d = new Date();
-            let i = 0;
-            function c() {
-                try {
-                    // 디버거 문자를 사용하여 개발자 도구 열림 감지
-                    // 개발자 도구가 열리면 이 함수가 호출될 때마다 콘솔이 지워짐
-                    // 이는 사용자를 방해하여 개발자 도구 사용을 어렵게 함
-                    // console.clear()는 일부 브라우저에서만 작동하며, 지속적인 호출은 성능에 영향을 줄 수 있음
-                    (function() {
-                        if (new Date() - d > 100) {
-                            // 개발자 도구 열림 감지 시 페이지 새로고침
-                            window.location.reload(); 
-                        }
-                        d = new Date();
-                        // debugger; // 디버거를 강제로 실행하여 개발자 도구 열림을 유도
-                        // console.log(i++); // 콘솔에 지속적으로 로그를 찍어 콘솔을 지우는 효과
-                    }).toString().indexOf('debugger') !== -1;
-                } catch (e) {}
-                setTimeout(c, 100);
-            }
-            c();
-
-            // F12 키 및 Ctrl+Shift+I (개발자 도구 단축키) 비활성화
-            document.addEventListener('keydown', function(e) {
-                if (e.key === 'F12' || (e.ctrlKey && e.shiftKey && e.key === 'I')) {
-                    e.preventDefault(); // 기본 동작 차단
-                    // 선택적으로 사용자에게 메시지 표시
-                    // alert('개발자 도구는 허용되지 않습니다.'); 
-                }
-            });
-
-            // 우클릭 메뉴 비활성화 (소스 보기 방지)
-            document.addEventListener('contextmenu', function(e) {
-                e.preventDefault(); // 기본 동작 차단
-                // alert('우클릭은 허용되지 않습니다.');
-            });
-        })();
-
-        // --- 다크모드 로직 (변수명 최소화) ---
-        const tB = document.getElementById('theme-toggle');
-        const sI = document.getElementById('theme-toggle-sun-icon');
-        const mI = document.getElementById('theme-toggle-moon-icon');
-
-        const tT = (isD) => {
-            document.documentElement.classList.toggle('dark', isD);
-            sI.classList.toggle('hidden', isD);
-            mI.classList.toggle('hidden', !isD);
-        };
-
-        const sT = localStorage.getItem('theme');
-        const pD = window.matchMedia('(prefers-color-scheme: dark)').matches;
-        if (sT === 'dark' || (!sT && pD)) {
-            tT(true);
-        } else {
-            tT(false);
-        }
-
-        tB.addEventListener('click', () => {
-            const isD = !document.documentElement.classList.contains('dark');
-            localStorage.setItem('theme', isD ? 'dark' : 'light');
-            tT(isD);
-        });
-
-        // --- 게임 로직 (변수명 최소화 및 주석 제거) ---
-        const mC = document.getElementById('main-container');
-        const sB = document.getElementById('start-btn');
-        const sAB = document.getElementById('show-answer-btn');
-        const hD = document.getElementById('highscore-display');
-        const mD = document.getElementById('message-display');
-        const gBs = document.querySelectorAll('.game-button');
-        const gBd = document.querySelector('.game-board');
-        const cO = document.getElementById('countdown-overlay');
-        const cS = document.getElementById('countdown-shape');
-        const b = document.body;
-        const bT = document.getElementById('bgm-toggle');
-        const bOI = document.getElementById('bgm-on-icon');
-        const bFI = document.getElementById('bgm-off-icon');
-        const iPI = document.getElementById('in-progress-indicator');
-        const dB = document.getElementById('dashboard-btn');
-        const dM = document.getElementById('dashboard-modal');
-        const cDB = document.getElementById('close-dashboard-btn');
-        const lL = document.getElementById('log-list');
-        const lCC = document.getElementById('log-chart-container');
-        const cLB = document.getElementById('clear-log-btn');
-
-        // 전역 변수 선언 (sS 대신 ssI 추가)
-        let gP = [];
-        let pP = [];
-        let l = 0;
-        let hS = 0;
-        let iP = false;
-        let c = 0;
-        let iBP = false; // Added initialization
-        let cB = 'waiting';
-        let iMM = false;
-
-        let s, ssI, eS, tUS, sBS, shS, iS, mS;
-        let bPs = {};
-        
-        const sl = ms => new Promise(res => setTimeout(res, ms));
-
-        document.addEventListener('DOMContentLoaded', () => {
-            lHS();
-            sS(); // setupSynths 함수 호출
-            const sBS = localStorage.getItem('bgmState');
-            if (sBS === 'on') {
-                iBP = true;
-                uBI(true);
-                pB(cB);
-            }
-            gBs.forEach(btn => {
-                const nE = document.createElement('span');
-                nE.className = 'answer-number';
-                btn.appendChild(nE);
-            });
-        });
-
-        // setupSynths 함수 (난독화된 sS)
-        function sS() {
-            s = new Tone.Synth({ oscillator: { type: 'sine' }, envelope: { attack: 0.005, decay: 0.1, sustain: 0.3, release: 1 } }).toDestination();
-            ssI = new Tone.Synth({ oscillator: { type: 'triangle' }, envelope: { attack: 0.01, decay: 0.2, sustain: 0.2, release: 0.2 } }).toDestination(); // sS 대신 ssI 사용
-            eS = new Tone.PolySynth(Tone.Synth, { oscillator: { type: 'square' }, envelope: { attack: 0.01, decay: 0.4, sustain: 0, release: 0.4 } }).toDestination();
-            const r = new Tone.Reverb(1.5).toDestination();
-            tUS = new Tone.Synth({ oscillator: { type: 'sine' }, envelope: { attack: 0.01, decay: 0.3, sustain: 0.1, release: 0.7 } }).connect(r);
-            sBS = new Tone.Synth({ oscillator: { type: 'sine' }, envelope: { attack: 0.01, decay: 0.2, release: 0.2 } }).toDestination();
-            sBS.volume.value = -6;
-            shS = new Tone.NoiseSynth({ noise: { type: 'brown' }, envelope: { attack: 0.1, decay: 1.4, sustain: 0 } }).toDestination();
-            shS.volume.value = -15;
-            iS = new Tone.Synth({ oscillator: { type: 'sawtooth' }, envelope: { attack: 0.01, decay: 0.8, sustain: 0.1, release: 1 } }).toDestination();
-            iS.volume.value = -18;
-            mS = new Tone.Synth({ oscillator: { type: 'triangle8' }, envelope: { attack: 0.01, decay: 0.5, sustain: 0.1, release: 1 } }).connect(r);
-            mS.volume.value = -15;
-
-            const bV = -20;
-            const wS = new Tone.PluckSynth({ attackNoise: 0.5, dampening: 4000, resonance: 0.7 }).toDestination();
-            wS.volume.value = bV + 8;
-            bPs.waiting = new Tone.Sequence((t, n) => {
-                wS.triggerAttack(n, t);
-            }, ["C4", "E4", "G4", "C5", "E5", "G4"], "8n");
-
-            const nB = new Tone.MonoSynth({ oscillator: { type: "fmsine" }, envelope: { attack: 0.01, decay: 0.3, sustain: 0.1, release: 0.5 } }).toDestination();
-            nB.volume.value = bV;
-            bPs.normal = new Tone.Sequence((t, n) => {
-                wS.triggerAttack(n.melody, t);
-                if (n.bass) {
-                    nB.triggerAttackRelease(n.bass, "8n", t);
-                }
-            }, [
-                { melody: "C4", bass: "C2" }, { melody: "E4", bass: null }, { melody: "G4", bass: "C2" },
-                { melody: "G4", bass: "G1" }, { melody: "E4", bass: null }, { melody: "C4", bass: "G1" }
-            ], "8n");
-
-            const hK = new Tone.MembraneSynth({ octaves: 4, pitchDecay: 0.1 }).toDestination();
-            hK.volume.value = bV + 2;
-            const hB = new Tone.MonoSynth({ oscillator: { type: "sawtooth" }, envelope: { attack: 0.01, decay: 0.3, sustain: 0.1, release: 0.5 } }).toDestination();
-            hB.volume.value = bV - 4;
-            bPs.hard = new Tone.Part((t, v) => {
-                if (v.kick) hK.triggerAttackRelease("C1", "8n", t);
-                if (v.bass) hB.triggerAttackRelease(v.bass, "8n", t);
-            }, [
-                { time: "0:0", kick: true, bass: "C2" }, { time: "0:2", bass: "C2" }, { time: "0:3", kick: true },
-                { time: "0:5", bass: "G1" }, { time: "0:6", kick: true }, { time: "0:8", bass: "G1" },
-                { time: "0:9", kick: true }, { time: "0:11", bass: "F1" }
-            ]);
-            bPs.hard.loop = true;
-            bPs.hard.loopEnd = "1m";
-
-            const vHK = new Tone.MembraneSynth({ octaves: 6, pitchDecay: 0.05 }).toDestination();
-            vHK.volume.value = bV;
-            const vHH = new Tone.MetalSynth({ frequency: 300, envelope: { attack: 0.001, decay: 0.05, release: 0.01 }, harmonicity: 4.1, modulationIndex: 22, resonance: 3000, octaves: 1.5 }).toDestination();
-            vHH.volume.value = bV - 10;
-            bPs.veryHard = new Tone.Sequence((t, n) => {
-                vHK.triggerAttackRelease("C1", "8n", t);
-                if (n === 'CH') vHH.triggerAttackRelease("C6", "16n", t);
-            }, ['C1', 'CH', 'C1', 'CH'], '4n');
-
-            const gOS = new Tone.AMSynth({ harmonicity: 1.5, envelope: { attack: 0.01, decay: 2, sustain: 0.1, release: 2 } }).toDestination();
-            gOS.volume.value = bV - 5;
-            bPs.gameover = new Tone.Sequence((t, n) => {
-                gOS.triggerAttackRelease(n, "1n", t);
-            }, [["C3", "E3"], ["G3", "B3"], ["F3", "A3"]], "1m");
-        }
-
-        function pB(s) {
-            if (!iBP) return;
-            Object.values(bPs).forEach(p => p.stop(0));
-            
-            cB = s;
-            
-            if (s === 'waiting') {
-                Tone.Transport.timeSignature = [6, 8];
-                Tone.Transport.bpm.value = 90;
-                bPs.waiting.start(0);
-            } else if (s === 'normal') {
-                Tone.Transport.timeSignature = [6, 8];
-                Tone.Transport.bpm.value = 100;
-                bPs.normal.start(0);
-            } else if (s === 'hard') {
-                Tone.Transport.timeSignature = [12, 8];
-                Tone.Transport.bpm.value = 120;
-                bPs.hard.start(0);
-            } else if (s === 'veryHard') {
-                Tone.Transport.timeSignature = [4, 4];
-                Tone.Transport.bpm.value = 140;
-                bPs.veryHard.start(0);
-            } else if (s === 'gameover') {
-                Tone.Transport.timeSignature = [6, 8];
-                Tone.Transport.bpm.value = 70;
-                bPs.gameover.start(0);
-            }
-            
-            if (Tone.Transport.state !== 'started') {
-                   Tone.Transport.start();
-            }
-        }
-        
-        function sBgm() {
-            if (Tone.Transport.state === 'started') {
-                Tone.Transport.stop();
-            }
-            Object.values(bPs).forEach(p => p.stop(0));
-        }
-
-        function lHS() {
-            hS = parseInt(localStorage.getItem('patternGameHighScore')) || 0;
-            uHSD();
-        }
-
-        function uHSD() {
-            hD.textContent = `최고 기록: ${hS}`;
-        }
-
-        function sHS() {
-            const fL = l > 0 ? l - 1 : 0;
-            if (fL > hS) {
-                hS = fL;
-                localStorage.setItem('patternGameHighScore', fL);
-                sC(true);
-                hD.classList.add('level-up');
-                setTimeout(() => hD.classList.remove('level-up'), 500);
-            }
-            sCL(fL);
-        }
-
-        sB.addEventListener('click', async () => {
-            await Tone.start();
-            sG();
-        });
-
-        bT.addEventListener('click', async () => {
-            await Tone.start();
-            iBP = !iBP;
-            localStorage.setItem('bgmState', iBP ? 'on' : 'off');
-            uBI(iBP);
-
-            if (iBP) {
-                pB(cB || 'waiting');
-            } else {
-                sBgm();
-            }
-        });
-
-        sAB.addEventListener('click', async () => {
-            sAB.classList.add('disabled');
-            sB.classList.add('disabled');
-            await sAP();
-            sAB.textContent = '다시 보기';
-            sAB.classList.remove('disabled');
-            sB.classList.remove('disabled');
-        });
-
-        function uBI(isPlaying) {
-            bOI.classList.toggle('hidden', !isPlaying);
-            bFI.classList.toggle('hidden', isPlaying);
-        }
-
-        gBs.forEach(button => {
-            button.addEventListener('click', (event) => {
-                if (!iP) return;
-                const cBI = parseInt(event.target.id.split('-')[1]);
-                pT(cBI);
-            });
-        });
-        
-        async function sG() {
-            mC.classList.add('game-started');
-            gBd.classList.remove('inverted');
-            iMM = false;
-            gP = [];
-            l = 0;
-            sB.classList.add('hidden');
-            sAB.classList.add('hidden');
-            iPI.classList.remove('hidden');
-            mD.textContent = '';
-            
-            await sl(500);
-
-            cO.classList.remove('hidden');
-            cS.classList.remove('shrinking-circle');
-            void cS.offsetWidth;
-            cS.classList.add('shrinking-circle');
-            
-            await sl(1500);
-            
-            cO.classList.add('hidden');
-            nL();
-        }
-
-        function nL() {
-            pP = [];
-            c = 0;
-            l++;
-            iP = false;
-
-            if (l >= 1 && l <= 4) pB('normal');
-            else if (l >= 5 && l <= 8) pB('hard');
-            else if (l >= 9) pB('veryHard');
-            
-            const pTA = Math.floor((l - 1) / 5) + 1;
-            const nPL = gP.length + pTA;
-            
-            gP = [];
-            for (let i = 0; i < nPL; i++) {
-                let cs = [0, 1, 2, 3];
-                if (gP.length > 0) {
-                    const lB = gP[gP.length - 1];
-                    cs = cs.filter(ch => ch !== lB);
-                }
-                const nB = cs[Math.floor(Math.random() * cs.length)];
-                gP.push(nB);
-            }
-            
-            pPtt();
-        }
-
-        function pPtt() {
-            gBd.classList.add('computer-turn');
-            let d = 0;
-            const bS = 700;
-            const sDP = 80;
-            const mS = 150;
-            const sL = Math.floor((l - 1) / 4);
-            const pI = Math.max(mS, bS - (sL * sDP));
-            
-            gP.forEach((bI) => {
-                setTimeout(() => aB(bI, false), d);
-                d += pI;
-            });
-
-            setTimeout(() => {
-                iP = true;
-                gBd.classList.remove('computer-turn');
-                gBs.forEach(btn => {
-                    btn.classList.add('pulse');
-                    setTimeout(() => btn.classList.remove('pulse'), 400);
-                });
-            }, d + 100);
-        }
-
-        function pT(id) {
-            aB(id, true);
-            pP.push(id);
-            cA(pP.length - 1);
-        }
-
-        function cA(cI) {
-            let cBI = gP[cI];
-            if (iMM) {
-                const mM = { 0: 1, 1: 0, 2: 3, 3: 2 };
-                cBI = mM[cBI];
-            }
-
-            if (pP[cI] !== cBI) {
-                gO();
-                return;
-            }
-            c++;
-            if (pP.length === gP.length) {
-                iP = false;
-                lCS();
-            }
-        }
-        
-        async function lCS() {
-            await sl(350); 
-            
-            if (l > 0 && l % 4 === 0) {
-                const e = [sCE, iCE, aMM];
-                let eTR;
-
-                if (l === 4) eTR = sCE;
-                else if (l === 8) eTR = iCE;
-                else if (l === 12) eTR = aMM;
-                else {
-                    eTR = e[Math.floor(Math.random() * e.length)];
-                }
-                
-                await eTR();
-                await sGRS();
-            } else {
-                ssI.triggerAttackRelease('C5', '8n'); // sS 대신 ssI 사용
-                b.classList.add('success-flash');
-                gBd.classList.add('shake-vertical');
-                setTimeout(() => {
-                    b.classList.remove('success-flash');
-                    gBd.classList.remove('shake-vertical');
-                }, 400);
-                await sl(800);
-            }
-            
-            nL();
-        }
-        
-        async function sCE() {
-            shS.triggerAttackRelease("1n");
-            gBd.classList.add('cube-rotate');
-            await sl(750);
-
-            const cD = [];
-            gBs.forEach(btn => {
-                const bC = Array.from(btn.classList).find(cl => cl.startsWith('bg-'));
-                cD.push({
-                    bg: bC,
-                    glow: btn.style.getPropertyValue('--glow-color')
-                });
-            });
-
-            for (let i = cD.length - 1; i > 0; i--) {
-                const j = Math.floor(Math.random() * (i + 1));
-                [cD[i], cD[j]] = [cD[j], cD[i]];
-            }
-
-            gBs.forEach((btn, i) => {
-                const oBC = Array.from(btn.classList).find(cl => cl.startsWith('bg-'));
-                btn.classList.remove(oBC);
-                btn.classList.add(cD[i].bg);
-                btn.style.setProperty('--glow-color', cD[i].glow);
-            });
-
-            await sl(750);
-            gBd.classList.remove('cube-rotate');
-        }
-
-        async function iCE() {
-            iS.triggerAttackRelease("C3", "1s");
-            gBd.classList.add('inverted');
-            await sl(1500);
-        }
-
-        async function aMM() {
-            mS.triggerAttackRelease("C5", "1s");
-            iMM = true;
-            mD.textContent = "좌우 반전!";
-            await sl(1500);
-            mD.textContent = "";
-        }
-        
-        async function sGRS() {
-            await sl(500); 
-            gBd.classList.add('get-ready-pulse');
-            const n = Tone.now();
-            sBS.triggerAttackRelease("C5", "16n", n);
-            sBS.triggerAttackRelease("C5", "16n", n + 0.4);
-            sBS.triggerAttackRelease("C5", "16n", n + 0.8);
-            sBS.triggerAttackRelease("G5", "8n", n + 1.2);
-            await sl(1500);
-            gBd.classList.remove('get-ready-pulse');
-            await sl(500);
-        }
-
-        async function gO() {
-            mC.classList.remove('game-started');
-            sHS();
-            uHSD();
-            
-            pB('gameover');
-
-            const fL = l > 0 ? l - 1 : 0;
-            mD.textContent = `게임 오버! 최종 레벨: ${fL}`;
-            
-            eS.triggerAttackRelease(['C3', 'C#3'], '4n');
-            b.classList.add('game-over-flash');
-            setTimeout(() => b.classList.remove('game-over-flash'), 400);
-            
-            iPI.classList.add('hidden');
-            sB.classList.remove('hidden', 'disabled');
-            sB.textContent = '다시 시작';
-            iP = false;
-
-            sAB.textContent = '정답 보기';
-            sAB.classList.remove('hidden', 'disabled');
-            sB.classList.replace('w-full', 'w-2/3');
-        }
-
-        async function sAP() {
-            mD.textContent = '정답 확인...';
-            await sl(500);
-            
-            for (let i = 0; i < gP.length; i++) {
-                const bI = gP[i];
-                const btn = document.getElementById(`button-${bI}`);
-                const nE = btn.querySelector('.answer-number');
-
-                nE.textContent = i + 1;
-                nE.classList.add('visible');
-                aB(bI, false);
-                await sl(600);
-            }
-            
-            await sl(1000);
-            
-            gBs.forEach(btn => {
-                btn.querySelector('.answer-number').classList.remove('visible');
-            });
-            mD.textContent = '';
-        }
-
-        const ns = ['C4', 'E4', 'G4', 'A4'];
-        function aB(id, isP) {
-            const btn = document.getElementById(`button-${id}`);
-            btn.classList.add('active');
-            
-            const gS = 15 + c * 4;
-            const gSp = 2 + c * 1;
-            btn.style.boxShadow = `0 0 ${gS}px ${gSp}px var(--glow-color)`;
-
-            if (isP) {
-                const n = Tone.Frequency(ns[id]).transpose(c * 1);
-                s.triggerAttackRelease(n, '8n');
-            } else {
-                s.triggerAttackRelease(ns[id], '8n');
-            }
-
-            setTimeout(() => {
-                btn.classList.remove('active');
-                btn.style.boxShadow = '';
-            }, 300);
-        }
-
-        function sC(isHS) {
-            confetti({
-                particleCount: isHS ? 300 : 150,
-                spread: isHS ? 180 : 90,
-                origin: { y: 0.6 },
-                gravity: 0.8,
-                ticks: 300,
-                scalar: 1.2
-            });
-        }
-
-        // --- 대시보드 로직 (변수명 최소화) ---
-        dB.addEventListener('click', () => {
-            rD();
-            dM.classList.remove('hidden');
-        });
-
-        cDB.addEventListener('click', () => {
-            dM.classList.add('hidden');
-        });
-
-        cLB.addEventListener('click', () => {
-            if (confirm('정말로 모든 기록을 삭제하시겠습니까?')) {
-                localStorage.removeItem('challengeLog');
-                rD();
-            }
-        });
-
-        function sCL(s) {
-            let ls = JSON.parse(localStorage.getItem('challengeLog')) || [];
-            const n = new Date();
-            const nL = {
-                id: n.getTime(),
-                date: n.toLocaleString('ko-KR'),
-                score: s
-            };
-            ls.unshift(nL);
-            localStorage.setItem('challengeLog', JSON.stringify(ls));
-        }
-
-        function rD() {
-            const ls = JSON.parse(localStorage.getItem('challengeLog')) || [];
-            lL.innerHTML = '';
-            lCC.innerHTML = '';
-
-            if (ls.length === 0) {
-                lL.innerHTML = '<p class="text-center text-secondary">아직 도전 기록이 없습니다.</p>';
-                return;
-            }
-
-            ls.forEach(log => {
-                const lI = document.createElement('div');
-                lI.className = 'flex justify-between items-center p-2 border-b border-slate-200 dark:border-slate-700';
-                lI.innerHTML = `
-                    <span class="text-sm text-secondary">${new Date(log.id).toLocaleDateString('ko-KR')}</span>
-                    <span class="font-bold">레벨 ${log.score}</span>
-                `;
-                lL.appendChild(lI);
-            });
-
-            rC(ls.slice(0, 10).reverse());
-        }
-
-        function rC(ls) {
-            const sNS = "http://www.w3.org/2000/svg";
-            const svg = document.createElementNS(sNS, "svg");
-            svg.setAttribute("width", "100%");
-            svg.setAttribute("height", "100%");
-            svg.setAttribute("viewBox", "0 0 100 50");
-
-            if (ls.length < 2) return;
-
-            const mS = Math.max(...ls.map(l => l.score), 1);
-            const pts = ls.map((log, i) => {
-                const x = (i / (ls.length - 1)) * 90 + 5;
-                const y = 45 - (log.score / mS) * 40;
-                return `${x},${y}`;
-            }).join(' ');
-
-            const pL = document.createElementNS(sNS, "polyline");
-            pL.setAttribute("points", pts);
-            pL.setAttribute("fill", "none");
-            pL.setAttribute("stroke", "var(--text-highlight)");
-            pL.setAttribute("stroke-width", "1");
-            svg.appendChild(pL);
-
-            ls.forEach((log, i) => {
-                const x = (i / (ls.length - 1)) * 90 + 5;
-                const y = 45 - (log.score / mS) * 40;
-                const circ = document.createElementNS(sNS, "circle");
-                circ.setAttribute("cx", x);
-                circ.setAttribute("cy", y);
-                circ.setAttribute("r", "1.5");
-                circ.setAttribute("fill", "var(--text-highlight)");
-                svg.appendChild(circ);
-            });
-
-            lCC.appendChild(svg);
-        }
+        (function(){const d=new Date;function c(){try{(function(){if(new Date-d>100){window.location.reload()}d=new Date}).toString().indexOf("debugger")!==-1}catch(e){}setTimeout(c,100)}c();document.addEventListener("keydown",function(e){if(e.key==="F12"||e.ctrlKey&&e.shiftKey&&e.key==="I"){e.preventDefault()}});document.addEventListener("contextmenu",function(e){e.preventDefault()})})();
+        const tBtn=document.getElementById("theme-toggle"),sunI=document.getElementById("theme-toggle-sun-icon"),moonI=document.getElementById("theme-toggle-moon-icon"),tTh=e=>{document.documentElement.classList.toggle("dark",e),sunI.classList.toggle("hidden",e),moonI.classList.toggle("hidden",!e)};const sTh=localStorage.getItem("theme"),pDark=window.matchMedia("(prefers-color-scheme: dark)").matches;sTh==="dark"||!sTh&&pDark?tTh(!0):tTh(!1),tBtn.addEventListener("click",()=>{const e=!document.documentElement.classList.contains("dark");localStorage.setItem("theme",e?"dark":"light"),tTh(e)});
+        const mC=document.getElementById("main-container"),sB=document.getElementById("start-btn"),sAB=document.getElementById("show-answer-btn"),hD=document.getElementById("highscore-display"),mD=document.getElementById("message-display"),gBs=document.querySelectorAll(".game-button"),gB=document.querySelector(".game-board"),cO=document.getElementById("countdown-overlay"),cS=document.getElementById("countdown-shape"),body=document.body,bT=document.getElementById("bgm-toggle"),bOI=document.getElementById("bgm-on-icon"),bFI=document.getElementById("bgm-off-icon"),iPI=document.getElementById("in-progress-indicator"),dB=document.getElementById("dashboard-btn"),dM=document.getElementById("dashboard-modal"),cDB=document.getElementById("close-dashboard-btn"),lL=document.getElementById("log-list"),lCC=document.getElementById("log-chart-container"),cLB=document.getElementById("clear-log-btn"),bcD=document.getElementById("basecamp-display"),rSM=document.getElementById("rest-stage-modal");
+        let gP=[],pP=[],l=0,hS=0,bCL=0,iPT=!1,c=0,iBP=!1,cBGM="waiting",iMM=!1,iPC=!1,s,sS,eS,tUS,sBS,shS,iS,mS,bCS,bPs={};
+        const sl=e=>new Promise(t=>setTimeout(t,e));
+        document.addEventListener("DOMContentLoaded",()=>{lBC(),lHS(),sSy();const e=localStorage.getItem("bgmState");"on"===e&&(iBP=!0,uBI(!0),pB(cBGM)),gBs.forEach(e=>{const t=document.createElement("span");t.className="answer-number",e.appendChild(t)})});
+        function sSy(){s=new Tone.Synth({oscillator:{type:"sine"},envelope:{attack:.005,decay:.1,sustain:.3,release:1}}).toDestination(),sS=new Tone.Synth({oscillator:{type:"triangle"},envelope:{attack:.01,decay:.2,sustain:.2,release:.2}}).toDestination(),eS=new Tone.PolySynth(Tone.Synth,{oscillator:{type:"square"},envelope:{attack:.01,decay:.4,sustain:0,release:.4}}).toDestination();const e=new Tone.Reverb(1.5).toDestination();tUS=new Tone.Synth({oscillator:{type:"sine"},envelope:{attack:.01,decay:.3,sustain:.1,release:.7}}).connect(e),sBS=new Tone.Synth({oscillator:{type:"sine"},envelope:{attack:.01,decay:.2,release:.2}}).toDestination(),sBS.volume.value=-6,shS=new Tone.NoiseSynth({noise:{type:"brown"},envelope:{attack:.1,decay:1.4,sustain:0}}).toDestination(),shS.volume.value=-15,iS=new Tone.Synth({oscillator:{type:"sawtooth"},envelope:{attack:.01,decay:.8,sustain:.1,release:1}}).toDestination(),iS.volume.value=-18,mS=new Tone.Synth({oscillator:{type:"triangle8"},envelope:{attack:.01,decay:.5,sustain:.1,release:1}}).connect(e),mS.volume.value=-15,bCS=new Tone.Synth({oscillator:{type:"fatsawtooth"},envelope:{attack:.05,decay:.5,sustain:.4,release:.8}}).toDestination(),bCS.volume.value=-10;const t=-20,o=new Tone.PluckSynth({attackNoise:.5,dampening:4e3,resonance:.7}).toDestination();o.volume.value=t+8,bPs.waiting=new Tone.Sequence(((e,t)=>{o.triggerAttack(t,e)}),["C4","E4","G4","C5","E5","G4"],"8n");const a=new Tone.MonoSynth({oscillator:{type:"fmsine"},envelope:{attack:.01,decay:.3,sustain:.1,release:.5}}).toDestination();a.volume.value=t,bPs.normal=new Tone.Sequence(((e,t)=>{o.triggerAttack(t.melody,e),t.bass&&a.triggerAttackRelease(t.bass,"8n",e)}),[{melody:"C4",bass:"C2"},{melody:"E4",bass:null},{melody:"G4",bass:"C2"},{melody:"G4",bass:"G1"},{melody:"E4",bass:null},{melody:"C4",bass:"G1"}],"8n");const n=new Tone.MembraneSynth({octaves:4,pitchDecay:.1}).toDestination();n.volume.value=t+2;const r=new Tone.MonoSynth({oscillator:{type:"sawtooth"},envelope:{attack:.01,decay:.3,sustain:.1,release:.5}}).toDestination();r.volume.value=t-4,bPs.hard=new Tone.Part(((e,t)=>{t.kick&&n.triggerAttackRelease("C1","8n",e),t.bass&&r.triggerAttackRelease(t.bass,"8n",e)}),[{time:"0:0",kick:!0,bass:"C2"},{time:"0:2",bass:"C2"},{time:"0:3",kick:!0},{time:"0:5",bass:"G1"},{time:"0:6",kick:!0},{time:"0:8",bass:"G1"},{time:"0:9",kick:!0},{time:"0:11",bass:"F1"}]),bPs.hard.loop=!0,bPs.hard.loopEnd="1m";const d=new Tone.MembraneSynth({octaves:6,pitchDecay:.05}).toDestination();d.volume.value=t;const i=new Tone.MetalSynth({frequency:300,envelope:{attack:.001,decay:.05,release:.01},harmonicity:4.1,modulationIndex:22,resonance:3e3,octaves:1.5}).toDestination();i.volume.value=t-10,bPs.veryHard=new Tone.Sequence(((e,t)=>{d.triggerAttackRelease("C1","8n",e),"CH"===t&&i.triggerAttackRelease("C6","16n",e)}),["C1","CH","C1","CH"],"4n");const c=new Tone.AMSynth({harmonicity:1.5,envelope:{attack:.01,decay:2,sustain:.1,release:2}}).toDestination();c.volume.value=t-5,bPs.gameover=new Tone.Sequence(((e,t)=>{c.triggerAttackRelease(t,"1n",e)}),[["C3","E3"],["G3","B3"],["F3","A3"]],"1m")}
+        function pB(e){if(!iBP)return;Object.values(bPs).forEach(e=>e.stop(0)),cBGM=e,"waiting"===e?(Tone.Transport.timeSignature=[6,8],Tone.Transport.bpm.value=90,bPs.waiting.start(0)):"normal"===e?(Tone.Transport.timeSignature=[6,8],Tone.Transport.bpm.value=100,bPs.normal.start(0)):"hard"===e?(Tone.Transport.timeSignature=[12,8],Tone.Transport.bpm.value=120,bPs.hard.start(0)):"veryHard"===e?(Tone.Transport.timeSignature=[4,4],Tone.Transport.bpm.value=140,bPs.veryHard.start(0)):"gameover"===e&&(Tone.Transport.timeSignature=[6,8],Tone.Transport.bpm.value=70,bPs.gameover.start(0)),"started"!==Tone.Transport.state&&Tone.Transport.start()}
+        function stB(){"started"===Tone.Transport.state&&Tone.Transport.stop(),Object.values(bPs).forEach(e=>e.stop(0))}
+        function lHS(){hS=parseInt(localStorage.getItem("patternGameHighScore"))||0,uHSD()}
+        function lBC(){const e=JSON.parse(localStorage.getItem("patternGameBaseCamp"));if(e){const t=(new Date).toISOString().split("T")[0];t===e.date?(bCL=e.level,uBCD(),sB.textContent=`레벨 ${bCL}부터 시작`):localStorage.removeItem("patternGameBaseCamp")}}
+        function sBC(){if(l<=bCL)return;bCL=l;const e=(new Date).toISOString().split("T")[0];localStorage.setItem("patternGameBaseCamp",JSON.stringify({level:bCL,date:e})),uBCD();const t=Tone.now();bCS.triggerAttackRelease("A3","2n",t),bCS.triggerAttackRelease("E4","2n",t+.1),bCS.triggerAttackRelease("A4","2n",t+.2)}
+        function uBCD(){bCL>0?(bcD.querySelector("span").textContent=`캠프: ${bCL}`,bcD.classList.remove("hidden")):bcD.classList.add("hidden")}
+        function uHSD(){hD.textContent=`최고 기록: ${hS}`}
+        function sHS(){const e=l>0?l-1:0;e>hS&&(hS=e,localStorage.setItem("patternGameHighScore",e),sCf(!0),hD.classList.add("level-up"),setTimeout(()=>{hD.classList.remove("level-up")},500)),sCL(e)}
+        function cTP(e){let t=0;for(let o=1;o<=e;o++){t+=Math.floor((o-1)/5)+1}return t}
+        sB.addEventListener("click",async()=>{await Tone.start(),sG()}),bT.addEventListener("click",async()=>{await Tone.start(),iBP=!iBP,localStorage.setItem("bgmState",iBP?"on":"off"),uBI(iBP),iBP?pB(cBGM||"waiting"):stB()}),sAB.addEventListener("click",async()=>{sAB.classList.add("disabled"),sB.classList.add("disabled"),await sAP(),sAB.textContent="다시 보기",sAB.classList.remove("disabled"),sB.classList.remove("disabled")});
+        function uBI(e){bOI.classList.toggle("hidden",!e),bFI.classList.toggle("hidden",e)}
+        gBs.forEach(e=>{e.addEventListener("click",t=>{if(!iPT||iPC)return;iPC=!0;const o=parseInt(t.target.id.split("-")[1]);pT(o)})});
+        async function sG(){mC.classList.add("game-started"),gB.classList.remove("inverted"),iMM=!1,iPC=!1,l=bCL,sB.classList.add("hidden"),sAB.classList.add("hidden"),iPI.classList.remove("hidden"),mD.textContent="",await sl(500),cO.classList.remove("hidden"),cS.classList.remove("shrinking-circle"),void cS.offsetWidth,cS.classList.add("shrinking-circle"),await sl(1500),cO.classList.add("hidden"),nL()}
+        function shf(e){let t=e.length,o;for(;0!=t;)o=Math.floor(Math.random()*t),t--,[e[t],e[o]]=[e[o],e[t]];return e}
+        function nL(){l++,iPT=!1,pP=[],c=0,l>=1&&l<=4?pB("normal"):l>=5&&l<=8?pB("hard"):l>=9&&pB("veryHard");const e=cTP(l);let t=[];const o=Math.floor(e/4);for(let s=0;s<o;s++)t.push(0,1,2,3);const a=e%4,n=shf([0,1,2,3]);for(let r=0;r<a;r++)t.push(n[r]);gP=shf(t);for(let d=1;d<gP.length;d++)if(gP[d]===gP[d-1]){for(let i=d+1;i<gP.length;i++)if(gP[i]!==gP[d]){[gP[d],gP[i]]=[gP[i],gP[d]];break}if(gP[d]===gP[d-1]){const C=[0,1,2,3].filter(e=>e!==gP[d]);gP[d]=C[Math.floor(Math.random()*C.length)]}}pPtn()}
+        function pPtn(){gBs.forEach(e=>{e.classList.add("disabled"),e.classList.add("desaturated")});let e=0;const t=700,o=80,a=150,n=Math.floor((l-1)/4),r=Math.max(a,t-n*o);gP.forEach(t=>{setTimeout(()=>aB(t,!1),e),e+=r}),setTimeout(()=>{iPT=!0,iPC=!1,gBs.forEach(e=>{e.classList.remove("disabled"),e.classList.remove("desaturated"),e.classList.add("pulse"),setTimeout(()=>e.classList.remove("pulse"),400)})},e+100)}
+        function pT(e){aB(e,!0),pP.push(e),cA(pP.length-1)}
+        function cA(e){let t=gP[e];if(iMM){const o={0:1,1:0,2:3,3:2};t=o[t]}pP[e]!==t?(gO(),void 0):(c++,pP.length===gP.length?(iPT=!1,lCS()):iPC=!1)}
+        async function lCS(){iPT=!1,await sl(350);let e=!0;if(l>0&&l%3==0&&l>bCL)sBC(),await sRS();else if(l>0&&l%4==0){const t=[sCE,iCE,aMM];let o;o=4===l?sCE:8===l?iCE:12===l?aMM:t[Math.floor(Math.random()*t.length)],await o(),await sGRS()}else sS.triggerAttackRelease("C5","8n"),body.classList.add("success-flash"),gB.classList.add("shake-vertical"),setTimeout(()=>{body.classList.remove("success-flash"),gB.classList.remove("shake-vertical")},400),await sl(800);e&&nL()}
+        async function sRS(){return new Promise(async e=>{rSM.classList.remove("hidden");const t=document.getElementById("rest-level-guide");t.innerHTML="";const o=document.getElementById("rest-timer-display");if(o){const a=new Date,n=new Date;n.setHours(23,59,59,999);const r=n.getTime()-a.getTime();if(r>0){const d=Math.floor(r/36e5),i=Math.floor(r%36e5/6e4);o.textContent=`오늘의 베이스캠프는 ${d}시간 ${i}분 후에 초기화됩니다.`,o.classList.remove("hidden")}else o.classList.add("hidden")}for(let c=1;c<=3;c++){const C=l+c,p=cTP(C),h=document.createElement("div");h.className="flex items-center justify-between p-2 rounded-lg";const m=document.createElement("span");m.className="font-bold text-teal-400",m.textContent=`레벨 ${C}`;const g=document.createElement("div");g.className="flex flex-wrap gap-1.5 justify-end items-center",g.style.width="70%";for(let u=0;u<p;u++){const f="http://www.w3.org/2000/svg",v=document.createElementNS(f,"svg");v.setAttribute("class","pattern-char"),v.setAttribute("viewBox","0 0 20 20"),v.style.animationDelay=`${.12*u}s, ${.15*c+.06*u}s`;const k=document.createElementNS(f,"circle");k.setAttribute("cx","10"),k.setAttribute("cy","10"),k.setAttribute("r","10"),k.setAttribute("class","pattern-char-body");const L=document.createElementNS(f,"circle");L.setAttribute("cx","7"),L.setAttribute("cy","8"),L.setAttribute("r","1.5"),L.setAttribute("class","pattern-char-eye");const B=document.createElementNS(f,"circle");B.setAttribute("cx","13"),B.setAttribute("cy","8"),B.setAttribute("r","1.5"),B.setAttribute("class","pattern-char-eye"),v.appendChild(k),v.appendChild(L),v.appendChild(B),g.appendChild(v)}h.appendChild(m),h.appendChild(g),t.appendChild(h)}document.getElementById("rest-continue-btn").onclick=()=>{rSM.classList.add("hidden"),e()}})}
+        async function sCE(){shS.triggerAttackRelease("1n"),gB.classList.add("cube-rotate"),await sl(750);const e=[];gBs.forEach(t=>{const o=Array.from(t.classList).find(e=>e.startsWith("bg-"));e.push({bg:o,glow:t.style.getPropertyValue("--glow-color")})});for(let t=e.length-1;t>0;t--){const o=Math.floor(Math.random()*(t+1));[e[t],e[o]]=[e[o],e[t]]}gBs.forEach((t,o)=>{const a=Array.from(t.classList).find(e=>e.startsWith("bg-"));t.classList.remove(a),t.classList.add(e[o].bg),t.style.setProperty("--glow-color",e[o].glow)}),await sl(750),gB.classList.remove("cube-rotate")}
+        async function iCE(){iS.triggerAttackRelease("C3","1s"),gB.classList.add("inverted"),await sl(1500)}
+        async function aMM(){mS.triggerAttackRelease("C5","1s"),iMM=!0,mD.textContent="좌우 반전!",await sl(1500),mD.textContent=""}
+        async function sGRS(){await sl(500),gB.classList.add("get-ready-pulse");const e=Tone.now();sBS.triggerAttackRelease("C5","16n",e),sBS.triggerAttackRelease("C5","16n",e+.4),sBS.triggerAttackRelease("C5","16n",e+.8),sBS.triggerAttackRelease("G5","8n",e+1.2),await sl(1500),gB.classList.remove("get-ready-pulse"),await sl(500)}
+        async function gO(){mC.classList.remove("game-started"),sHS(),uHSD(),pB("gameover");const e=l>0?l-1:0;mD.textContent=`게임 오버! 최종 레벨: ${e}`,eS.triggerAttackRelease(["C3","C#3"],"4n"),body.classList.add("game-over-flash"),setTimeout(()=>body.classList.remove("game-over-flash"),400),iPI.classList.add("hidden"),sB.classList.remove("hidden","disabled"),sB.textContent=bCL>0?`레벨 ${bCL}부터 다시 시작`:"다시 시작",iPT=!1,iPC=!1,sAB.textContent="정답 보기",sAB.classList.remove("hidden","disabled"),sB.classList.replace("w-full","w-2/3")}
+        async function sAP(){mD.textContent="정답 확인...",gBs.forEach(e=>e.classList.add("desaturated")),await sl(500);for(let e=0;e<gP.length;e++){const t=gP[e],o=document.getElementById(`button-${t}`),a=o.querySelector(".answer-number");a.textContent=e+1,a.classList.add("visible"),aB(t,!1),await sl(600)}await sl(1e3),gBs.forEach(e=>{e.querySelector(".answer-number").classList.remove("visible"),e.classList.remove("desaturated")}),mD.textContent=""}
+        const notes=["C4","E4","G4","A4"];
+        function aB(e,t){const o=document.getElementById(`button-${e}`);t||o.classList.remove("desaturated"),o.classList.add("active");const a=15+4*c,n=2+1*c;o.style.boxShadow=`0 0 ${a}px ${n}px var(--glow-color)`,t?s.triggerAttackRelease(Tone.Frequency(notes[e]).transpose(1*c),"8n"):s.triggerAttackRelease(notes[e],"8n"),setTimeout(()=>{o.classList.remove("active"),o.style.boxShadow="",t||o.classList.add("desaturated")},300)}
+        function sCf(e){confetti({particleCount:e?300:150,spread:e?180:90,origin:{y:.6},gravity:.8,ticks:300,scalar:1.2})}
+        dB.addEventListener("click",()=>{rD(),dM.classList.remove("hidden")}),cDB.addEventListener("click",()=>{dM.classList.add("hidden")}),cLB.addEventListener("click",()=>{confirm("정말로 모든 기록을 삭제하시겠습니까?")&&(localStorage.removeItem("challengeLog"),localStorage.removeItem("patternGameBaseCamp"),bCL=0,uBCD(),sB.textContent="게임 시작",rD())});
+        function sCL(e){let t=JSON.parse(localStorage.getItem("challengeLog"))||[];const o=new Date,a={id:o.getTime(),date:o.toLocaleString("ko-KR"),score:e};t.unshift(a),localStorage.setItem("challengeLog",JSON.stringify(t))}
+        function rD(){const e=JSON.parse(localStorage.getItem("challengeLog"))||[];if(lL.innerHTML="",lCC.innerHTML="",0===e.length)return void(lL.innerHTML='<p class="text-center text-secondary">아직 도전 기록이 없습니다.</p>');e.forEach(e=>{const t=document.createElement("div");t.className="flex justify-between items-center p-2 border-b border-slate-200 dark:border-slate-700",t.innerHTML=`\n                    <span class="text-sm text-secondary">${(new Date(e.id)).toLocaleDateString("ko-KR")}</span>\n                    <span class="font-bold">레벨 ${e.score}</span>\n                `,lL.appendChild(t)}),rC(e.slice(0,10).reverse())}
+        function rC(e){const t="http://www.w3.org/2000/svg",o=document.createElementNS(t,"svg");if(o.setAttribute("width","100%"),o.setAttribute("height","100%"),o.setAttribute("viewBox","0 0 100 50"),e.length<2)return;const a=Math.max(...e.map(e=>e.score),1),n=e.map((e,t)=>{const o=t/(e.length-1)*90+5,n=45-e.score/a*40;return`${o},${n}`}).join(" "),r=document.createElementNS(t,"polyline");r.setAttribute("points",n),r.setAttribute("fill","none"),r.setAttribute("stroke","var(--text-highlight)"),r.setAttribute("stroke-width","1"),o.appendChild(r),e.forEach((e,n)=>{const r=n/(e.length-1)*90+5,d=45-e.score/a*40,i=document.createElementNS(t,"circle");i.setAttribute("cx",r),i.setAttribute("cy",d),i.setAttribute("r","1.5"),i.setAttribute("fill","var(--text-highlight)"),o.appendChild(i)}),lCC.appendChild(o)}
     </script>
 </body>
 </html>
