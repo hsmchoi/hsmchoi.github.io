@@ -9,110 +9,101 @@
     <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
     <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;700&display=swap" rel="stylesheet">
     <style>
-        /* --- 다크모드 색상 변수 설정 --- */
         :root {
-            --bg-primary: #f1f5f9;      /* slate-100 */
-            --bg-secondary: #ffffff;    /* white */
-            --text-primary: #1e293b;    /* slate-800 */
-            --text-secondary: #475569;  /* slate-600 */
-            --text-highlight: #0f766e;  /* teal-600 */
-            --success-flash-bg: #dcfce7; /* green-100 */
-            --fail-flash-bg: #fecaca;    /* red-200 */
+            --bg-primary: #f1f5f9; --bg-secondary: #ffffff; --text-primary: #1e293b; --text-secondary: #475569;
+            --text-highlight: #0f766e; --success-flash-bg: #dcfce7; --fail-flash-bg: #fecaca;
+            --overlay-bg: rgba(0, 0, 0, 0.5); --overlay-shape: #ffffff;
         }
-
         .dark {
-            --bg-primary: #0f172a;      /* slate-900 */
-            --bg-secondary: #1e293b;    /* slate-800 */
-            --text-primary: #e2e8f0;    /* slate-200 */
-            --text-secondary: #94a3b8;  /* slate-400 */
-            --text-highlight: #2dd4bf;  /* teal-400 */
-            --success-flash-bg: #15803d; /* green-700 */
-            --fail-flash-bg: #b91c1c;    /* red-700 */
+            --bg-primary: #0f172a; --bg-secondary: #1e293b; --text-primary: #e2e8f0; --text-secondary: #94a3b8;
+            --text-highlight: #2dd4bf; --success-flash-bg: #15803d; --fail-flash-bg: #b91c1c;
+            --overlay-bg: rgba(0, 0, 0, 0.7); --overlay-shape: #e2e8f0;
         }
-        /* --- 기본 스타일 --- */
         body {
-            font-family: 'Noto Sans KR', sans-serif;
-            -webkit-tap-highlight-color: transparent;
-            overflow: hidden;
-            background-color: var(--bg-primary);
-            color: var(--text-primary);
-            transition: background-color 0.3s ease, color 0.3s ease;
+            font-family: 'Noto Sans KR', sans-serif; -webkit-tap-highlight-color: transparent; overflow: hidden;
+            background-color: var(--bg-primary); color: var(--text-primary); transition: background-color 0.3s ease, color 0.3s ease;
         }
-        #game-container, #mode-selection {
-            background-color: var(--bg-secondary);
-            transition: background-color 0.3s ease;
-        }
+        #game-container, #dashboard-modal { background-color: var(--bg-secondary); transition: background-color 0.3s ease; }
         .text-secondary { color: var(--text-secondary); }
         .text-highlight { color: var(--text-highlight); }
-
         .game-board {
-            display: grid;
-            grid-template-columns: repeat(2, 1fr);
-            gap: 1.25rem;
-            width: 100%;
-            max-width: 400px;
-            aspect-ratio: 1 / 1;
-            transition: transform 0.1s ease-in-out;
+            position: relative; display: grid; grid-template-columns: repeat(2, 1fr); gap: 1.25rem;
+            width: 100%; max-width: 400px; aspect-ratio: 1 / 1;
+            transition: transform 1.5s, opacity 0.3s, filter 0.8s ease-in-out; transform-style: preserve-3d;
         }
         .game-button {
-            border-radius: 0.75rem;
-            cursor: pointer;
-            transition: transform 0.1s ease, box-shadow 0.2s ease, background-color 0.2s ease;
+            position: relative; border-radius: 0.75rem; cursor: pointer;
+            transition: transform 0.1s ease, box-shadow 0.2s ease, background-color 0.5s ease;
             box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
         }
         .game-button:active { transform: scale(0.96); }
-        .game-button.active {
-            transform: scale(1.03);
-            box-shadow: 0 0 25px 3px var(--glow-color);
-            filter: brightness(1.25);
-        }
+        .game-button.active { transform: scale(1.03); filter: brightness(1.25); }
         .disabled { pointer-events: none; opacity: 0.6; }
-        
-        /* --- 애니메이션 --- */
-        @keyframes shake-horizontal { 0%, 100% { transform: translateX(0); } 25% { transform: translateX(-3px); } 75% { transform: translateX(3px); } }
-        .shake-horizontal { animation: shake-horizontal 0.2s ease-in-out; }
         
         @keyframes shake-vertical { 0%, 100% { transform: translateY(0); } 25% { transform: translateY(-3px); } 75% { transform: translateY(3px); } }
         .shake-vertical { animation: shake-vertical 0.2s ease-in-out; }
-        
         @keyframes success-flash { 0%, 100% { background-color: var(--bg-primary); } 50% { background-color: var(--success-flash-bg); } }
         .success-flash { animation: success-flash 0.4s ease-in-out; }
-        
         @keyframes gameOverFlash { 0%, 100% { background-color: var(--bg-primary); } 50% { background-color: var(--fail-flash-bg); } }
         .game-over-flash { animation: gameOverFlash 0.4s ease-in-out; }
-        
-        @keyframes levelUp { 0%, 100% { transform: scale(1); color: var(--text-primary); } 50% { transform: scale(1.3); color: #10b981; } }
+        @keyframes levelUp { 0%, 100% { transform: scale(1); } 50% { transform: scale(1.3); color: #fde047; } }
         .level-up { animation: levelUp 0.5s ease-in-out; }
+        @keyframes shrink-out { from { transform: scale(1); opacity: 0.7; } to { transform: scale(0); opacity: 0; } }
+        .shrinking-circle { animation: shrink-out 1.5s cubic-bezier(0.7, 0, 0.3, 1) forwards; }
+        @keyframes pulse { 0% { filter: brightness(1.2); } 100% { filter: brightness(1); } }
+        .pulse { animation: pulse 0.4s ease-in-out; }
+        .cube-rotate { transform: rotateY(180deg); }
+        .inverted { filter: invert(1); }
+        @keyframes get-ready-pulse { 0%, 100% { background-color: var(--bg-secondary); } 50% { background-color: var(--bg-primary); } }
+        .get-ready-pulse { animation: get-ready-pulse 1.5s ease-in-out; }
+        #countdown-overlay { background-color: var(--overlay-bg); pointer-events: none; }
+        #countdown-shape { width: 80%; padding-bottom: 80%; border-radius: 50%; border: 6px solid var(--overlay-shape); }
+        .computer-turn { opacity: 0.7; }
+        .answer-number {
+            position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%);
+            font-size: 3rem; font-weight: bold; color: white; text-shadow: 0 0 5px black;
+            pointer-events: none; opacity: 0; transition: opacity 0.2s ease-in-out;
+        }
+        .answer-number.visible { opacity: 1; }
+        #title-header {
+            transition: max-height 0.5s ease-in-out, opacity 0.3s ease-in-out, margin-bottom 0.5s ease-in-out;
+            max-height: 200px; opacity: 1; overflow: hidden;
+        }
+        #game-wrapper { transition: transform 0.5s ease-in-out; transform-origin: top; }
+        #highscore-display { transition: opacity 0.5s ease-in-out; }
+        .game-started #title-header { max-height: 0; opacity: 0; margin-bottom: 0 !important; }
+        .game-started #game-wrapper { transform: scale(1.05); }
+        .game-started #highscore-display { opacity: 0; }
+        #dashboard-modal { z-index: 50; }
+        #dashboard-modal-content { max-height: 70vh; }
     </style>
 </head>
 <body class="flex flex-col items-center justify-center min-h-screen p-4">
 
-    <div class="w-full max-w-lg text-center relative">
-        <!-- 다크 모드 토글 버튼 -->
-        <button id="theme-toggle" class="absolute top-0 right-0 p-2 rounded-full focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-slate-500" aria-label="Toggle dark mode">
-            <svg id="theme-toggle-sun-icon" class="w-6 h-6 text-slate-800 dark:text-slate-200" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z"></path></svg>
-            <svg id="theme-toggle-moon-icon" class="w-6 h-6 hidden text-slate-800 dark:text-slate-200" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z"></path></svg>
-        </button>
-
-        <h1 class="text-4xl md:text-5xl font-bold mb-4 leading-tight">도전! 패턴 기억 게임</h1>
-        
-        <!-- 모드 선택 화면 -->
-        <div id="mode-selection" class="p-6 md:p-8 rounded-2xl shadow-xl">
-            <p class="text-secondary text-base mb-6">플레이할 모드를 선택하세요.</p>
-            <div class="flex flex-col sm:flex-row justify-center gap-4 mt-8">
-                <button id="normal-mode-btn" class="w-full sm:w-auto text-lg font-bold py-4 px-8 bg-sky-500 hover:bg-sky-600 text-white rounded-lg shadow-lg transition-transform transform hover:scale-105">노말 모드</button>
-                <button id="hard-mode-btn" class="w-full sm:w-auto text-lg font-bold py-4 px-8 bg-rose-500 hover:bg-rose-600 text-white rounded-lg shadow-lg transition-transform transform hover:scale-105">하드 모드</button>
-            </div>
+    <div id="main-container" class="w-full max-w-lg text-center relative">
+        <div class="absolute top-0 right-0 mt-2 mr-2 z-10 flex items-center space-x-2">
+            <!-- 도전 로그 버튼 -->
+            <button id="dashboard-btn" class="p-2 rounded-full focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-slate-500" aria-label="Show challenge log">
+                <svg class="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"></path></svg>
+            </button>
+            <button id="bgm-toggle" class="p-2 rounded-full focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-slate-500" aria-label="Toggle background music">
+                <svg id="bgm-on-icon" class="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.536 8.464a5 5 0 010 7.072m2.828-9.9a9 9 0 010 12.728M5.586 15H4a1 1 0 01-1-1v-4a1 1 0 011-1h1.586l4.707-4.707C10.923 3.663 12 4.109 12 5v14c0 .891-1.077 1.337-1.707.707L5.586 15z"></path></svg>
+                <svg id="bgm-off-icon" class="w-6 h-6 hidden" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5.586 15H4a1 1 0 01-1-1v-4a1 1 0 011-1h1.586l4.707-4.707C10.923 3.663 12 4.109 12 5v14c0 .891-1.077 1.337-1.707.707L5.586 15z" clip-rule="evenodd"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2"></path></svg>
+            </button>
+            <button id="theme-toggle" class="p-2 rounded-full focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-slate-500" aria-label="Toggle dark mode">
+                <svg id="theme-toggle-sun-icon" class="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z"></path></svg>
+                <svg id="theme-toggle-moon-icon" class="w-6 h-6 hidden" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z"></path></svg>
+            </button>
         </div>
 
-        <!-- 게임 화면 (초기 숨김) -->
-        <div id="game-wrapper" class="hidden">
+        <div id="title-header">
+            <h1 class="text-4xl md:text-5xl font-bold mb-4 leading-tight pt-8">도전! 패턴 기억 게임</h1>
             <p class="text-secondary text-base mb-6">최고 기록에 도전하고, 당신의 한계를 시험하세요!</p>
+        </div>
+        
+        <div id="game-wrapper">
             <div id="game-container" class="p-6 md:p-8 rounded-2xl shadow-xl">
-                <div class="flex justify-between items-center mb-5">
-                    <div class="text-lg font-bold">
-                        <span id="level-display">레벨: 0</span>
-                    </div>
+                <div class="flex justify-center items-center mb-5 h-7">
                     <div class="text-lg font-bold text-highlight">
                         <span id="highscore-display">최고 기록: 0</span>
                     </div>
@@ -126,8 +117,35 @@
                 </div>
                 
                 <div id="message-display" class="mt-5 text-base font-medium text-secondary h-6"></div>
-                <button id="start-btn" class="w-full mt-6 bg-teal-600 hover:bg-teal-700 text-white font-bold py-3 px-5 rounded-lg transition-all duration-200 shadow-md hover:shadow-lg">게임 시작</button>
+                <div id="button-container" class="w-full mt-6 relative h-12">
+                    <div class="absolute inset-0 flex items-center gap-4">
+                        <button id="show-answer-btn" class="w-1/3 bg-slate-500 hover:bg-slate-600 text-white font-bold py-3 px-5 rounded-lg transition-all duration-200 shadow-md hover:shadow-lg hidden">정답 보기</button>
+                        <button id="start-btn" class="w-full bg-teal-600 hover:bg-teal-700 text-white font-bold py-3 px-5 rounded-lg transition-all duration-200 shadow-md hover:shadow-lg">게임 시작</button>
+                    </div>
+                    <div id="in-progress-indicator" class="absolute inset-0 bg-teal-800 rounded-lg hidden"></div>
+                </div>
+                
+                <div id="countdown-overlay" class="absolute inset-0 flex items-center justify-center rounded-2xl hidden">
+                    <div id="countdown-shape"></div>
+                </div>
             </div>
+        </div>
+    </div>
+
+    <!-- 도전 로그 대시보드 모달 -->
+    <div id="dashboard-modal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center hidden">
+        <div id="dashboard-modal-content" class="p-6 md:p-8 rounded-2xl shadow-xl w-full max-w-lg mx-4">
+            <div class="flex justify-between items-center mb-4">
+                <h2 class="text-2xl font-bold">도전 로그</h2>
+                <button id="close-dashboard-btn" class="p-2 rounded-full hover:bg-gray-200 dark:hover:bg-gray-700">
+                    <svg class="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
+                </button>
+            </div>
+            <div id="log-chart-container" class="w-full h-40 mb-4"></div>
+            <div id="log-list" class="overflow-y-auto pr-2" style="max-height: 40vh;">
+                <!-- 로그 항목이 여기에 추가됩니다. -->
+            </div>
+            <button id="clear-log-btn" class="w-full mt-4 bg-rose-500 hover:bg-rose-600 text-white font-bold py-2 px-4 rounded-lg">기록 삭제</button>
         </div>
     </div>
 
@@ -137,20 +155,12 @@
         const sunIcon = document.getElementById('theme-toggle-sun-icon');
         const moonIcon = document.getElementById('theme-toggle-moon-icon');
 
-        // 테마 변경 함수
         const toggleTheme = (isDark) => {
-            if (isDark) {
-                document.documentElement.classList.add('dark');
-                sunIcon.classList.add('hidden');
-                moonIcon.classList.remove('hidden');
-            } else {
-                document.documentElement.classList.remove('dark');
-                sunIcon.classList.remove('hidden');
-                moonIcon.classList.add('hidden');
-            }
+            document.documentElement.classList.toggle('dark', isDark);
+            sunIcon.classList.toggle('hidden', isDark);
+            moonIcon.classList.toggle('hidden', !isDark);
         };
 
-        // 페이지 로드 시 테마 적용
         const savedTheme = localStorage.getItem('theme');
         const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
         if (savedTheme === 'dark' || (!savedTheme && prefersDark)) {
@@ -159,85 +169,226 @@
             toggleTheme(false);
         }
 
-        // 버튼 클릭 이벤트
         themeToggleBtn.addEventListener('click', () => {
-            const isDark = document.documentElement.classList.toggle('dark');
+            const isDark = !document.documentElement.classList.contains('dark');
             localStorage.setItem('theme', isDark ? 'dark' : 'light');
             toggleTheme(isDark);
         });
 
         // --- 게임 로직 ---
-        // DOM 요소
-        const modeSelection = document.getElementById('mode-selection');
-        const gameWrapper = document.getElementById('game-wrapper');
-        const normalModeBtn = document.getElementById('normal-mode-btn');
-        const hardModeBtn = document.getElementById('hard-mode-btn');
+        const mainContainer = document.getElementById('main-container');
         const startBtn = document.getElementById('start-btn');
-        const levelDisplay = document.getElementById('level-display');
+        const showAnswerBtn = document.getElementById('show-answer-btn');
         const highscoreDisplay = document.getElementById('highscore-display');
         const messageDisplay = document.getElementById('message-display');
         const gameButtons = document.querySelectorAll('.game-button');
         const gameBoard = document.querySelector('.game-board');
+        const countdownOverlay = document.getElementById('countdown-overlay');
+        const countdownShape = document.getElementById('countdown-shape');
         const body = document.body;
+        const bgmToggleBtn = document.getElementById('bgm-toggle');
+        const bgmOnIcon = document.getElementById('bgm-on-icon');
+        const bgmOffIcon = document.getElementById('bgm-off-icon');
+        const inProgressIndicator = document.getElementById('in-progress-indicator');
+        const dashboardBtn = document.getElementById('dashboard-btn');
+        const dashboardModal = document.getElementById('dashboard-modal');
+        const closeDashboardBtn = document.getElementById('close-dashboard-btn');
+        const logList = document.getElementById('log-list');
+        const logChartContainer = document.getElementById('log-chart-container');
+        const clearLogBtn = document.getElementById('clear-log-btn');
 
-        // 게임 상태 변수
-        let gameMode = 'normal';
         let gamePattern = [];
         let playerPattern = [];
         let level = 0;
-        let highscore = { normal: 0, hard: 0 };
+        let highscore = 0;
         let isPlayerTurn = false;
         let combo = 0;
+        let isBgmPlaying = false;
+        let currentBgm = 'waiting';
+        let isMirrorMode = false;
 
-        // 오디오 신디사이저
-        let synth, successSynth, errorSynth;
+        let synth, successSynth, errorSynth, tierUpSynth, startBeepSynth, shuffleSynth, invertSynth, mirrorSynth;
+        let bgmParts = {};
         
         const sleep = ms => new Promise(res => setTimeout(res, ms));
 
         document.addEventListener('DOMContentLoaded', () => {
             loadHighScore();
             setupSynths();
+            const savedBgmState = localStorage.getItem('bgmState');
+            if (savedBgmState === 'on') {
+                isBgmPlaying = true;
+                updateBgmIcon(true);
+                playBgm(currentBgm);
+            }
+            gameButtons.forEach(btn => {
+                const numberEl = document.createElement('span');
+                numberEl.className = 'answer-number';
+                btn.appendChild(numberEl);
+            });
         });
 
         function setupSynths() {
+            // SFX Synths
             synth = new Tone.Synth({ oscillator: { type: 'sine' }, envelope: { attack: 0.005, decay: 0.1, sustain: 0.3, release: 1 } }).toDestination();
             successSynth = new Tone.Synth({ oscillator: { type: 'triangle' }, envelope: { attack: 0.01, decay: 0.2, sustain: 0.2, release: 0.2 } }).toDestination();
             errorSynth = new Tone.PolySynth(Tone.Synth, { oscillator: { type: 'square' }, envelope: { attack: 0.01, decay: 0.4, sustain: 0, release: 0.4 } }).toDestination();
+            const reverb = new Tone.Reverb(1.5).toDestination();
+            tierUpSynth = new Tone.Synth({ oscillator: { type: 'sine' }, envelope: { attack: 0.01, decay: 0.3, sustain: 0.1, release: 0.7 } }).connect(reverb);
+            startBeepSynth = new Tone.Synth({ oscillator: { type: 'sine' }, envelope: { attack: 0.01, decay: 0.2, release: 0.2 } }).toDestination();
+            startBeepSynth.volume.value = -6;
+            shuffleSynth = new Tone.NoiseSynth({ noise: { type: 'brown' }, envelope: { attack: 0.1, decay: 1.4, sustain: 0 } }).toDestination();
+            shuffleSynth.volume.value = -15;
+            invertSynth = new Tone.Synth({ oscillator: { type: 'sawtooth' }, envelope: { attack: 0.01, decay: 0.8, sustain: 0.1, release: 1 } }).toDestination();
+            invertSynth.volume.value = -18;
+            mirrorSynth = new Tone.Synth({ oscillator: { type: 'triangle8' }, envelope: { attack: 0.01, decay: 0.5, sustain: 0.1, release: 1 } }).connect(reverb);
+            mirrorSynth.volume.value = -15;
+
+            // BGM Synths & Loops
+            const bgmVolume = -20;
+            const waitingSynth = new Tone.PluckSynth({ attackNoise: 0.5, dampening: 4000, resonance: 0.7 }).toDestination();
+            waitingSynth.volume.value = bgmVolume + 8;
+            bgmParts.waiting = new Tone.Sequence((time, note) => {
+                waitingSynth.triggerAttack(note, time);
+            }, ["C4", "E4", "G4", "C5", "E5", "G4"], "8n");
+
+            const normalBass = new Tone.MonoSynth({ oscillator: { type: "fmsine" }, envelope: { attack: 0.01, decay: 0.3, sustain: 0.1, release: 0.5 } }).toDestination();
+            normalBass.volume.value = bgmVolume;
+            bgmParts.normal = new Tone.Sequence((time, note) => {
+                waitingSynth.triggerAttack(note.melody, time);
+                if (note.bass) {
+                    normalBass.triggerAttackRelease(note.bass, "8n", time);
+                }
+            }, [
+                { melody: "C4", bass: "C2" }, { melody: "E4", bass: null }, { melody: "G4", bass: "C2" },
+                { melody: "G4", bass: "G1" }, { melody: "E4", bass: null }, { melody: "C4", bass: "G1" }
+            ], "8n");
+
+            const hardKick = new Tone.MembraneSynth({ octaves: 4, pitchDecay: 0.1 }).toDestination();
+            hardKick.volume.value = bgmVolume + 2;
+            const hardBass = new Tone.MonoSynth({ oscillator: { type: "sawtooth" }, envelope: { attack: 0.01, decay: 0.3, sustain: 0.1, release: 0.5 } }).toDestination();
+            hardBass.volume.value = bgmVolume - 4;
+            bgmParts.hard = new Tone.Part((time, value) => {
+                if (value.kick) hardKick.triggerAttackRelease("C1", "8n", time);
+                if (value.bass) hardBass.triggerAttackRelease(value.bass, "8n", time);
+            }, [
+                { time: "0:0", kick: true, bass: "C2" }, { time: "0:2", bass: "C2" }, { time: "0:3", kick: true },
+                { time: "0:5", bass: "G1" }, { time: "0:6", kick: true }, { time: "0:8", bass: "G1" },
+                { time: "0:9", kick: true }, { time: "0:11", bass: "F1" }
+            ]);
+            bgmParts.hard.loop = true;
+            bgmParts.hard.loopEnd = "1m";
+
+            const vHardKick = new Tone.MembraneSynth({ octaves: 6, pitchDecay: 0.05 }).toDestination();
+            vHardKick.volume.value = bgmVolume;
+            const vHardHihat = new Tone.MetalSynth({ frequency: 300, envelope: { attack: 0.001, decay: 0.05, release: 0.01 }, harmonicity: 4.1, modulationIndex: 22, resonance: 3000, octaves: 1.5 }).toDestination();
+            vHardHihat.volume.value = bgmVolume - 10;
+            bgmParts.veryHard = new Tone.Sequence((time, note) => {
+                vHardKick.triggerAttackRelease("C1", "8n", time);
+                if (note === 'CH') vHardHihat.triggerAttackRelease("C6", "16n", time);
+            }, ['C1', 'CH', 'C1', 'CH'], '4n');
+
+            const gameOverSynth = new Tone.AMSynth({ harmonicity: 1.5, envelope: { attack: 0.01, decay: 2, sustain: 0.1, release: 2 } }).toDestination();
+            gameOverSynth.volume.value = bgmVolume - 5;
+            bgmParts.gameover = new Tone.Sequence((time, note) => {
+                gameOverSynth.triggerAttackRelease(note, "1n", time);
+            }, [["C3", "E3"], ["G3", "B3"], ["F3", "A3"]], "1m");
+        }
+
+        function playBgm(state) {
+            if (!isBgmPlaying) return;
+            Object.values(bgmParts).forEach(part => part.stop(0));
+            
+            currentBgm = state;
+            
+            if (state === 'waiting') {
+                Tone.Transport.timeSignature = [6, 8];
+                Tone.Transport.bpm.value = 90;
+                bgmParts.waiting.start(0);
+            } else if (state === 'normal') {
+                Tone.Transport.timeSignature = [6, 8];
+                Tone.Transport.bpm.value = 100;
+                bgmParts.normal.start(0);
+            } else if (state === 'hard') {
+                Tone.Transport.timeSignature = [12, 8];
+                Tone.Transport.bpm.value = 120;
+                bgmParts.hard.start(0);
+            } else if (state === 'veryHard') {
+                Tone.Transport.timeSignature = [4, 4];
+                Tone.Transport.bpm.value = 140;
+                bgmParts.veryHard.start(0);
+            } else if (state === 'gameover') {
+                Tone.Transport.timeSignature = [6, 8];
+                Tone.Transport.bpm.value = 70;
+                bgmParts.gameover.start(0);
+            }
+            
+            if (Tone.Transport.state !== 'started') {
+                 Tone.Transport.start();
+            }
+        }
+        
+        function stopBgm() {
+            if (Tone.Transport.state === 'started') {
+                Tone.Transport.stop();
+            }
+            Object.values(bgmParts).forEach(part => part.stop(0));
         }
 
         function loadHighScore() {
-            highscore.normal = localStorage.getItem('patternGameHighScore_normal') || 0;
-            highscore.hard = localStorage.getItem('patternGameHighScore_hard') || 0;
+            highscore = parseInt(localStorage.getItem('patternGameHighScore')) || 0;
+            updateHighScoreDisplay();
         }
 
         function updateHighScoreDisplay() {
-            highscoreDisplay.textContent = `최고 기록: ${highscore[gameMode]}`;
+            highscoreDisplay.textContent = `최고 기록: ${highscore}`;
         }
 
         function saveHighScore() {
             const finalLevel = level > 0 ? level - 1 : 0;
-            if (finalLevel > highscore[gameMode]) {
-                highscore[gameMode] = finalLevel;
-                localStorage.setItem(`patternGameHighScore_${gameMode}`, finalLevel);
-                messageDisplay.textContent = '최고 기록 경신!';
+            if (finalLevel > highscore) {
+                highscore = finalLevel;
+                localStorage.setItem('patternGameHighScore', finalLevel);
                 showConfetti(true);
+                highscoreDisplay.classList.add('level-up');
+                setTimeout(() => highscoreDisplay.classList.remove('level-up'), 500);
             }
-        }
-
-        normalModeBtn.addEventListener('click', () => selectMode('normal'));
-        hardModeBtn.addEventListener('click', () => selectMode('hard'));
-        
-        function selectMode(mode) {
-            gameMode = mode;
-            modeSelection.classList.add('hidden');
-            gameWrapper.classList.remove('hidden');
-            updateHighScoreDisplay();
+            // --- 여기가 추가된 부분: 도전 로그 기록 ---
+            saveChallengeLog(finalLevel);
+            // --- 추가 끝 ---
         }
 
         startBtn.addEventListener('click', async () => {
             await Tone.start();
             startGame();
         });
+
+        bgmToggleBtn.addEventListener('click', async () => {
+            await Tone.start();
+            isBgmPlaying = !isBgmPlaying;
+            localStorage.setItem('bgmState', isBgmPlaying ? 'on' : 'off');
+            updateBgmIcon(isBgmPlaying);
+
+            if (isBgmPlaying) {
+                playBgm(currentBgm || 'waiting');
+            } else {
+                stopBgm();
+            }
+        });
+
+        showAnswerBtn.addEventListener('click', async () => {
+            showAnswerBtn.classList.add('disabled');
+            startBtn.classList.add('disabled');
+            await showAnswerPattern();
+            showAnswerBtn.textContent = '다시 보기';
+            showAnswerBtn.classList.remove('disabled');
+            startBtn.classList.remove('disabled');
+        });
+
+        function updateBgmIcon(isPlaying) {
+            bgmOnIcon.classList.toggle('hidden', !isPlaying);
+            bgmOffIcon.classList.toggle('hidden', isPlaying);
+        }
 
         gameButtons.forEach(button => {
             button.addEventListener('click', (event) => {
@@ -247,11 +398,27 @@
             });
         });
         
-        function startGame() {
+        async function startGame() {
+            mainContainer.classList.add('game-started');
+            gameBoard.classList.remove('inverted');
+            isMirrorMode = false;
             gamePattern = [];
             level = 0;
-            startBtn.classList.add('disabled');
-            startBtn.textContent = '게임 진행 중...';
+            startBtn.classList.add('hidden');
+            showAnswerBtn.classList.add('hidden');
+            inProgressIndicator.classList.remove('hidden');
+            messageDisplay.textContent = '';
+            
+            await sleep(500);
+
+            countdownOverlay.classList.remove('hidden');
+            countdownShape.classList.remove('shrinking-circle');
+            void countdownShape.offsetWidth;
+            countdownShape.classList.add('shrinking-circle');
+            
+            await sleep(1500);
+            
+            countdownOverlay.classList.add('hidden');
             nextLevel();
         }
 
@@ -259,39 +426,31 @@
             playerPattern = [];
             combo = 0;
             level++;
-            levelDisplay.textContent = `레벨: ${level}`;
             isPlayerTurn = false;
+
+            if (level >= 1 && level <= 4) playBgm('normal');
+            else if (level >= 5 && level <= 8) playBgm('hard');
+            else if (level >= 9) playBgm('veryHard');
             
             const patternsToAdd = Math.floor((level - 1) / 5) + 1;
-
-            if (gameMode === 'hard') {
-                const newPatternLength = gamePattern.length + patternsToAdd;
-                gamePattern = [];
-                for (let i = 0; i < newPatternLength; i++) {
-                    let choices = [0, 1, 2, 3];
-                    if (gamePattern.length > 0) {
-                        const lastButton = gamePattern[gamePattern.length - 1];
-                        choices = choices.filter(choice => choice !== lastButton);
-                    }
-                    const nextButton = choices[Math.floor(Math.random() * choices.length)];
-                    gamePattern.push(nextButton);
+            const newPatternLength = gamePattern.length + patternsToAdd;
+            
+            gamePattern = [];
+            for (let i = 0; i < newPatternLength; i++) {
+                let choices = [0, 1, 2, 3];
+                if (gamePattern.length > 0) {
+                    const lastButton = gamePattern[gamePattern.length - 1];
+                    choices = choices.filter(choice => choice !== lastButton);
                 }
-            } else {
-                for (let i = 0; i < patternsToAdd; i++) {
-                    let choices = [0, 1, 2, 3];
-                    if (gamePattern.length > 0) {
-                        const lastButton = gamePattern[gamePattern.length - 1];
-                        choices = choices.filter(choice => choice !== lastButton);
-                    }
-                    const nextButton = choices[Math.floor(Math.random() * choices.length)];
-                    gamePattern.push(nextButton);
-                }
+                const nextButton = choices[Math.floor(Math.random() * choices.length)];
+                gamePattern.push(nextButton);
             }
+            
             playPattern();
         }
 
         function playPattern() {
-            messageDisplay.textContent = '패턴을 기억하세요...';
+            gameBoard.classList.add('computer-turn');
             let delay = 0;
             const baseSpeed = 700;
             const speedDecrementPerTier = 80;
@@ -306,7 +465,11 @@
 
             setTimeout(() => {
                 isPlayerTurn = true;
-                messageDisplay.textContent = '당신 차례입니다!';
+                gameBoard.classList.remove('computer-turn');
+                gameButtons.forEach(btn => {
+                    btn.classList.add('pulse');
+                    setTimeout(() => btn.classList.remove('pulse'), 400);
+                });
             }, delay + 100);
         }
 
@@ -317,15 +480,17 @@
         }
 
         function checkAnswer(currentIndex) {
-            if (playerPattern[currentIndex] !== gamePattern[currentIndex]) {
+            let correctButtonId = gamePattern[currentIndex];
+            if (isMirrorMode) {
+                const mirrorMap = { 0: 1, 1: 0, 2: 3, 3: 2 };
+                correctButtonId = mirrorMap[correctButtonId];
+            }
+
+            if (playerPattern[currentIndex] !== correctButtonId) {
                 gameOver();
                 return;
             }
-
             combo++;
-            const comboMessages = ["좋아요!", "계속하세요!", "완벽해요!", "엄청나요!", "신들렸군요!"];
-            messageDisplay.textContent = comboMessages[Math.min(combo - 1, comboMessages.length - 1)];
-
             if (playerPattern.length === gamePattern.length) {
                 isPlayerTurn = false;
                 levelClearSequence();
@@ -334,69 +499,262 @@
         
         async function levelClearSequence() {
             await sleep(350); 
-            messageDisplay.textContent = '성공!';
-            successSynth.triggerAttackRelease('C5', '8n');
+            
+            if (level > 0 && level % 4 === 0) {
+                const effects = [shuffleCubeEffect, invertColorEffect, activateMirrorMode];
+                let effectToRun;
 
-            if (gameMode === 'hard') {
+                if (level === 4) effectToRun = shuffleCubeEffect;
+                else if (level === 8) effectToRun = invertColorEffect;
+                else if (level === 12) effectToRun = activateMirrorMode;
+                else {
+                    effectToRun = effects[Math.floor(Math.random() * effects.length)];
+                }
+                
+                await effectToRun();
+                await showGetReadySignal();
+            } else {
+                successSynth.triggerAttackRelease('C5', '8n');
                 body.classList.add('success-flash');
                 gameBoard.classList.add('shake-vertical');
                 setTimeout(() => {
                     body.classList.remove('success-flash');
                     gameBoard.classList.remove('shake-vertical');
                 }, 400);
-            } else {
-                gameBoard.classList.add('shake-horizontal');
-                setTimeout(() => gameBoard.classList.remove('shake-horizontal'), 200);
+                await sleep(800);
             }
-
-            if (level > 0 && level % 5 === 0) showConfetti(false);
             
-            await sleep(600);
-            levelDisplay.classList.add('level-up');
-            await sleep(500);
-            levelDisplay.classList.remove('level-up');
-
             nextLevel();
         }
+        
+        async function shuffleCubeEffect() {
+            shuffleSynth.triggerAttackRelease("1n");
+            gameBoard.classList.add('cube-rotate');
+            await sleep(750);
 
-        function gameOver() {
-            saveHighScore();
-            if (messageDisplay.textContent !== '최고 기록 경신!') {
-                 const finalLevel = level > 0 ? level - 1 : 0;
-                 messageDisplay.textContent = `게임 오버! 최종 레벨: ${finalLevel}`;
+            const colorData = [];
+            gameButtons.forEach(btn => {
+                const bgClass = Array.from(btn.classList).find(c => c.startsWith('bg-'));
+                colorData.push({
+                    bg: bgClass,
+                    glow: btn.style.getPropertyValue('--glow-color')
+                });
+            });
+
+            for (let i = colorData.length - 1; i > 0; i--) {
+                const j = Math.floor(Math.random() * (i + 1));
+                [colorData[i], colorData[j]] = [colorData[j], colorData[i]];
             }
+
+            gameButtons.forEach((btn, i) => {
+                const oldBgClass = Array.from(btn.classList).find(c => c.startsWith('bg-'));
+                btn.classList.remove(oldBgClass);
+                btn.classList.add(colorData[i].bg);
+                btn.style.setProperty('--glow-color', colorData[i].glow);
+            });
+
+            await sleep(750);
+            gameBoard.classList.remove('cube-rotate');
+        }
+
+        async function invertColorEffect() {
+            invertSynth.triggerAttackRelease("C3", "1s");
+            gameBoard.classList.add('inverted');
+            await sleep(1500);
+        }
+
+        async function activateMirrorMode() {
+            mirrorSynth.triggerAttackRelease("C5", "1s");
+            isMirrorMode = true;
+            messageDisplay.textContent = "좌우 반전!";
+            await sleep(1500);
+            messageDisplay.textContent = "";
+        }
+        
+        async function showGetReadySignal() {
+            await sleep(500); 
+            gameBoard.classList.add('get-ready-pulse');
+            const now = Tone.now();
+            startBeepSynth.triggerAttackRelease("C5", "16n", now);
+            startBeepSynth.triggerAttackRelease("C5", "16n", now + 0.4);
+            startBeepSynth.triggerAttackRelease("C5", "16n", now + 0.8);
+            startBeepSynth.triggerAttackRelease("G5", "8n", now + 1.2);
+            await sleep(1500);
+            gameBoard.classList.remove('get-ready-pulse');
+            await sleep(500);
+        }
+
+        async function gameOver() {
+            mainContainer.classList.remove('game-started');
+            saveHighScore();
+            updateHighScoreDisplay();
+            
+            playBgm('gameover');
+
+            const finalLevel = level > 0 ? level - 1 : 0;
+            messageDisplay.textContent = `게임 오버! 최종 레벨: ${finalLevel}`;
            
             errorSynth.triggerAttackRelease(['C3', 'C#3'], '4n');
             body.classList.add('game-over-flash');
             setTimeout(() => body.classList.remove('game-over-flash'), 400);
-
-            startBtn.classList.remove('disabled');
+            
+            inProgressIndicator.classList.add('hidden');
+            startBtn.classList.remove('hidden', 'disabled');
             startBtn.textContent = '다시 시작';
             isPlayerTurn = false;
+
+            showAnswerBtn.textContent = '정답 보기';
+            showAnswerBtn.classList.remove('hidden', 'disabled');
+            startBtn.classList.replace('w-full', 'w-2/3');
+        }
+
+        async function showAnswerPattern() {
+            messageDisplay.textContent = '정답 확인...';
+            await sleep(500);
+            
+            for (let i = 0; i < gamePattern.length; i++) {
+                const buttonId = gamePattern[i];
+                const button = document.getElementById(`button-${buttonId}`);
+                const numberEl = button.querySelector('.answer-number');
+
+                numberEl.textContent = i + 1;
+                numberEl.classList.add('visible');
+                activateButton(buttonId, false);
+                await sleep(600);
+            }
+            
+            await sleep(1000);
+            
+            gameButtons.forEach(btn => {
+                btn.querySelector('.answer-number').classList.remove('visible');
+            });
+            messageDisplay.textContent = '';
         }
 
         const notes = ['C4', 'E4', 'G4', 'A4'];
         function activateButton(id, isPlayer) {
             const button = document.getElementById(`button-${id}`);
             button.classList.add('active');
+            
+            const glowSize = 15 + combo * 4;
+            const glowSpread = 2 + combo * 1;
+            button.style.boxShadow = `0 0 ${glowSize}px ${glowSpread}px var(--glow-color)`;
+
             if (isPlayer) {
                 const note = Tone.Frequency(notes[id]).transpose(combo * 1);
                 synth.triggerAttackRelease(note, '8n');
             } else {
                 synth.triggerAttackRelease(notes[id], '8n');
             }
-            setTimeout(() => button.classList.remove('active'), 300);
+
+            setTimeout(() => {
+                button.classList.remove('active');
+                button.style.boxShadow = '';
+            }, 300);
         }
 
         function showConfetti(isHighScore) {
             confetti({
-                particleCount: isHighScore ? 250 : 150,
-                spread: isHighScore ? 120 : 90,
+                particleCount: isHighScore ? 300 : 150,
+                spread: isHighScore ? 180 : 90,
                 origin: { y: 0.6 },
                 gravity: 0.8,
-                ticks: 300
+                ticks: 300,
+                scalar: 1.2
             });
         }
+
+        // --- 여기가 추가된 부분: 대시보드 로직 ---
+        dashboardBtn.addEventListener('click', () => {
+            renderDashboard();
+            dashboardModal.classList.remove('hidden');
+        });
+
+        closeDashboardBtn.addEventListener('click', () => {
+            dashboardModal.classList.add('hidden');
+        });
+
+        clearLogBtn.addEventListener('click', () => {
+            if (confirm('정말로 모든 기록을 삭제하시겠습니까?')) {
+                localStorage.removeItem('challengeLog');
+                renderDashboard();
+            }
+        });
+
+        function saveChallengeLog(score) {
+            let logs = JSON.parse(localStorage.getItem('challengeLog')) || [];
+            const now = new Date();
+            const newLog = {
+                id: now.getTime(),
+                date: now.toLocaleString('ko-KR'),
+                score: score
+            };
+            logs.unshift(newLog); // 최신 기록을 맨 앞에 추가
+            localStorage.setItem('challengeLog', JSON.stringify(logs));
+        }
+
+        function renderDashboard() {
+            const logs = JSON.parse(localStorage.getItem('challengeLog')) || [];
+            logList.innerHTML = '';
+            logChartContainer.innerHTML = '';
+
+            if (logs.length === 0) {
+                logList.innerHTML = '<p class="text-center text-secondary">아직 도전 기록이 없습니다.</p>';
+                return;
+            }
+
+            // 로그 목록 렌더링
+            logs.forEach(log => {
+                const logItem = document.createElement('div');
+                logItem.className = 'flex justify-between items-center p-2 border-b border-slate-200 dark:border-slate-700';
+                logItem.innerHTML = `
+                    <span class="text-sm text-secondary">${new Date(log.id).toLocaleDateString('ko-KR')}</span>
+                    <span class="font-bold">레벨 ${log.score}</span>
+                `;
+                logList.appendChild(logItem);
+            });
+
+            // 차트 렌더링 (SVG)
+            renderChart(logs.slice(0, 10).reverse()); // 최근 10개 기록만 역순으로 표시
+        }
+
+        function renderChart(logs) {
+            const svgNS = "http://www.w3.org/2000/svg";
+            const svg = document.createElementNS(svgNS, "svg");
+            svg.setAttribute("width", "100%");
+            svg.setAttribute("height", "100%");
+            svg.setAttribute("viewBox", "0 0 100 50");
+
+            if (logs.length < 2) return;
+
+            const maxScore = Math.max(...logs.map(l => l.score), 1);
+            const points = logs.map((log, i) => {
+                const x = (i / (logs.length - 1)) * 90 + 5;
+                const y = 45 - (log.score / maxScore) * 40;
+                return `${x},${y}`;
+            }).join(' ');
+
+            const polyline = document.createElementNS(svgNS, "polyline");
+            polyline.setAttribute("points", points);
+            polyline.setAttribute("fill", "none");
+            polyline.setAttribute("stroke", "var(--text-highlight)");
+            polyline.setAttribute("stroke-width", "1");
+            svg.appendChild(polyline);
+
+            logs.forEach((log, i) => {
+                const x = (i / (logs.length - 1)) * 90 + 5;
+                const y = 45 - (log.score / maxScore) * 40;
+                const circle = document.createElementNS(svgNS, "circle");
+                circle.setAttribute("cx", x);
+                circle.setAttribute("cy", y);
+                circle.setAttribute("r", "1.5");
+                circle.setAttribute("fill", "var(--text-highlight)");
+                svg.appendChild(circle);
+            });
+
+            logChartContainer.appendChild(svg);
+        }
+        // --- 추가 끝 ---
     </script>
 </body>
 </html>
