@@ -1,0 +1,1007 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <title>도전! 패턴 기억 게임 v6</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/tone/14.7.77/Tone.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg-primary: #f1f5f9; --bg-secondary: #fff; --text-primary: #1e293b; --text-secondary: #475569;
+            --text-highlight: #0f766e; --success-flash-bg: #dcfce7; --fail-flash-bg: #fecaca;
+            --overlay-bg: rgba(0,0,0,0.5); --overlay-shape: #fff; --pulsing-indicator-start: #0f766e;
+            --pulsing-indicator-end: #134e4a; --toast-bg: #1e293b; --toast-text: #e2e8f0;
+        }
+        .dark {
+            --bg-primary: #0f172a; --bg-secondary: #1e293b; --text-primary: #e2e8f0; --text-secondary: #94a3b8;
+            --text-highlight: #2dd4bf; --success-flash-bg: #15803d; --fail-flash-bg: #b91c1c;
+            --overlay-bg: rgba(0,0,0,0.7); --overlay-shape: #e2e8f0; --pulsing-indicator-start: #134e4a;
+            --pulsing-indicator-end: #0f766e; --toast-bg: #e2e8f0; --toast-text: #1e293b;
+        }
+        body {
+            font-family: 'Noto Sans KR', sans-serif; -webkit-tap-highlight-color: transparent;
+            overflow: hidden; background-color: var(--bg-primary); color: var(--text-primary);
+            transition: background-color .3s ease, color .3s ease;
+        }
+        #game-container { position: relative; background-color: var(--bg-secondary); transition: background-color .3s ease; perspective: 1000px; }
+        .text-secondary { color: var(--text-secondary); }
+        .text-highlight { color: var(--text-highlight); }
+        .game-board { position: relative; display: grid; grid-template-columns: repeat(2, 1fr); gap: 1.25rem; width: 100%; max-width: 400px; aspect-ratio: 1 / 1; transition: transform 1.5s, opacity .3s, filter .8s ease-in-out; transform-style: preserve-3d; }
+        .game-button {
+            position: relative; border-radius: .75rem; cursor: pointer;
+            transition: transform .1s ease, box-shadow .2s ease, background-color .5s ease, filter .2s ease-in-out, opacity .2s ease-in-out;
+            box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1), 0 2px 4px -2px rgba(0,0,0,0.1);
+            animation: idle-float 4s ease-in-out infinite;
+        }
+        .game-button:active { transform: scale(.96); box-shadow: inset 0 2px 4px rgba(0,0,0,0.2), 0 1px 2px rgba(0,0,0,0.05); }
+        .game-button.active { transform: scale(1.03); filter: brightness(1.25); animation: none; }
+        .disabled { pointer-events: none; }
+        @keyframes idle-float { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-3px); } }
+        @keyframes shake-vertical { 0%, 100% { transform: translateY(0); } 25% { transform: translateY(-3px); } 75% { transform: translateY(3px); } }
+        .shake-vertical { animation: shake-vertical .2s ease-in-out; }
+        @keyframes shake-horizontal { 0%, 100% { transform: translateX(0); } 25% { transform: translateX(-5px); } 75% { transform: translateX(5px); } }
+        .shake-horizontal { animation: shake-horizontal .3s ease-in-out; }
+        @keyframes success-flash { 0%, 100% { background-color: var(--bg-primary); } 50% { background-color: var(--success-flash-bg); } }
+        .success-flash { animation: success-flash .4s ease-in-out; }
+        @keyframes gameOverFlash { 0%, 100% { background-color: var(--bg-primary); } 50% { background-color: var(--fail-flash-bg); } }
+        .game-over-flash { animation: gameOverFlash .4s ease-in-out; }
+        @keyframes levelUp { 0%, 100% { transform: scale(1); } 50% { transform: scale(1.3); color: #fde047; } }
+        .level-up { animation: levelUp .5s ease-in-out; }
+        @keyframes shrink-out { from { transform: scale(1); opacity: .7; } to { transform: scale(0); opacity: 0; } }
+        .shrinking-circle { animation: shrink-out 1.5s cubic-bezier(.7,0,.3,1) forwards; }
+        @keyframes pulse { 0% { filter: brightness(1.2); } 100% { filter: brightness(1); } }
+        .pulse { animation: pulse .4s ease-in-out; }
+        .cube-rotate { transform: rotateY(180deg); }
+        .inverted { filter: invert(1); }
+        @keyframes get-ready-pulse { 0%, 100% { background-color: var(--bg-secondary); } 50% { background-color: var(--bg-primary); } }
+        .get-ready-pulse { animation: get-ready-pulse 1.5s ease-in-out; }
+        @keyframes pulsing-indicator { 0% { background-color: var(--pulsing-indicator-start); } 50% { background-color: var(--pulsing-indicator-end); } 100% { background-color: var(--pulsing-indicator-start); } }
+        #in-progress-indicator { animation: pulsing-indicator 2s infinite ease-in-out; }
+        #countdown-overlay { background-color: var(--overlay-bg); pointer-events: none; }
+        #countdown-shape { width: 80%; padding-bottom: 80%; border-radius: 50%; border: 6px solid var(--overlay-shape); }
+        .desaturated { filter: saturate(40%); opacity: .6; }
+        .answer-number { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); font-size: 3rem; font-weight: 700; color: #fff; text-shadow: 0 0 5px #000; pointer-events: none; opacity: 0; transition: opacity .2s ease-in-out; }
+        .answer-number.visible { opacity: 1; }
+        #title-header { transition: max-height .5s ease-in-out, opacity .3s ease-in-out, margin-bottom .5s ease-in-out; max-height: 200px; opacity: 1; overflow: hidden; }
+        #game-wrapper { transition: transform .5s ease-in-out; transform-origin: top; }
+        .game-started #title-header { max-height: 0; opacity: 0; margin-bottom: 0 !important; }
+        .game-started #game-wrapper { transform: scale(1.05); }
+        @keyframes announcer-float { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-10px); } }
+        #announcer { animation: announcer-float 3s ease-in-out infinite; }
+        @keyframes dot-appear { from { transform: scale(.5) translateY(10px); opacity: 0; } to { transform: scale(1) translateY(0); opacity: 1; } }
+        @keyframes wave-float { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-6px); } }
+        .pattern-char { width: 1rem; height: 1rem; opacity: 0; animation: wave-float 2s ease-in-out infinite, dot-appear .5s cubic-bezier(.25,.46,.45,.94) forwards; transform-origin: bottom center; display: inline-block; vertical-align: middle; }
+        .pattern-char-body { fill: var(--text-highlight); }
+        .pattern-char-eye { fill: #0f172a; }
+        @keyframes text-focus-in { 0% { filter: blur(12px); opacity: 0; } 100% { filter: blur(0); opacity: 1; } }
+        .text-focus-in { animation: text-focus-in 1s cubic-bezier(.55,.085,.68,.53) both; }
+        @keyframes text-fade-in { from { opacity: 0; } to { opacity: 1; } }
+        .text-fade-in { animation: text-fade-in 1.2s cubic-bezier(.39,.575,.565,1) .5s both; }
+        
+        #toast-container { position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%); z-index: 100; display: flex; flex-direction: column; align-items: center; gap: 10px; }
+        .toast {
+            display: flex; align-items: center; gap: 10px; padding: 12px 20px;
+            background-color: var(--toast-bg); color: var(--toast-text);
+            border-radius: 9999px; box-shadow: 0 10px 15px -3px rgba(0,0,0,0.1), 0 4px 6px -4px rgba(0,0,0,0.1);
+            animation: toast-in .5s cubic-bezier(.25,.46,.45,.94) both;
+        }
+        @keyframes toast-in { from { transform: translateY(20px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
+        .achievement-progress-bar { height: 6px; background-color: #e5e7eb; border-radius: 3px; overflow: hidden; }
+        .achievement-progress { height: 100%; background-color: var(--text-highlight); transition: width .5s ease; }
+        .achievement-locked { filter: grayscale(1); opacity: 0.6; }
+
+        /* NEW: Combo Styles */
+        #combo-display { transition: opacity 0.3s ease, transform 0.3s ease; }
+        .combo-bounce { animation: combo-bounce 0.3s cubic-bezier(.25,.46,.45,.94); }
+        @keyframes combo-bounce { 0%, 100% { transform: scale(1); } 50% { transform: scale(1.2); } }
+        .combo-break { animation: combo-break 0.5s ease-out forwards; }
+        @keyframes combo-break {
+            0% { transform: scale(1.2); opacity: 1; color: #ef4444; }
+            25% { transform: scale(1.1) rotate(-5deg); }
+            50% { transform: scale(1.1) rotate(5deg); }
+            100% { transform: scale(0.5); opacity: 0; color: #ef4444; }
+        }
+        @keyframes combo-flash { 0%, 100% { box-shadow: none; } 50% { box-shadow: inset 0 0 50px rgba(253, 224, 71, 0.5); } }
+        .combo-flash-effect { animation: combo-flash 0.4s ease-in-out; }
+    </style>
+</head>
+<body class="flex flex-col items-center justify-center min-h-screen p-4">
+
+    <div id="main-container" class="w-full max-w-lg text-center relative">
+        <div class="absolute top-0 right-0 mt-2 mr-2 z-10 flex items-center space-x-1">
+            <button id="theme-change-btn" class="p-2 rounded-full focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-slate-500" aria-label="Change theme">
+                <svg class="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 21a4 4 0 01-4-4V5a2 2 0 012-2h4a2 2 0 012 2v12a4 4 0 01-4 4zm0 0h12a2 2 0 002-2v-4a2 2 0 00-2-2h-2.343M11 7.343l1.657-1.657a2 2 0 012.828 0l2.829 2.829a2 2 0 010 2.828l-8.486 8.485M7 17h.01"></path></svg>
+            </button>
+            <button id="achievement-btn" class="p-2 rounded-full focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-slate-500" aria-label="Show achievements">
+                <svg class="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 3v4M3 5h4M6 17v4m-2-2h4m5-16l2.286 6.857L21 12l-5.714 2.143L13 21l-2.286-6.857L5 12l5.714-2.143L13 3z"></path></svg>
+            </button>
+            <button id="dashboard-btn" class="p-2 rounded-full focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-slate-500" aria-label="Show challenge log">
+                <svg class="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"></path></svg>
+            </button>
+            <button id="bgm-toggle" class="p-2 rounded-full focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-slate-500" aria-label="Toggle background music">
+                <svg id="bgm-on-icon" class="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.536 8.464a5 5 0 010 7.072m2.828-9.9a9 9 0 010 12.728M5.586 15H4a1 1 0 01-1-1v-4a1 1 0 011-1h1.586l4.707-4.707C10.923 3.663 12 4.109 12 5v14c0 .891-1.077 1.337-1.707.707L5.586 15z"></path></svg>
+                <svg id="bgm-off-icon" class="w-6 h-6 hidden" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5.586 15H4a1 1 0 01-1-1v-4a1 1 0 011-1h1.586l4.707-4.707C10.923 3.663 12 4.109 12 5v14c0 .891-1.077 1.337-1.707.707L5.586 15z" clip-rule="evenodd"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2"></path></svg>
+            </button>
+            <button id="theme-toggle" class="p-2 rounded-full focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-slate-500" aria-label="Toggle dark mode">
+                <svg id="theme-toggle-sun-icon" class="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z"></path></svg>
+                <svg id="theme-toggle-moon-icon" class="w-6 h-6 hidden" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z"></path></svg>
+            </button>
+        </div>
+
+        <div id="title-header">
+            <h1 class="text-4xl md:text-5xl font-bold mb-4 leading-tight pt-8">도전! 패턴 기억 게임</h1>
+            <p class="text-secondary text-base mb-6">최고 기록에 도전하고, 당신의 한계를 시험하세요!</p>
+        </div>
+        
+        <div id="game-wrapper">
+            <div id="game-container" class="p-6 md:p-8 rounded-2xl shadow-xl">
+                <div class="flex justify-center items-center mb-5 h-7 space-x-4">
+                    <div id="basecamp-display" class="text-lg font-bold text-secondary flex items-center gap-2 hidden">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+                            <path fill-rule="evenodd" d="M3 6a3 3 0 013-3h10a1 1 0 01.8 1.6L14.25 8l2.55 3.4A1 1 0 0116 13H6a1 1 0 01-1-1V6z" clip-rule="evenodd" />
+                        </svg>
+                        <span>캠프: 0</span>
+                    </div>
+                    <div class="text-lg font-bold text-highlight">
+                        <span id="highscore-display">최고 기록: 0</span>
+                    </div>
+                </div>
+
+                <div class="game-board mx-auto">
+                    <div id="button-0" class="game-button" data-color-id="0"></div>
+                    <div id="button-1" class="game-button" data-color-id="1"></div>
+                    <div id="button-2" class="game-button" data-color-id="2"></div>
+                    <div id="button-3" class="game-button" data-color-id="3"></div>
+                </div>
+                
+                <!-- NEW: Combo Display -->
+                <div id="combo-display" class="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 text-6xl font-bold text-white opacity-0 transition-opacity pointer-events-none" style="text-shadow: 0 0 10px rgba(0,0,0,0.5);">
+                    <span id="combo-count" class="block">0</span>
+                    <span class="text-2xl block -mt-2">COMBO</span>
+                </div>
+
+                <div id="message-display" class="mt-5 text-base font-medium text-secondary h-6"></div>
+                <div id="button-container" class="w-full mt-6 relative h-12">
+                    <div class="absolute inset-0 flex items-center gap-4">
+                        <button id="show-answer-btn" class="w-1/3 bg-slate-500 hover:bg-slate-600 text-white font-bold py-3 px-5 rounded-lg transition-all duration-200 shadow-md hover:shadow-lg hidden">정답 보기</button>
+                        <button id="start-btn" class="w-full bg-teal-600 hover:bg-teal-700 text-white font-bold py-3 px-5 rounded-lg transition-all duration-200 shadow-md hover:shadow-lg">게임 시작</button>
+                    </div>
+                    <div id="in-progress-indicator" class="absolute inset-0 bg-teal-800 rounded-lg hidden"></div>
+                </div>
+                
+                <div id="countdown-overlay" class="absolute inset-0 flex items-center justify-center rounded-2xl hidden">
+                    <div id="countdown-shape"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modals -->
+    <div id="dashboard-modal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center hidden z-20">
+        <div class="p-6 md:p-8 rounded-2xl shadow-xl w-full max-w-lg mx-4 bg-white dark:bg-slate-800 text-slate-800 dark:text-slate-200">
+            <div class="flex justify-between items-center mb-4">
+                <h2 class="text-2xl font-bold">도전 로그</h2>
+                <button id="close-dashboard-btn" class="p-2 rounded-full hover:bg-gray-200 dark:hover:bg-gray-700">
+                    <svg class="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
+                </button>
+            </div>
+            <div id="log-chart-container" class="w-full h-40 mb-4"></div>
+            <div id="log-list" class="overflow-y-auto pr-2" style="max-height: 40vh;"></div>
+            <button id="clear-log-btn" class="w-full mt-4 bg-rose-500 hover:bg-rose-600 text-white font-bold py-2 px-4 rounded-lg">기록 삭제</button>
+        </div>
+    </div>
+
+    <div id="rest-stage-modal" class="fixed inset-0 bg-black bg-opacity-70 flex items-center justify-center hidden z-20">
+        <div class="p-8 rounded-2xl shadow-xl w-full max-w-sm mx-4 bg-slate-800 text-slate-200 text-center">
+            <div id="announcer" class="w-24 h-24 mx-auto mb-4">
+                <svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
+                    <path d="M50 90C27.9 90 10 72.1 10 50S27.9 10 50 10s40 17.9 40 40-17.9 40-40 40z" fill="#2dd4bf"/>
+                    <circle cx="38" cy="45" r="5" fill="#0f172a"/><circle cx="62" cy="45" r="5" fill="#0f172a"/>
+                    <path d="M35 65q15 10 30 0" stroke="#0f172a" stroke-width="4" fill="none" stroke-linecap="round"/>
+                </svg>
+            </div>
+            <h2 class="text-2xl font-bold mb-2 text-focus-in">베이스캠프 도착!</h2>
+            <p class="text-slate-400 mb-4 text-fade-in">다음 베이스캠프까지의 여정입니다.</p>
+            <p id="rest-timer-display" class="text-xs text-slate-500 mb-4 text-fade-in" style="animation-delay: 0.7s;"></p>
+            <div id="rest-level-guide" class="space-y-3 my-6"></div>
+            <button id="rest-continue-btn" class="w-full bg-teal-500 hover:bg-teal-600 text-white font-bold py-3 px-5 rounded-lg transition-all duration-200">계속하기</button>
+        </div>
+    </div>
+
+    <div id="achievement-modal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center hidden z-20">
+        <div class="p-6 md:p-8 rounded-2xl shadow-xl w-full max-w-lg mx-4 bg-white dark:bg-slate-800 text-slate-800 dark:text-slate-200">
+            <div class="flex justify-between items-center mb-6">
+                <h2 class="text-2xl font-bold">업적</h2>
+                <button id="close-achievement-btn" class="p-2 rounded-full hover:bg-gray-200 dark:hover:bg-gray-700">
+                    <svg class="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
+                </button>
+            </div>
+            <div id="achievement-list" class="overflow-y-auto pr-2 space-y-4" style="max-height: 60vh;"></div>
+        </div>
+    </div>
+    
+    <div id="theme-modal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center hidden z-20">
+        <div class="p-6 md:p-8 rounded-2xl shadow-xl w-full max-w-lg mx-4 bg-white dark:bg-slate-800 text-slate-800 dark:text-slate-200">
+            <div class="flex justify-between items-center mb-6">
+                <h2 class="text-2xl font-bold">테마 선택</h2>
+                <button id="close-theme-btn" class="p-2 rounded-full hover:bg-gray-200 dark:hover:bg-gray-700">
+                    <svg class="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
+                </button>
+            </div>
+            <div id="theme-list" class="overflow-y-auto pr-2 grid grid-cols-1 sm:grid-cols-2 gap-4" style="max-height: 60vh;"></div>
+        </div>
+    </div>
+
+    <div id="toast-container"></div>
+
+    <!-- 분리된 업적 데이터 파일 (Simulated via script tag) -->
+    <script>
+    const THEME_DATA = {
+        'default': {
+            name: '기본',
+            colors: ['#fb7185', '#38bdf8', '#fbbf24', '#34d399'],
+            glows: ['rgba(251, 113, 133, 0.7)', 'rgba(56, 189, 248, 0.7)', 'rgba(251, 191, 36, 0.7)', 'rgba(52, 211, 153, 0.7)']
+        },
+        'sunset': {
+            name: '해질녘',
+            colors: ['#f97316', '#f43f5e', '#a855f7', '#ec4899'],
+            glows: ['rgba(249, 115, 22, 0.7)', 'rgba(244, 63, 94, 0.7)', 'rgba(168, 85, 247, 0.7)', 'rgba(236, 72, 153, 0.7)']
+        },
+        'forest': {
+            name: '숲속',
+            colors: ['#22c55e', '#16a34a', '#84cc16', '#4d7c0f'],
+            glows: ['rgba(34, 197, 94, 0.7)', 'rgba(22, 163, 74, 0.7)', 'rgba(132, 204, 22, 0.7)', 'rgba(77, 124, 15, 0.7)']
+        },
+    };
+
+    const achievements_data = {
+        // --- 1. 진행 및 레벨 (Progression & Levels) ---
+        'prog_level_10': { order: 101, name: '열 걸음', description: '최고 기록 10레벨 달성', category: '진행', condition: (stats) => stats.highScoreEver >= 10 },
+        'prog_level_20': { order: 102, name: '스무 고개', description: '최고 기록 20레벨 달성', category: '진행', condition: (stats) => stats.highScoreEver >= 20 },
+        'prog_level_50': { order: 103, name: '기억의 지배자', description: '최고 기록 50레벨 달성', category: '진행', condition: (stats) => stats.highScoreEver >= 50, reward: { type: 'theme', value: 'sunset' } },
+        'prog_level_100': { order: 104, name: '전설의 탄생', description: '최고 기록 100레벨 달성', category: '진행', condition: (stats) => stats.highScoreEver >= 100, reward: { type: 'theme', value: 'forest' } },
+        'prog_play_1': { order: 110, name: '새로운 시작', description: '첫 게임 플레이', category: '진행', condition: (stats) => stats.totalPlays >= 1 },
+        'prog_play_10': { order: 111, name: '열 번의 도전', description: '총 10회 플레이', category: '진행', condition: (stats) => stats.totalPlays >= 10, getProgress: (stats) => ({ current: stats.totalPlays, target: 10 }) },
+        'prog_play_100': { order: 112, name: '백 번의 고뇌', description: '총 100회 플레이', category: '진행', condition: (stats) => stats.totalPlays >= 100, getProgress: (stats) => ({ current: stats.totalPlays, target: 100 }) },
+        'prog_play_1000': { order: 113, name: '천 번의 기억', description: '총 1000회 플레이', category: '진행', condition: (stats) => stats.totalPlays >= 1000, getProgress: (stats) => ({ current: stats.totalPlays, target: 1000 }) },
+        'prog_consecutive_3': { order: 120, name: '작심삼일', description: '3일 연속 플레이', category: '진행', condition: (stats) => stats.consecutivePlayDays >= 3, getProgress: (stats) => ({ current: stats.consecutivePlayDays, target: 3 }) },
+        'prog_consecutive_7': { order: 121, name: '일주일의 용사', description: '7일 연속 플레이', category: '진행', condition: (stats) => stats.consecutivePlayDays >= 7, getProgress: (stats) => ({ current: stats.consecutivePlayDays, target: 7 }) },
+        'prog_consecutive_30': { order: 122, name: '한 달의 위업', description: '30일 연속 플레이', category: '진행', condition: (stats) => stats.consecutivePlayDays >= 30, getProgress: (stats) => ({ current: stats.consecutivePlayDays, target: 30 }) },
+        'prog_first_basecamp': { order: 130, name: '첫 번째 캠프', description: '첫 베이스캠프 도착', category: '진행', condition: (stats) => stats.totalBasecamps >= 1 },
+
+        // --- 2. 기술 및 퍼포먼스 (Skill & Performance) ---
+        'skill_combo_10': { order: 201, name: '콤보 시작', description: '10 콤보 달성', category: '기술', condition: (s, i, c) => c.event === 'correctPress' && c.combo >= 10 },
+        'skill_combo_20': { order: 202, name: '콤보 전문가', description: '20 콤보 달성', category: '기술', condition: (s, i, c) => c.event === 'correctPress' && c.combo >= 20 },
+        'skill_combo_50': { order: 203, name: '메가 콤보', description: '50 콤보 달성', category: '기술', condition: (s, i, c) => c.event === 'correctPress' && c.combo >= 50 },
+        'skill_combo_100': { order: 204, name: '테라 콤보', description: '100 콤보 달성', category: '기술', condition: (s, i, c) => c.event === 'correctPress' && c.combo >= 100 },
+        'skill_perfect_1': { order: 210, name: '완벽한 기억', description: '실수 없이 레벨 클리어', category: '기술', condition: (s, i, c) => c.event === 'levelClear' && c.isPerfect },
+        'skill_perfect_5_straight': { order: 211, name: '흐름을 탔어', description: '실수 없이 5개 레벨 연속 클리어', category: '기술', condition: (s, i, c) => c.event === 'levelClear' && c.isPerfect && i.consecutivePerfects >= 5 },
+        'skill_perfect_10_straight': { order: 212, name: '무아지경', description: '실수 없이 10개 레벨 연속 클리어', category: '기술', condition: (s, i, c) => c.event === 'levelClear' && c.isPerfect && i.consecutivePerfects >= 10 },
+        'skill_speed_5s': { order: 220, name: '전광석화', description: '5초 안에 레벨 클리어', category: '기술', condition: (s, i, c) => c.event === 'levelClear' && c.levelDuration <= 5 },
+        'skill_speed_3s': { order: 221, name: '빛의 속도', description: '3초 안에 레벨 클리어', category: '기술', condition: (s, i, c) => c.event === 'levelClear' && c.levelDuration <= 3 },
+        'skill_speed_2s': { order: 222, name: '번갯불에 콩 볶기', description: '2초 안에 레벨 클리어', category: '기술', condition: (s, i, c) => c.event === 'levelClear' && c.levelDuration <= 2 },
+        'skill_no_mistake_game': { order: 230, name: '퍼펙트 게임', description: '레벨 1부터 10까지 실수 없이 클리어', category: '기술', condition: (s, i, c) => c.event === 'levelClear' && c.level >= 10 && !i.hasMadeMistake },
+        'skill_clear_inverted': { order: 240, name: '반전의 지배자', description: '좌우 반전 레벨 클리어', category: '기술', condition: (s, i, c) => c.event === 'specialEvent' && c.eventName === 'aMM' },
+
+        // --- 3. 누적 (Grinding) ---
+        'grind_press_100': { order: 301, name: '손가락 풀기', description: '총 버튼 100회 누르기', category: '누적', condition: (s) => Object.values(s.buttonPresses).reduce((a,b)=>a+b,0) >= 100, getProgress: (s) => ({current: Object.values(s.buttonPresses).reduce((a,b)=>a+b,0), target: 100}) },
+        'grind_press_1k': { order: 302, name: '견습생의 손놀림', description: '총 버튼 1,000회 누르기', category: '누적', condition: (s) => Object.values(s.buttonPresses).reduce((a,b)=>a+b,0) >= 1000, getProgress: (s) => ({current: Object.values(s.buttonPresses).reduce((a,b)=>a+b,0), target: 1000}) },
+        'grind_press_10k': { order: 303, name: '장인의 경지', description: '총 버튼 10,000회 누르기', category: '누적', condition: (s) => Object.values(s.buttonPresses).reduce((a,b)=>a+b,0) >= 10000, getProgress: (s) => ({current: Object.values(s.buttonPresses).reduce((a,b)=>a+b,0), target: 10000}) },
+        'grind_levels_100': { order: 310, name: '기억의 조각', description: '총 100개 레벨 클리어', category: '누적', condition: (s) => s.totalLevelsCleared >= 100, getProgress: (s) => ({current: s.totalLevelsCleared, target: 100}) },
+        'grind_levels_1k': { order: 311, name: '기억의 궁전', description: '총 1,000개 레벨 클리어', category: '누적', condition: (s) => s.totalLevelsCleared >= 1000, getProgress: (s) => ({current: s.totalLevelsCleared, target: 1000}) },
+        'grind_gameover_10': { order: 320, name: '괜찮아', description: '게임 오버 10번 보기', category: '누적', condition: (s) => s.totalGameOver >= 10, getProgress: (s) => ({current: s.totalGameOver, target: 10}) },
+        'grind_gameover_100': { order: 321, name: '불사조', description: '게임 오버 100번 보기', category: '누적', condition: (s) => s.totalGameOver >= 100, getProgress: (s) => ({current: s.totalGameOver, target: 100}) },
+        'grind_playtime_10min': { order: 330, name: '짧은 휴식', description: '총 플레이 시간 10분 달성', category: '누적', condition: (s) => s.totalPlayTime >= 600, getProgress: (s) => ({current: Math.floor(s.totalPlayTime/60), target: 10}) },
+        'grind_playtime_1hr': { order: 331, name: '시간 여행자', description: '총 플레이 시간 1시간 달성', category: '누적', condition: (s) => s.totalPlayTime >= 3600, getProgress: (s) => ({current: Math.floor(s.totalPlayTime/60), target: 60}) },
+        'grind_playtime_10hr': { order: 332, name: '시간의 지배자', description: '총 플레이 시간 10시간 달성', category: '누적', condition: (s) => s.totalPlayTime >= 36000, getProgress: (s) => ({current: Math.floor(s.totalPlayTime/3600), target: 10}) },
+
+        // --- 4. 시간/날짜 (Time/Date) ---
+        'time_night_owl': { order: 401, name: '올빼미족', description: '새벽 1시 ~ 4시 사이에 플레이', category: '시간', condition: (s, i, c) => { if(c.event !== 'gameStart') return false; const h = new Date().getHours(); return h >= 1 && h <= 4; } },
+        'time_early_bird': { order: 402, name: '얼리버드', description: '아침 5시 ~ 7시 사이에 플레이', category: '시간', condition: (s, i, c) => { if(c.event !== 'gameStart') return false; const h = new Date().getHours(); return h >= 5 && h <= 7; } },
+        'time_lunch_game': { order: 403, name: '점심시간의 승부', description: '12시 ~ 13시 사이에 플레이', category: '시간', condition: (s, i, c) => { if(c.event !== 'gameStart') return false; const h = new Date().getHours(); return h >= 12 && h <= 13; } },
+        'time_monday_blue': { order: 410, name: '월요병 극복', description: '월요일에 플레이', category: '시간', condition: (s, i, c) => c.event === 'gameStart' && new Date().getDay() === 1 },
+        'time_friday_night': { order: 411, name: '불타는 금요일', description: '금요일에 플레이', category: '시간', condition: (s, i, c) => c.event === 'gameStart' && new Date().getDay() === 5 },
+        'time_new_year': { order: 420, name: '새해 다짐', description: '1월 1일에 플레이', category: '시간', condition: (s, i, c) => { if(c.event !== 'gameStart') return false; const d = new Date(); return d.getMonth() === 0 && d.getDate() === 1; } },
+        'time_christmas': { order: 421, name: '크리스마스의 기적', description: '12월 25일에 플레이', category: '시간', condition: (s, i, c) => { if(c.event !== 'gameStart') return false; const d = new Date(); return d.getMonth() === 11 && d.getDate() === 25; } },
+
+        // --- 5. 메타/탐험 (Meta/Exploration) ---
+        'meta_fashionista': { order: 501, name: '패셔니스타', description: '테마 10번 변경', category: '메타', condition: (s) => s.uiClicks.theme >= 10, getProgress: (s) => ({ current: s.uiClicks.theme, target: 10 }) },
+        'meta_dj': { order: 502, name: 'DJ', description: 'BGM 20번 껐다 켜기', category: '메타', condition: (s) => s.uiClicks.bgm >= 20, getProgress: (s) => ({ current: s.uiClicks.bgm, target: 20 }) },
+        'meta_historian': { order: 503, name: '역사가', description: '도전 로그 10번 열어보기', category: '메타', condition: (s) => s.uiClicks.log >= 10, getProgress: (s) => ({ current: s.uiClicks.log, target: 10 }) },
+        'meta_perfectionist': { order: 504, name: '완벽주의자', description: '업적 창 10번 열어보기', category: '메타', condition: (s) => s.uiClicks.achievement >= 10, getProgress: (s) => ({ current: s.uiClicks.achievement, target: 10 }) },
+        'meta_clean_slate': { order: 505, name: '새 출발', description: '모든 기록 삭제하기', category: '메타', condition: (s, i, c) => c.event === 'clearData' },
+        'meta_curiosity': { order: 510, name: '호기심 천국', description: '모든 메뉴 버튼 한 번씩 눌러보기', category: '메타', condition: (s) => s.uiClicks.achievement > 0 && s.uiClicks.log > 0 && s.uiClicks.bgm > 0 && s.uiClicks.theme > 0 },
+        'meta_symmetric_pattern': { order: 520, name: '대칭의 미학', description: '대칭 패턴 클리어', category: '메타', condition: (s, i, c) => c.event === 'levelClear' && i.patternHistory[i.patternHistory.length-1].analysis.isSymmetrical },
+        'meta_single_color_pattern': { order: 521, name: '단색의 미', description: '한 가지 색으로만 이루어진 패턴 클리어', category: '메타', condition: (s, i, c) => c.event === 'levelClear' && i.patternHistory[i.patternHistory.length-1].analysis.isSingleColor },
+    };
+    </script>
+
+    <script>
+        // Anti-debugging and theme toggle logic (unchanged)
+        (function(){const d=new Date;function c(){try{(function(){if(new Date-d>100){window.location.reload()}d=new Date}).toString().indexOf("debugger")!==-1}catch(e){}setTimeout(c,100)}c();document.addEventListener("keydown",function(e){if(e.key==="F12"||e.ctrlKey&&e.shiftKey&&e.key==="I"){e.preventDefault()}});document.addEventListener("contextmenu",function(e){e.preventDefault()})})();
+        
+        // --- DOM Elements ---
+        const mC = document.getElementById("main-container"), sB = document.getElementById("start-btn"), sAB = document.getElementById("show-answer-btn"),
+            hD = document.getElementById("highscore-display"), mD = document.getElementById("message-display"), gBs = document.querySelectorAll(".game-button"),
+            gB = document.querySelector(".game-board"), cO = document.getElementById("countdown-overlay"), cS = document.getElementById("countdown-shape"),
+            body = document.body, bT = document.getElementById("bgm-toggle"), bOI = document.getElementById("bgm-on-icon"), bFI = document.getElementById("bgm-off-icon"),
+            themeBtn = document.getElementById("theme-toggle"),
+            iPI = document.getElementById("in-progress-indicator"), bcD = document.getElementById("basecamp-display"), rSM = document.getElementById("rest-stage-modal"),
+            dB = document.getElementById("dashboard-btn"), dM = document.getElementById("dashboard-modal"), cDB = document.getElementById("close-dashboard-btn"),
+            lL = document.getElementById("log-list"), lCC = document.getElementById("log-chart-container"), cLB = document.getElementById("clear-log-btn"),
+            achBtn = document.getElementById("achievement-btn"), achM = document.getElementById("achievement-modal"),
+            cAchB = document.getElementById("close-achievement-btn"), achL = document.getElementById("achievement-list"),
+            themeChangeBtn = document.getElementById("theme-change-btn"), themeM = document.getElementById("theme-modal"),
+            cThemeBtn = document.getElementById("close-theme-btn"), themeL = document.getElementById("theme-list"),
+            comboDisplay = document.getElementById("combo-display"), comboCount = document.getElementById("combo-count"),
+            toastContainer = document.getElementById("toast-container");
+
+        // --- Game State Variables ---
+        let gP = [], pP = [], l = 0, hS = 0, bCL = 0, iPT = false, combo = 0, iBP = false, cBGM = "waiting", iMM = false, iPC = false;
+        let s, sS, eS, tUS, sBS, shS, iS, mS, bCS, cBS, bPs = {};
+        
+        // --- Expanded Game Stats & State ---
+        let gameStats;
+        let inGameStats;
+        
+        const sl = e => new Promise(t => setTimeout(t, e));
+
+        // --- Initialization ---
+        document.addEventListener("DOMContentLoaded", () => {
+            resetInGameStats();
+            loadGameStats();
+            updateTimeBasedStats();
+            
+            ldBC();
+            lHS();
+            sSy();
+            loadAchievements();
+            
+            const bgmState = localStorage.getItem("bgmState");
+            if ("on" === bgmState) { iBP = true; uBI(true); pB(cBGM); }
+            gBs.forEach(e => { const t = document.createElement("span"); t.className = "answer-number"; e.appendChild(t); });
+            
+            const theme = localStorage.getItem("theme");
+            const prefersDark = window.matchMedia("(prefers-color-scheme: dark)").matches;
+            toggleTheme(theme === "dark" || (!theme && prefersDark));
+
+            const savedTheme = localStorage.getItem('patternGameTheme') || 'default';
+            applyTheme(savedTheme);
+
+            checkAchievements({ event: 'gameLoad' });
+            saveGameStats();
+        });
+        
+        // --- Expanded Data Tracking System ---
+        function getDefaultGameStats() {
+            return {
+                totalPlays: 0, totalLevelsCleared: 0, totalGameOver: 0, totalShowAnswer: 0,
+                totalBasecamps: 0, totalSpecialEvents: 0, totalPerfectLevels: 0, totalCombos: 0,
+                highScoreEver: 0, highScoreResets: 0,
+                buttonPresses: { '0': 0, '1': 0, '2': 0, '3': 0 },
+                playDays: [], lastPlayDate: null, consecutivePlayDays: 0,
+                totalPlayTime: 0,
+                uiClicks: { bgm: 0, theme: 0, log: 0, achievement: 0, themeChange: 0 },
+                unlockedThemes: ['default'], unlockedBgms: ['default'],
+            };
+        }
+
+        function resetInGameStats() {
+            inGameStats = {
+                levelsCleared: 0, maxCombo: 0, startTime: Date.now(),
+                hasMadeMistake: false, consecutivePerfects: 0,
+                specialEvents: new Set(), patternHistory: [],
+                inputTimings: [], isFirstLevel: true,
+            };
+        }
+
+        function loadGameStats() {
+            try {
+                const savedStats = JSON.parse(localStorage.getItem('patternGameStats'));
+                gameStats = { ...getDefaultGameStats(), ...savedStats };
+            } catch (e) {
+                gameStats = getDefaultGameStats();
+            }
+        }
+
+        function saveGameStats() {
+            localStorage.setItem('patternGameStats', JSON.stringify(gameStats));
+        }
+
+        function updateTimeBasedStats() {
+            const today = new Date().toISOString().split('T')[0];
+            if (!gameStats.lastPlayDate) {
+                gameStats.consecutivePlayDays = 1;
+            } else {
+                const lastDate = new Date(gameStats.lastPlayDate);
+                const todayDate = new Date(today);
+                const diffTime = todayDate - lastDate;
+                const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+                if (diffDays === 1) {
+                    gameStats.consecutivePlayDays++;
+                } else if (diffDays > 1) {
+                    gameStats.consecutivePlayDays = 1;
+                    checkAchievements({ event: 'returnee', days: diffDays });
+                }
+            }
+            gameStats.lastPlayDate = today;
+            if (!gameStats.playDays.includes(today)) {
+                gameStats.playDays.push(today);
+            }
+        }
+
+        // --- Sound Synthesis Setup ---
+        function sSy() {
+            cBS = new Tone.NoiseSynth({ noise: { type: "white" }, envelope: { attack: .01, decay: .1, sustain: 0 } }).toDestination();
+            cBS.volume.value = -10;
+            s = new Tone.Synth({ oscillator: { type: "sine" }, envelope: { attack: .005, decay: .1, sustain: .3, release: 1 } }).toDestination();
+            sS = new Tone.Synth({ oscillator: { type: "triangle" }, envelope: { attack: .01, decay: .2, sustain: .2, release: .2 } }).toDestination();
+            eS = new Tone.PolySynth(Tone.Synth, { oscillator: { type: "square" }, envelope: { attack: .01, decay: .4, sustain: 0, release: .4 } }).toDestination();
+            const reverb = new Tone.Reverb(1.5).toDestination();
+            tUS = new Tone.Synth({ oscillator: { type: "sine" }, envelope: { attack: .01, decay: .3, sustain: .1, release: .7 } }).connect(reverb);
+            sBS = new Tone.Synth({ oscillator: { type: "sine" }, envelope: { attack: .01, decay: .2, release: .2 } }).toDestination();
+            sBS.volume.value = -6;
+            shS = new Tone.NoiseSynth({ noise: { type: "brown" }, envelope: { attack: .1, decay: 1.4, sustain: 0 } }).toDestination();
+            shS.volume.value = -15;
+            iS = new Tone.Synth({ oscillator: { type: "sawtooth" }, envelope: { attack: .01, decay: .8, sustain: .1, release: 1 } }).toDestination();
+            iS.volume.value = -18;
+            mS = new Tone.Synth({ oscillator: { type: "triangle8" }, envelope: { attack: .01, decay: .5, sustain: .1, release: 1 } }).connect(reverb);
+            mS.volume.value = -15;
+            bCS = new Tone.Synth({ oscillator: { type: "fatsawtooth" }, envelope: { attack: .05, decay: .5, sustain: .4, release: .8 } }).toDestination();
+            bCS.volume.value = -10;
+            const masterVolume = -20;
+            const pluck = new Tone.PluckSynth({ attackNoise: .5, dampening: 4e3, resonance: .7 }).toDestination();
+            pluck.volume.value = masterVolume + 8;
+            bPs.waiting = new Tone.Sequence(((time, note) => { pluck.triggerAttack(note, time) }), ["C4", "E4", "G4", "C5", "E5", "G4"], "8n");
+            const bass1 = new Tone.MonoSynth({ oscillator: { type: "fmsine" }, envelope: { attack: .01, decay: .3, sustain: .1, release: .5 } }).toDestination();
+            bass1.volume.value = masterVolume;
+            bPs.normal = new Tone.Sequence(((time, value) => { pluck.triggerAttack(value.melody, time); if (value.bass) bass1.triggerAttackRelease(value.bass, "8n", time); }), [{ melody: "C4", bass: "C2" }, { melody: "E4" }, { melody: "G4", bass: "C2" }, { melody: "G4", bass: "G1" }, { melody: "E4" }, { melody: "C4", bass: "G1" }], "8n");
+            const kick = new Tone.MembraneSynth({ octaves: 4, pitchDecay: .1 }).toDestination();
+            kick.volume.value = masterVolume + 2;
+            const bass2 = new Tone.MonoSynth({ oscillator: { type: "sawtooth" }, envelope: { attack: .01, decay: .3, sustain: .1, release: .5 } }).toDestination();
+            bass2.volume.value = masterVolume - 4;
+            bPs.hard = new Tone.Part(((time, value) => { if (value.kick) kick.triggerAttackRelease("C1", "8n", time); if (value.bass) bass2.triggerAttackRelease(value.bass, "8n", time); }), [{ time: "0:0", kick: true, bass: "C2" }, { time: "0:2", bass: "C2" }, { time: "0:3", kick: true }, { time: "0:5", bass: "G1" }, { time: "0:6", kick: true }, { time: "0:8", bass: "G1" }, { time: "0:9", kick: true }, { time: "0:11", bass: "F1" }]);
+            bPs.hard.loop = true;
+            bPs.hard.loopEnd = "1m";
+            const kick2 = new Tone.MembraneSynth({ octaves: 6, pitchDecay: .05 }).toDestination();
+            kick2.volume.value = masterVolume;
+            const hihat = new Tone.MetalSynth({ frequency: 300, envelope: { attack: .001, decay: .05, release: .01 }, harmonicity: 4.1, modulationIndex: 22, resonance: 3e3, octaves: 1.5 }).toDestination();
+            hihat.volume.value = masterVolume - 10;
+            bPs.veryHard = new Tone.Sequence(((time, note) => { kick2.triggerAttackRelease("C1", "8n", time); if (note === "CH") hihat.triggerAttackRelease("C6", "16n", time); }), ["C1", "CH", "C1", "CH"], "4n");
+            const gameOverSynth = new Tone.AMSynth({ harmonicity: 1.5, envelope: { attack: .01, decay: 2, sustain: .1, release: 2 } }).toDestination();
+            gameOverSynth.volume.value = masterVolume - 5;
+            bPs.gameover = new Tone.Sequence(((time, note) => { gameOverSynth.triggerAttackRelease(note, "1n", time) }), [["C3", "E3"], ["G3", "B3"], ["F3", "A3"]], "1m");
+        }
+        function pB(e){if(!iBP)return;Object.values(bPs).forEach(e=>e.stop(0)),cBGM=e,"waiting"===e?(Tone.Transport.timeSignature=[6,8],Tone.Transport.bpm.value=90,bPs.waiting.start(0)):"normal"===e?(Tone.Transport.timeSignature=[6,8],Tone.Transport.bpm.value=100,bPs.normal.start(0)):"hard"===e?(Tone.Transport.timeSignature=[12,8],Tone.Transport.bpm.value=120,bPs.hard.start(0)):"veryHard"===e?(Tone.Transport.timeSignature=[4,4],Tone.Transport.bpm.value=140,bPs.veryHard.start(0)):"gameover"===e&&(Tone.Transport.timeSignature=[6,8],Tone.Transport.bpm.value=70,bPs.gameover.start(0)),"started"!==Tone.Transport.state&&Tone.Transport.start()}
+        function stB(){"started"===Tone.Transport.state&&Tone.Transport.stop(),Object.values(bPs).forEach(e=>e.stop(0))}
+
+        // --- Data Loading & Saving (Legacy) ---
+        function lHS(){ hS = parseInt(localStorage.getItem("patternGameHighScore")) || 0; uHSD(); }
+        function ldBC(){ const e = JSON.parse(localStorage.getItem("patternGameBaseCamp")); if(e){ const t = (new Date).toISOString().split("T")[0]; t !== e.date ? (bCL = 0, localStorage.removeItem("patternGameBaseCamp"), uBCD(), sB.textContent = "게임 시작") : (bCL = e.level) } else bCL = 0; }
+        function svBC(){ ldBC(); if (l <= bCL) return; bCL = l; const e = (new Date).toISOString().split("T")[0]; localStorage.setItem("patternGameBaseCamp", JSON.stringify({ level: bCL, date: e })); uBCD(); const t = Tone.now(); bCS.triggerAttackRelease("A3", "2n", t); bCS.triggerAttackRelease("E4", "2n", t + .1); bCS.triggerAttackRelease("A4", "2n", t + .2); gameStats.totalBasecamps++; checkAchievements({ event: 'basecampReached' }); }
+        function uBCD(){ bCL > 0 ? (bcD.querySelector("span").textContent = `캠프: ${bCL}`, bcD.classList.remove("hidden")) : (bcD.classList.add("hidden"), sB.textContent = "게임 시작"); }
+        function uHSD(){ hD.textContent = `최고 기록: ${hS}`; }
+        function sHS(){ const e = l > 0 ? l - 1 : 0; if (e > hS) { hS = e; localStorage.setItem("patternGameHighScore", e); if (e > gameStats.highScoreEver) { gameStats.highScoreEver = e; } gameStats.highScoreResets++; sCf(true); hD.classList.add("level-up"); setTimeout(() => { hD.classList.remove("level-up") }, 500); } sCL(e); }
+        function cTP(e){ let t = 0; for (let o = 1; o <= e; o++) { t += Math.floor((o - 1) / 5) + 1; } return t; }
+
+        // --- Event Listeners ---
+        sB.addEventListener("click", async () => { await Tone.start(); sG(); });
+        bT.addEventListener("click", async () => { await Tone.start(); iBP = !iBP; localStorage.setItem("bgmState", iBP ? "on" : "off"); uBI(iBP); iBP ? pB(cBGM || "waiting") : stB(); gameStats.uiClicks.bgm++; checkAchievements({ event: 'uiClick', element: 'bgm' }); });
+        sAB.addEventListener("click", async () => { sAB.classList.add("disabled"); sB.classList.add("disabled"); await sAP(); sAB.textContent = "다시 보기"; sAB.classList.remove("disabled"); sB.classList.remove("disabled"); gameStats.totalShowAnswer++; checkAchievements({ event: 'showAnswer' }); });
+        
+        themeBtn.addEventListener("click", () => { const isDark = !document.documentElement.classList.contains("dark"); localStorage.setItem("theme", isDark ? "dark" : "light"); toggleTheme(isDark); gameStats.uiClicks.theme++; checkAchievements({ event: 'uiClick', element: 'theme' }); });
+        function toggleTheme(isDark) { document.documentElement.classList.toggle("dark", isDark); document.getElementById("theme-toggle-sun-icon").classList.toggle("hidden", isDark); document.getElementById("theme-toggle-moon-icon").classList.toggle("hidden", !isDark); }
+        function uBI(e){ bOI.classList.toggle("hidden", !e); bFI.classList.toggle("hidden", e); }
+
+        gBs.forEach(e => { e.addEventListener("click", t => { if (!iPT || iPC) return; iPC = true; const o = parseInt(t.target.id.split("-")[1]); pT(o, t.target); }); });
+
+        // --- Game Logic ---
+        async function sG() {
+            resetInGameStats();
+            gameStats.totalPlays++;
+            checkAchievements({ event: 'gameStart' });
+            hideComboDisplay(false);
+
+            ldBC(); uBCD(); mC.classList.add("game-started"); gB.classList.remove("inverted", "shake-horizontal");
+            iMM = false; iPC = false; l = bCL; combo = 0;
+            sB.classList.add("hidden"); sAB.classList.add("hidden"); iPI.classList.remove("hidden");
+            mD.textContent = "";
+            await sl(500);
+            cO.classList.remove("hidden"); cS.classList.remove("shrinking-circle"); void cS.offsetWidth; cS.classList.add("shrinking-circle");
+            await sl(1500);
+            cO.classList.add("hidden");
+            nL();
+        }
+
+        function nL() {
+            l++; iPT = false; pP = [];
+            if (l >= 1 && l <= 4) pB("normal"); else if (l >= 5 && l <= 8) pB("hard"); else if (l >= 9) pB("veryHard");
+            
+            const patternLength = cTP(l);
+            gP = []; let lastBtn = -1;
+            for (let i = 0; i < patternLength; i++) {
+                let possibleBtns = [0, 1, 2, 3];
+                if (lastBtn !== -1) { possibleBtns = possibleBtns.filter(n => n !== lastBtn); }
+                const nextBtn = possibleBtns[Math.floor(Math.random() * possibleBtns.length)];
+                gP.push(nextBtn); lastBtn = nextBtn;
+            }
+            
+            const patternAnalysis = analyzePattern(gP);
+            inGameStats.patternHistory.push({ level: l, pattern: gP, analysis: patternAnalysis });
+            checkAchievements({ event: 'newLevel', level: l, patternAnalysis });
+            
+            pPtn();
+        }
+
+        function pPtn() {
+            gBs.forEach(e => { e.classList.add("disabled", "desaturated"); });
+            let delay = 0; const baseDelay = 700, reduction = 80, minDelay = 150, stage = Math.floor((l - 1) / 4);
+            const patternDelay = Math.max(minDelay, baseDelay - stage * reduction);
+            
+            gP.forEach(btn => { setTimeout(() => aB(btn, false), delay); delay += patternDelay; });
+            
+            setTimeout(() => {
+                iPT = true; iPC = false;
+                inGameStats.patternShownTime = Date.now();
+                gBs.forEach(e => { e.classList.remove("disabled", "desaturated"); e.classList.add("pulse"); setTimeout(() => e.classList.remove("pulse"), 400); });
+            }, delay + 100);
+        }
+
+        function pT(btnIndex, targetElement) {
+            const pressTime = Date.now();
+            if (pP.length === 0) {
+                inGameStats.inputTimings.push(pressTime - (inGameStats.patternShownTime || pressTime));
+            } else {
+                inGameStats.inputTimings.push(pressTime - inGameStats.lastInputTime);
+            }
+            inGameStats.lastInputTime = pressTime;
+
+            aB(btnIndex, true); 
+            pP.push(btnIndex);
+            
+            const colorId = targetElement.dataset.colorId;
+            gameStats.buttonPresses[colorId]++;
+            
+            checkAchievements({ event: 'buttonPress', button: btnIndex });
+            cA(pP.length - 1, targetElement);
+        }
+
+        function cA(index, targetElement) {
+            let correctBtn = gP[index];
+            if (iMM) { const mirrorMap = { 0: 1, 1: 0, 2: 3, 3: 2 }; correctBtn = mirrorMap[correctBtn]; }
+            
+            if (pP[index] !== correctBtn) {
+                inGameStats.hasMadeMistake = true;
+                inGameStats.consecutivePerfects = 0;
+                hideComboDisplay(true);
+                combo = 0;
+                gO();
+            } else {
+                combo++;
+                updateComboDisplay();
+                if (combo > inGameStats.maxCombo) { inGameStats.maxCombo = combo; }
+                
+                const particleCount = 20 + Math.floor(combo / 10) * 10;
+                const rect = targetElement.getBoundingClientRect();
+                const origin = { x: (rect.left + rect.width / 2) / window.innerWidth, y: (rect.top + rect.height / 2) / window.innerHeight };
+                confetti({ particleCount: particleCount, spread: 25, origin: origin, gravity: 0.5, ticks: 150, scalar: 0.7 });
+
+                checkAchievements({ event: 'correctPress', combo: combo });
+
+                if (pP.length === gP.length) {
+                    iPT = false;
+                    lCS();
+                } else {
+                    iPC = false;
+                }
+            }
+        }
+
+        async function lCS() {
+            iPT = false;
+            await sl(350);
+            
+            inGameStats.levelsCleared++;
+            gameStats.totalLevelsCleared++;
+            
+            let isPerfect = !inGameStats.hasMadeMistake;
+            if(isPerfect) {
+                gameStats.totalPerfectLevels++;
+                inGameStats.consecutivePerfects++;
+            }
+
+            const levelDuration = (Date.now() - inGameStats.patternShownTime) / 1000;
+            checkAchievements({ event: 'levelClear', level: l, isPerfect: isPerfect, levelDuration: levelDuration });
+
+            if (l > 0 && l % 3 == 0 && l > bCL) {
+                svBC(); await sRS();
+            } else if (l > 0 && l % 4 == 0) {
+                const events = [sCE, iCE, aMM];
+                let eventFunc;
+                if (l === 4) eventFunc = sCE;
+                else if (l === 8) eventFunc = iCE;
+                else if (l === 12) eventFunc = aMM;
+                else eventFunc = events[Math.floor(Math.random() * events.length)];
+                
+                gameStats.totalSpecialEvents++;
+                inGameStats.specialEvents.add(eventFunc.name);
+                checkAchievements({ event: 'specialEvent', eventName: eventFunc.name });
+
+                await eventFunc();
+                await sGRS();
+            } else {
+                sS.triggerAttackRelease("C5", "8n");
+                body.classList.add("success-flash"); gB.classList.add("shake-vertical");
+                setTimeout(() => { body.classList.remove("success-flash"); gB.classList.remove("shake-vertical"); }, 400);
+                await sl(800);
+            }
+            
+            if (inGameStats.isFirstLevel) { inGameStats.isFirstLevel = false; }
+            nL();
+        }
+        
+        async function sRS(){return new Promise(async e=>{rSM.classList.remove("hidden");const t=document.getElementById("rest-level-guide");t.innerHTML="";const o=document.getElementById("rest-timer-display");if(o){const a=new Date,n=new Date;n.setHours(23,59,59,999);const r=n.getTime()-a.getTime();if(r>0){const d=Math.floor(r/36e5),i=Math.floor(r%36e5/6e4);o.textContent=`오늘의 베이스캠프는 ${d}시간 ${i}분 후에 초기화됩니다.`,o.classList.remove("hidden")}else o.classList.add("hidden")}for(let c=1;c<=3;c++){const C=l+c,p=cTP(C),h=document.createElement("div");h.className="flex items-center justify-between p-2 rounded-lg";const m=document.createElement("span");m.className="font-bold text-teal-400",m.textContent=`레벨 ${C}`;const g=document.createElement("div");g.className="flex flex-wrap gap-1.5 justify-end items-center",g.style.width="70%";for(let u=0;u<p;u++){const f="http://www.w3.org/2000/svg",v=document.createElementNS(f,"svg");v.setAttribute("class","pattern-char"),v.setAttribute("viewBox","0 0 20 20"),v.style.animationDelay=`${.12*u}s, ${.15*c+.06*u}s`;const k=document.createElementNS(f,"circle");k.setAttribute("cx","10"),k.setAttribute("cy","10"),k.setAttribute("r","10"),k.setAttribute("class","pattern-char-body");const L=document.createElementNS(f,"circle");L.setAttribute("cx","7"),L.setAttribute("cy","8"),L.setAttribute("r","1.5"),L.setAttribute("class","pattern-char-eye");const B=document.createElementNS(f,"circle");B.setAttribute("cx","13"),B.setAttribute("cy","8"),B.setAttribute("r","1.5"),B.setAttribute("class","pattern-char-eye"),v.appendChild(k),v.appendChild(L),v.appendChild(B),g.appendChild(v)}h.appendChild(m),h.appendChild(g),t.appendChild(h)}document.getElementById("rest-continue-btn").onclick=()=>{rSM.classList.add("hidden"),e()}})}
+        async function sCE(){shS.triggerAttackRelease("1n"),gB.classList.add("cube-rotate"),await sl(750);const e=[];gBs.forEach(t=>{const o=Array.from(t.classList).find(e=>e.startsWith("bg-"));e.push({bg:o,glow:t.style.getPropertyValue("--glow-color")})});for(let t=e.length-1;t>0;t--){const o=Math.floor(Math.random()*(t+1));[e[t],e[o]]=[e[o],e[t]]}gBs.forEach((t,o)=>{const a=Array.from(t.classList).find(e=>e.startsWith("bg-"));t.classList.remove(a),t.classList.add(e[o].bg),t.style.setProperty("--glow-color",e[o].glow)}),await sl(750),gB.classList.remove("cube-rotate")}
+        async function iCE(){iS.triggerAttackRelease("C3","1s"),gB.classList.add("inverted"),await sl(1500)}
+        async function aMM(){mS.triggerAttackRelease("C5","1s"),iMM=!0,mD.textContent="좌우 반전!",await sl(1500),mD.textContent=""}
+        async function sGRS(){await sl(500),gB.classList.add("get-ready-pulse");const e=Tone.now();sBS.triggerAttackRelease("C5","16n",e),sBS.triggerAttackRelease("C5","16n",e+.4),sBS.triggerAttackRelease("C5","16n",e+.8),sBS.triggerAttackRelease("G5","8n",e+1.2),await sl(1500),gB.classList.remove("get-ready-pulse"),await sl(500)}
+
+        async function gO() {
+            ldBC(); mC.classList.remove("game-started");
+            sHS(); uHSD(); pB("gameover");
+            
+            const finalLevel = l > 0 ? l - 1 : 0;
+            const gameDuration = (Date.now() - inGameStats.startTime) / 1000;
+            gameStats.totalPlayTime += gameDuration;
+            gameStats.totalGameOver++;
+            gameStats.totalCombos += inGameStats.maxCombo;
+            
+            mD.textContent = `게임 오버! 최종 레벨: ${finalLevel}`;
+            eS.triggerAttackRelease(["C3", "C#3"], "4n");
+            body.classList.add("game-over-flash");
+            gB.classList.add("shake-horizontal");
+            setTimeout(() => { body.classList.remove("game-over-flash"); }, 400);
+            
+            iPI.classList.add("hidden");
+            sB.classList.remove("hidden", "disabled");
+            sB.textContent = bCL > 0 ? `레벨 ${bCL}부터 다시 시작` : "다시 시작";
+            iPT = false; iPC = false;
+            sAB.textContent = "정답 보기";
+            sAB.classList.remove("hidden", "disabled");
+            sB.classList.replace("w-full", "w-2/3");
+            
+            checkAchievements({ event: 'gameOver', finalLevel: finalLevel, duration: gameDuration, maxCombo: inGameStats.maxCombo });
+            saveGameStats();
+        }
+
+        const notes=["C4","E4","G4","A4"];
+        function aB(buttonIndex, isPlayerTurn) {
+            const button = document.getElementById(`button-${buttonIndex}`);
+            if (!button) return;
+
+            if (!isPlayerTurn) {
+                button.classList.remove("desaturated");
+            }
+            button.classList.add("active");
+            
+            const glowSize = 15 + Math.floor(combo / 2);
+            const glowSpread = 2 + Math.floor(combo / 5);
+            const glowColor = button.style.getPropertyValue('--glow-color');
+            if (glowColor) {
+                button.style.boxShadow = `0 0 ${glowSize}px ${glowSpread}px ${glowColor}`;
+            }
+
+            const noteToPlay = notes[buttonIndex];
+            const transposition = Math.floor(combo / 5);
+            
+            if (isPlayerTurn) {
+                s.triggerAttackRelease(Tone.Frequency(noteToPlay).transpose(transposition), "8n");
+            } else {
+                s.triggerAttackRelease(noteToPlay, "8n");
+            }
+
+            setTimeout(() => {
+                button.classList.remove("active");
+                button.style.boxShadow = ''; // Reset box shadow
+                if (!isPlayerTurn) {
+                    button.classList.add("desaturated");
+                }
+            }, 300);
+        }
+
+        async function sAP() {
+            mD.textContent = "정답 확인...";
+            gBs.forEach(e => e.classList.add("desaturated"));
+            await sl(500);
+
+            for (let i = 0; i < gP.length; i++) {
+                const btnIndex = gP[i];
+                const button = document.getElementById(`button-${btnIndex}`);
+                const numberDisplay = button.querySelector(".answer-number");
+                
+                if (numberDisplay) {
+                    numberDisplay.textContent = i + 1;
+                    numberDisplay.classList.add("visible");
+                }
+                
+                aB(btnIndex, false);
+                await sl(600);
+                
+                if (numberDisplay) {
+                    numberDisplay.classList.remove("visible");
+                }
+            }
+
+            await sl(1000);
+            gBs.forEach(e => {
+                e.classList.remove("desaturated");
+            });
+            mD.textContent = "";
+        }
+
+        function sCf(isHighScore) {
+            confetti({
+                particleCount: isHighScore ? 300 : 150,
+                spread: isHighScore ? 180 : 90,
+                origin: { y: 0.6 },
+                gravity: 0.8,
+                ticks: 300,
+                scalar: 1.2
+            });
+        }
+        
+        // --- Dashboard Logic ---
+        cLB.addEventListener("click", () => {
+            if (confirm("정말로 모든 기록을 삭제하시겠습니까? 기록에는 도전 로그, 최고 기록, 베이스캠프, 그리고 모든 업적 진행 상황이 포함됩니다.")) {
+                localStorage.removeItem("challengeLog");
+                localStorage.removeItem("patternGameHighScore");
+                localStorage.removeItem("patternGameBaseCamp");
+                localStorage.removeItem("patternGameStats");
+                localStorage.removeItem("patternGameAchievements");
+                
+                loadGameStats();
+                loadAchievements();
+                hS = 0; uHSD();
+                bCL = 0; uBCD();
+                sB.textContent = "게임 시작";
+                rD();
+                renderAchievements();
+                showToast("모든 기록이 초기화되었습니다.");
+                checkAchievements({ event: 'clearData' });
+            }
+        });
+        dB.addEventListener("click",()=>{rD(),dM.classList.remove("hidden"); gameStats.uiClicks.log++; checkAchievements({event:'uiClick', element:'log'})});cDB.addEventListener("click",()=>{dM.classList.add("hidden")});
+        function sCL(e){let t=JSON.parse(localStorage.getItem("challengeLog"))||[];const o=new Date,a={id:o.getTime(),date:o.toLocaleString("ko-KR"),score:e};t.unshift(a),localStorage.setItem("challengeLog",JSON.stringify(t))}
+        function rD(){const e=JSON.parse(localStorage.getItem("challengeLog"))||[];if(lL.innerHTML="",lCC.innerHTML="",0===e.length)return void(lL.innerHTML='<p class="text-center text-secondary">아직 도전 기록이 없습니다.</p>');e.forEach(e=>{const t=document.createElement("div");t.className="flex justify-between items-center p-2 border-b border-slate-200 dark:border-slate-700",t.innerHTML=`\n <span class="text-sm text-secondary">${(new Date(e.id)).toLocaleDateString("ko-KR")}</span>\n <span class="font-bold">레벨 ${e.score}</span>\n `,lL.appendChild(t)}),rC(e.slice(0,10).reverse())}
+        function rC(e){const t="http://www.w3.org/2000/svg",o=document.createElementNS(t,"svg");if(o.setAttribute("width","100%"),o.setAttribute("height","100%"),o.setAttribute("viewBox","0 0 100 50"),e.length<2)return;const a=Math.max(...e.map(lg=>lg.score),1),n=e.map((lg,t)=>{const o=t/(e.length-1)*90+5,d=45-lg.score/a*40;return`${o},${d}`}).join(" "),r=document.createElementNS(t,"polyline");r.setAttribute("points",n),r.setAttribute("fill","none"),r.setAttribute("stroke","var(--text-highlight)"),r.setAttribute("stroke-width","1"),o.appendChild(r),e.forEach((lg,n)=>{const r=n/(e.length-1)*90+5,d=45-lg.score/a*40,i=document.createElementNS(t,"circle");i.setAttribute("cx",r),i.setAttribute("cy",d),i.setAttribute("r","1.5"),i.setAttribute("fill","var(--text-highlight)"),o.appendChild(i)}),lCC.appendChild(o)}
+
+        // --- Game State Analysis Engine ---
+        function analyzePattern(pattern) {
+            const analysis = {
+                isSymmetrical: false,
+                isRepetitive: false,
+                isSingleColor: false,
+                shape: null,
+            };
+            if (pattern.length > 1 && pattern.length % 2 === 0) {
+                const half = pattern.length / 2;
+                const firstHalf = pattern.slice(0, half);
+                const secondHalf = pattern.slice(half).reverse();
+                if (JSON.stringify(firstHalf) === JSON.stringify(secondHalf)) {
+                    analysis.isSymmetrical = true;
+                }
+            }
+            if (new Set(pattern).size === 1) {
+                analysis.isSingleColor = true;
+            }
+            return analysis;
+        }
+
+        // --- Advanced Achievement System ---
+        let achievements = {};
+
+        function loadAchievements() {
+            Object.keys(achievements_data).forEach(key => {
+                achievements[key] = { ...achievements_data[key], unlocked: false };
+            });
+
+            const savedProgress = JSON.parse(localStorage.getItem('patternGameAchievements'));
+            if (savedProgress) {
+                Object.keys(achievements).forEach(key => {
+                    if (achievements[key] && savedProgress[key]) {
+                        achievements[key].unlocked = savedProgress[key].unlocked;
+                    }
+                });
+            }
+        }
+
+        function saveAchievements() {
+            const dataToSave = {};
+            Object.keys(achievements).forEach(key => {
+                dataToSave[key] = { unlocked: achievements[key].unlocked };
+            });
+            localStorage.setItem('patternGameAchievements', JSON.stringify(dataToSave));
+        }
+
+        function unlockAchievement(id) {
+            if (!achievements[id] || achievements[id].unlocked) return;
+            achievements[id].unlocked = true;
+            
+            const reward = achievements[id].reward;
+            if (reward && reward.type === 'theme') {
+                if (!gameStats.unlockedThemes.includes(reward.value)) {
+                    gameStats.unlockedThemes.push(reward.value);
+                    showToast(`새로운 테마 잠금 해제: ${THEME_DATA[reward.value].name}`);
+                }
+            }
+            
+            saveAchievements();
+            saveGameStats();
+            showToast(`업적 달성: ${achievements[id].name}`);
+            if (!achM.classList.contains('hidden')) {
+                renderAchievements();
+            }
+        }
+
+        function checkAchievements(context) {
+            if (!achievements || Object.keys(achievements).length === 0) return;
+            Object.keys(achievements).forEach(id => {
+                const ach = achievements[id];
+                if (ach && !ach.unlocked && typeof ach.condition === 'function' && ach.condition(gameStats, inGameStats, context)) {
+                    unlockAchievement(id);
+                }
+            });
+        }
+        
+        function renderAchievements() {
+            achL.innerHTML = '';
+            const sortedKeys = Object.keys(achievements).sort((a, b) => {
+                const achA = achievements[a];
+                const achB = achievements[b];
+                if (achA.unlocked !== achB.unlocked) {
+                    return achA.unlocked ? -1 : 1;
+                }
+                return (achA.order || 999) - (achB.order || 999);
+            });
+
+            sortedKeys.forEach(id => {
+                const ach = achievements[id];
+                const isLocked = !ach.unlocked;
+                
+                const wrapper = document.createElement('div');
+                wrapper.className = `p-4 rounded-lg flex items-center gap-4 ${isLocked ? 'achievement-locked bg-slate-100 dark:bg-slate-700' : 'bg-teal-50 dark:bg-teal-900/50'}`;
+                
+                const icon = isLocked ? 
+                    `<svg class="w-10 h-10 text-slate-400 dark:text-slate-500 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"></path></svg>` :
+                    `<svg class="w-10 h-10 text-amber-400 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20"><path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z"></path></svg>`;
+
+                let progressHTML = '';
+                if (ach.getProgress) {
+                    const { current, target } = ach.getProgress(gameStats);
+                    const percent = Math.min(100, (current / target) * 100);
+                    progressHTML = `
+                        <div class="mt-2">
+                            <span class="text-xs text-secondary">${current} / ${target}</span>
+                            <div class="achievement-progress-bar">
+                                <div class="achievement-progress" style="width: ${percent}%"></div>
+                            </div>
+                        </div>
+                    `;
+                }
+
+                wrapper.innerHTML = `
+                    ${icon}
+                    <div class="flex-grow">
+                        <h3 class="font-bold text-base">${ach.name}</h3>
+                        <p class="text-sm text-secondary">${ach.description}</p>
+                        ${progressHTML}
+                    </div>
+                `;
+                achL.appendChild(wrapper);
+            });
+        }
+
+        function showToast(message) {
+            const toast = document.createElement('div');
+            toast.className = 'toast';
+            toast.innerHTML = `
+                <svg class="w-6 h-6 text-amber-400" fill="currentColor" viewBox="0 0 20 20"><path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z"></path></svg>
+                <span class="font-medium">${message}</span>
+            `;
+            toastContainer.appendChild(toast);
+            setTimeout(() => { toast.remove(); }, 3000);
+        }
+
+        achBtn.addEventListener('click', () => { renderAchievements(); achM.classList.remove('hidden'); gameStats.uiClicks.achievement++; checkAchievements({event:'uiClick', element:'achievement'}) });
+        cAchB.addEventListener('click', () => { achM.classList.add('hidden'); });
+
+        // --- Theme System ---
+        function applyTheme(themeId) {
+            const theme = THEME_DATA[themeId];
+            if (!theme) return;
+
+            gBs.forEach((button, index) => {
+                button.style.backgroundColor = theme.colors[index];
+                button.style.setProperty('--glow-color', theme.glows[index]);
+            });
+            localStorage.setItem('patternGameTheme', themeId);
+        }
+
+        function renderThemeModal() {
+            themeL.innerHTML = '';
+            const currentTheme = localStorage.getItem('patternGameTheme') || 'default';
+
+            gameStats.unlockedThemes.forEach(themeId => {
+                const theme = THEME_DATA[themeId];
+                if (!theme) return;
+
+                const isActive = themeId === currentTheme;
+                const themeItem = document.createElement('div');
+                themeItem.className = `p-4 rounded-lg cursor-pointer border-2 ${isActive ? 'border-teal-500' : 'border-transparent'} bg-slate-100 dark:bg-slate-700`;
+                
+                let swatchesHTML = '<div class="flex space-x-2 mb-2">';
+                theme.colors.forEach(color => {
+                    swatchesHTML += `<div class="w-6 h-6 rounded-full" style="background-color: ${color};"></div>`;
+                });
+                swatchesHTML += '</div>';
+
+                themeItem.innerHTML = `
+                    ${swatchesHTML}
+                    <div class="flex justify-between items-center">
+                        <span class="font-bold">${theme.name}</span>
+                        ${isActive ? '<svg class="w-6 h-6 text-teal-500" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"></path></svg>' : ''}
+                    </div>
+                `;
+                
+                themeItem.addEventListener('click', () => {
+                    applyTheme(themeId);
+                    renderThemeModal();
+                });
+                themeL.appendChild(themeItem);
+            });
+        }
+
+        themeChangeBtn.addEventListener('click', () => {
+            renderThemeModal();
+            themeM.classList.remove('hidden');
+            gameStats.uiClicks.themeChange++;
+            checkAchievements({event: 'uiClick', element: 'themeChange'});
+        });
+        cThemeBtn.addEventListener('click', () => {
+            themeM.classList.add('hidden');
+        });
+
+        // --- Combo System ---
+        function updateComboDisplay() {
+            if (combo > 1) {
+                comboDisplay.classList.remove('opacity-0');
+                comboCount.textContent = combo;
+                comboCount.classList.add('combo-bounce');
+                setTimeout(() => comboCount.classList.remove('combo-bounce'), 300);
+
+                if (combo === 10 || combo === 20 || combo === 50 || combo === 100) {
+                    body.classList.add('combo-flash-effect');
+                    setTimeout(() => body.classList.remove('combo-flash-effect'), 400);
+                }
+            }
+        }
+
+        function hideComboDisplay(isBreak) {
+            if (isBreak && combo > 1) {
+                cBS.triggerAttackRelease("8n");
+                comboDisplay.classList.add('combo-break');
+                setTimeout(() => {
+                    comboDisplay.classList.remove('combo-break');
+                    comboDisplay.classList.add('opacity-0');
+                }, 500);
+            } else {
+                comboDisplay.classList.add('opacity-0');
+            }
+        }
+
+    </script>
+</body>
+</html>
