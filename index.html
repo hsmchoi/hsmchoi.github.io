@@ -440,6 +440,7 @@
 
                     DOM.pauseBtn.addEventListener('click', () => this.setState('PAUSED'));
                     DOM.resumeBtn.addEventListener('click', () => this.setState('RESUMING'));
+                    DOM.skillBtn.addEventListener('click', () => PlayerController.activateSkill());
                 },
 
                 async setState(newState) {
@@ -492,12 +493,14 @@
                         GameState.level = GameState.baseCampLevel;
                         GameState.roundCounter = GameState.baseCampLevel;
                         // Pre-populate a long pattern to simulate starting from a checkpoint
+                        let tempPattern = [];
                         for (let i = 1; i <= GameState.baseCampLevel; i++) {
                             EnemyController.selectNewAntagonist((i % 4) === 0);
                             for (let j = 0; j < GameState.maxMonsterHP; j++) {
-                                GameState.gamePattern.push(EnemyController.getNextStep(GameState.gamePattern));
+                                tempPattern.push(EnemyController.getNextStep(tempPattern));
                             }
                         }
+                        GameState.gamePattern = tempPattern; // This logic needs review for actual gameplay sense
                     } else {
                         GameState.level = 0;
                         GameState.roundCounter = 0;
@@ -1024,6 +1027,7 @@
 
                     const bgmState = localStorage.getItem('bgmState');
                     GameState.isBgmPlaying = (bgmState === 'off') ? false : true;
+                    SettingsController.updateBgmToggleUI(GameState.isBgmPlaying);
                     if (GameState.isBgmPlaying && Tone.context.state === 'running') this.setBgm('waiting');
                 },
 
@@ -1140,8 +1144,10 @@
                     UIController.startRhythmAnimation('playback', GameState.currentPatternDuration);
                     
                     setTimeout(() => {
-                        UIController.stopRhythmAnimation();
-                        GameManager.setState('PLAYER_INPUT');
+                        if (GameState.current === 'PATTERN_PLAYBACK') {
+                             UIController.stopRhythmAnimation();
+                             GameManager.setState('PLAYER_INPUT');
+                        }
                     }, GameState.currentPatternDuration + 100);
                 },
 
@@ -1190,6 +1196,17 @@
                         setTimeout(() => btn.classList.remove('pulse'), 400);
                     });
                     UIController.startRhythmAnimation('input', GameState.currentPatternDuration);
+
+                    // --- BUG FIX ---
+                    // Set a timeout to handle cases where the player doesn't complete the pattern in time.
+                    setTimeout(() => {
+                        // Check if the game is still waiting for input and the pattern isn't complete.
+                        // This prevents this from firing if the player has already succeeded or failed.
+                        if (GameState.current === 'PLAYER_INPUT' && GameState.playerPattern.length < GameState.gamePattern.length) {
+                            UIController.showTimingFeedback("MISS"); // Show "MISS" feedback for the timeout
+                            GameManager.setState('ROUND_FAIL');   // Trigger the round failure sequence
+                        }
+                    }, GameState.currentPatternDuration + 200); // Add a 200ms buffer for generosity
                 },
                 
                 handleInput(clickedIndex) {
