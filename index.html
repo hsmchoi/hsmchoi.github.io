@@ -352,7 +352,19 @@
                     'startShield': { name: '이지스 쉴드', description: '게임을 시작할 때 실드를 하나 가지고 시작합니다.', cost: 1000, maxLevel: 1 },
                     'fragmentBonus': { name: '탐광자', description: '획득하는 조각의 양을 10% 늘립니다.', cost: 750, maxLevel: 3 },
                     'gaugeBonus': { name: '몰입', description: '스킬 게이지 획득량을 10% 늘립니다.', cost: 600, maxLevel: 3 }
-                }
+                },
+                // --- NEW: SCIENTIFICALLY-GROUNDED ENCOUNTER SEQUENCE ---
+                encounterSequence: [
+                    'Slime',             // 1. Core Loop Learning (Working Memory Basics)
+                    'Goblin',            // 2. Breaking Prediction (Attention)
+                    'Mimic',             // 3. Reinforcing Focus on "Now"
+                    'The Destroyer',     // 4. FIRST BOSS: Testing Inhibitory Control
+                    'Conductor',         // 5. New Mechanic: Divided Attention (Pattern + Rhythm)
+                    'Goblin',            // 6. Internalizing New Skill (Practice)
+                    'Mimic',             // 7. Internalizing New Skill (Advanced Practice)
+                    'The Rhythm Breaker',// 8. MID-BOSS: Testing Higher-Order Pattern Recognition
+                    'The Shuffler'       // 9. FINAL BOSS: Testing Cognitive Flexibility
+                ]
             };
             
             // --- Centralized Game State ---
@@ -488,19 +500,11 @@
                     GameState.unbankedFragments = 0;
                     GameState.skillGauge = 0;
                     GameState.lostFragments = { amount: 0, level: -1 };
+                    GameState.playerHistory = [];
 
                     if (GameState.baseCampLevel > 0) {
                         GameState.level = GameState.baseCampLevel;
                         GameState.roundCounter = GameState.baseCampLevel;
-                        // Pre-populate a long pattern to simulate starting from a checkpoint
-                        let tempPattern = [];
-                        for (let i = 1; i <= GameState.baseCampLevel; i++) {
-                            EnemyController.selectNewAntagonist((i % 4) === 0);
-                            for (let j = 0; j < GameState.maxMonsterHP; j++) {
-                                tempPattern.push(EnemyController.getNextStep(tempPattern));
-                            }
-                        }
-                        GameState.gamePattern = tempPattern; // This logic needs review for actual gameplay sense
                     } else {
                         GameState.level = 0;
                         GameState.roundCounter = 0;
@@ -522,12 +526,7 @@
                     GameState.playerTimings = [];
                     GameState.accumulatedDamage = 0;
                     
-                    const isBossRound = (GameState.roundCounter % 4) === 0;
-                    if (isBossRound) {
-                        await UIController.showBossWarning();
-                    }
-                    
-                    EnemyController.selectNewAntagonist(isBossRound);
+                    EnemyController.selectNewAntagonist();
 
                     if (GameState.currentAntagonist.specialMechanic === 'shuffleButtons') {
                         await PlayerController.shuffleButtons();
@@ -744,6 +743,7 @@
                 },
 
                 async showBossWarning() {
+                    if (!GameState.currentAntagonist || GameState.currentAntagonist.type !== 'boss') return;
                     DOM.body.classList.add('boss-warning-flash');
                     AudioManager.playBossScream();
                     await sleep(1500);
@@ -1085,9 +1085,21 @@
              * EnemyController: Manages antagonist selection, pattern generation, and state.
              */
             const EnemyController = {
-                selectNewAntagonist(isBossRound) {
-                    const pool = isBossRound ? GameData.bossMonsters : GameData.normalMonsters;
-                    GameState.currentAntagonist = pool[Math.floor(Math.random() * pool.length)];
+                selectNewAntagonist() {
+                    let monsterKey;
+                    const sequenceIndex = GameState.roundCounter - 1;
+
+                    if (sequenceIndex < GameData.encounterSequence.length) {
+                        // We are within the designed learning curve
+                        monsterKey = GameData.encounterSequence[sequenceIndex];
+                    } else {
+                        // Endgame: Cycle through bosses for a persistent challenge
+                        const bossPool = GameData.bossMonsters;
+                        const endgameIndex = (sequenceIndex - GameData.encounterSequence.length) % bossPool.length;
+                        monsterKey = bossPool[endgameIndex].name; // The object key is the monster's name
+                    }
+                    
+                    GameState.currentAntagonist = GameData.antagonistProfiles[monsterKey];
                     
                     DOM.monsterIcon.innerHTML = GameState.currentAntagonist.icon;
                     DOM.monsterIcon.style.color = GameState.currentAntagonist.color;
@@ -1100,489 +1112,4 @@
                 },
 
                 getNextStep(pattern) {
-                    const weights = GameState.currentAntagonist.generateNext(pattern.slice());
-                    const lastStep = pattern.length > 0 ? pattern[pattern.length - 1] : -1;
-                    if (lastStep !== -1) { weights[lastStep] = 0; }
-                    
-                    const totalWeight = weights.reduce((sum, w) => sum + w, 0);
-                    if (totalWeight === 0) {
-                        const available = [0, 1, 2, 3].filter(i => i !== lastStep);
-                        return available[Math.floor(Math.random() * available.length)];
-                    }
-                    
-                    let random = Math.random() * totalWeight;
-                    for (let i = 0; i < weights.length; i++) {
-                        if (random < weights[i]) return i;
-                        random -= weights[i];
-                    }
-                    return 3;
-                },
-                
-                playPattern() {
-                    UIController.resetButtonAndMonsterStates();
-                    DOM.gameButtons.forEach(btn => btn.classList.add('disabled', 'desaturated'));
-                    
-                    let cumulativeTime = 0;
-                    const baseSpeed = 700, speedDecrementPerStage = 80, minSpeed = 150;
-                    const stage = Math.floor((GameState.level - 1) / 4);
-                    const patternIntervalBase = Math.max(minSpeed, baseSpeed - (stage * speedDecrementPerStage));
-                    
-                    GameState.gamePattern.forEach(originalId => {
-                        let interval = patternIntervalBase;
-                        if (GameState.currentAntagonist.specialMechanic === 'variableSpeed') {
-                            interval = patternIntervalBase * (Math.random() * 0.8 + 0.6);
-                        }
-                        setTimeout(() => {
-                            const currentIndex = GameState.buttonMapping.indexOf(originalId);
-                            this.animateButton(currentIndex, false);
-                        }, cumulativeTime);
-                        GameState.gameTimings.push(cumulativeTime + interval / 2);
-                        cumulativeTime += interval;
-                    });
-                    
-                    GameState.currentPatternDuration = cumulativeTime;
-                    UIController.startRhythmAnimation('playback', GameState.currentPatternDuration);
-                    
-                    setTimeout(() => {
-                        if (GameState.current === 'PATTERN_PLAYBACK') {
-                             UIController.stopRhythmAnimation();
-                             GameManager.setState('PLAYER_INPUT');
-                        }
-                    }, GameState.currentPatternDuration + 100);
-                },
-
-                animateButton(buttonIndex, isPlayer) {
-                    const btn = DOM.gameButtons[buttonIndex];
-                    const originalId = GameState.buttonMapping[buttonIndex];
-                    
-                    if (!isPlayer) { btn.classList.remove('desaturated'); }
-                    btn.classList.add('active');
-                    
-                    const glowSize = 15 + GameState.combo * 4;
-                    const glowSpread = 2 + GameState.combo * 1;
-                    btn.style.boxShadow = `0 0 ${glowSize}px ${glowSpread}px var(--glow-color)`;
-                    
-                    AudioManager.playNote(originalId, isPlayer);
-                    
-                    setTimeout(() => {
-                        btn.classList.remove('active');
-                        btn.style.boxShadow = '';
-                        if (!isPlayer) { btn.classList.add('desaturated'); }
-                    }, 300);
-                },
-                
-                async takeDamage() {
-                    DOM.monsterIcon.classList.add('monster-hit-animation');
-                    AudioManager.playComboAttackSound();
-                    GameState.currentMonsterHP = Math.max(0, GameState.currentMonsterHP - GameState.accumulatedDamage);
-                    UIController.updateHealthBar();
-                    GameState.accumulatedDamage = 0;
-                    await sleep(400);
-                    DOM.monsterIcon.classList.remove('monster-hit-animation');
-                }
-            };
-            
-            /**
-             * PlayerController: Handles player input, timing, skills, and state.
-             */
-            const PlayerController = {
-                enableInput() {
-                    GameState.isPlayerClicking = false;
-                    GameState.patternStartTime = performance.now();
-                    DOM.gameBoard.classList.add('idle');
-                    DOM.gameButtons.forEach(btn => {
-                        btn.classList.remove('disabled', 'desaturated');
-                        btn.classList.add('pulse');
-                        setTimeout(() => btn.classList.remove('pulse'), 400);
-                    });
-                    UIController.startRhythmAnimation('input', GameState.currentPatternDuration);
-
-                    // --- BUG FIX ---
-                    // Set a timeout to handle cases where the player doesn't complete the pattern in time.
-                    setTimeout(() => {
-                        // Check if the game is still waiting for input and the pattern isn't complete.
-                        // This prevents this from firing if the player has already succeeded or failed.
-                        if (GameState.current === 'PLAYER_INPUT' && GameState.playerPattern.length < GameState.gamePattern.length) {
-                            UIController.showTimingFeedback("MISS"); // Show "MISS" feedback for the timeout
-                            GameManager.setState('ROUND_FAIL');   // Trigger the round failure sequence
-                        }
-                    }, GameState.currentPatternDuration + 200); // Add a 200ms buffer for generosity
-                },
-                
-                handleInput(clickedIndex) {
-                    GameState.lastPressedButtonIndex = clickedIndex;
-                    const originalId = GameState.buttonMapping[clickedIndex];
-                    GameState.playerTimings.push(performance.now() - GameState.patternStartTime);
-                    EnemyController.animateButton(clickedIndex, true);
-                    GameState.playerPattern.push(originalId);
-                    this.checkAnswer(GameState.playerPattern.length - 1);
-                },
-
-                checkAnswer(currentIndex) {
-                    DOM.gameBoard.classList.remove('idle');
-                    DOM.gameBoard.classList.add('dancing');
-
-                    const correctButtonId = GameState.gamePattern[currentIndex];
-                    const playerButtonId = GameState.playerPattern[currentIndex];
-
-                    if (playerButtonId !== correctButtonId) {
-                        if (GameState.isShieldActive) {
-                            this.breakShield();
-                            UIController.showTimingFeedback("MISS");
-                            GameState.combo++;
-                            if (GameState.playerPattern.length === GameState.gamePattern.length) {
-                                GameManager.setState('ROUND_SUCCESS');
-                            } else {
-                                GameState.isPlayerClicking = false;
-                            }
-                            return;
-                        }
-                        this.setExpression(GameState.lastPressedButtonIndex, 'sad');
-                        UIController.showTimingFeedback("WRONG");
-                        GameManager.setState('ROUND_FAIL');
-                        return;
-                    }
-                    
-                    const correctTime = GameState.gameTimings[currentIndex];
-                    const playerTime = GameState.playerTimings[currentIndex] % GameState.currentPatternDuration;
-                    const diff = Math.abs(playerTime - correctTime);
-
-                    let judgement = "MISS";
-                    if (diff <= GameData.timingJudgement.PERFECT.window) judgement = "PERFECT";
-                    else if (diff <= GameData.timingJudgement.GREAT.window) judgement = "GREAT";
-                    else if (diff <= GameData.timingJudgement.GOOD.window) judgement = "GOOD";
-                    
-                    const judgementInfo = GameData.timingJudgement[judgement];
-                    
-                    if (judgement !== "MISS") {
-                        this.setExpression(GameState.lastPressedButtonIndex, 'happy');
-                        GameState.accumulatedDamage += judgementInfo.damage;
-                    } else {
-                        this.setExpression(GameState.lastPressedButtonIndex, 'sad');
-                    }
-                    UIController.showTimingFeedback(judgement);
-
-                    const skillGainMultiplier = 1 + (GameState.playerUpgrades.gaugeBonus || 0) * 0.1;
-                    if (!GameState.isSkillReady) {
-                        GameState.skillGauge = Math.min(GameState.maxSkillGauge, GameState.skillGauge + judgementInfo.skillGain * skillGainMultiplier);
-                    }
-
-                    const fragmentMultiplier = 1 + (GameState.playerUpgrades.fragmentBonus || 0) * 0.1;
-                    const fragmentsToAdd = (judgement !== "MISS") ? Math.round(GameState.level * 5 * judgementInfo.scoreMultiplier) : GameState.level;
-                    GameState.unbankedFragments += Math.round(fragmentsToAdd * GameState.currentAntagonist.scoreMultiplier * fragmentMultiplier);
-                    
-                    GameState.combo++;
-                    if (GameState.combo > 15) DOM.gameBoard.classList.add('combo-3');
-                    else if (GameState.combo > 8) DOM.gameBoard.classList.add('combo-2');
-                    else if (GameState.combo > 3) DOM.gameBoard.classList.add('combo-1');
-
-                    UIController.updateAll();
-
-                    if (GameState.playerPattern.length === GameState.gamePattern.length) {
-                        GameManager.setState('ROUND_SUCCESS');
-                    } else {
-                        GameState.isPlayerClicking = false;
-                    }
-                },
-                
-                setExpression(buttonIndex, expression) {
-                    if (buttonIndex < 0 || buttonIndex >= DOM.gameButtons.length) return;
-                    const btn = DOM.gameButtons[buttonIndex];
-                    const mouth = btn.querySelector('.mouth');
-                    if (!mouth) return;
-                    
-                    const mapping = GameState.buttonMapping[buttonIndex];
-                    let happyPath, sadPath;
-                    if (mapping === 1) { happyPath = "M 12 23 Q 16 26 20 23"; sadPath = "M 12 24 Q 16 21 20 24"; }
-                    else if (mapping === 2) { happyPath = "M 12 21 Q 16 24 20 21"; sadPath = "M 12 22 Q 16 19 20 22"; }
-                    else { happyPath = "M 12 22 Q 16 25 20 22"; sadPath = "M 12 23 Q 16 20 20 23"; }
-
-                    mouth.setAttribute('d', expression === 'happy' ? happyPath : sadPath);
-                },
-
-                activateSkill() {
-                    if (!GameState.isSkillReady || GameState.isShieldActive) return;
-                    GameState.isShieldActive = true;
-                    GameState.isSkillReady = false;
-                    GameState.skillGauge = 0;
-                    UIController.updateSkillGauge();
-                    AudioManager.playShieldUpSound();
-                    this.addShieldIndicator();
-                },
-                
-                addShieldIndicator() {
-                    const existing = document.getElementById('shield-indicator');
-                    if (existing) existing.remove();
-                    const shieldIndicator = document.createElement('div');
-                    shieldIndicator.id = 'shield-indicator';
-                    shieldIndicator.innerHTML = `<svg class="w-8 h-8 text-blue-400" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M10 1.944A11.954 11.954 0 012.166 5.02.997.997 0 001 6v5a9 9 0 009 9 9 9 0 009-9V6a.997.997 0 00-1.166-.98A11.954 11.954 0 0110 1.944z" clip-rule="evenodd"></path></svg>`;
-                    shieldIndicator.className = 'absolute -top-2 -right-2';
-                    DOM.livesDisplay.appendChild(shieldIndicator);
-                },
-
-                breakShield() {
-                    GameState.isShieldActive = false;
-                    AudioManager.playShieldBreakSound();
-                    const shieldIndicator = document.getElementById('shield-indicator');
-                    if (shieldIndicator) {
-                        shieldIndicator.classList.add('shield-break-animation');
-                        shieldIndicator.addEventListener('animationend', () => shieldIndicator.remove());
-                    }
-                },
-                
-                async shuffleButtons() {
-                    AudioManager.playShuffleSound();
-                    // Fisher-Yates shuffle
-                    for (let i = GameState.buttonMapping.length - 1; i > 0; i--) {
-                        const j = Math.floor(Math.random() * (i + 1));
-                        [GameState.buttonMapping[i], GameState.buttonMapping[j]] = [GameState.buttonMapping[j], GameState.buttonMapping[i]];
-                    }
-                    DOM.gameButtons.forEach(btn => btn.classList.add('shuffling'));
-                    await sleep(400);
-                    UIController.renderButtons();
-                    DOM.gameButtons.forEach(btn => btn.classList.remove('shuffling'));
-                }
-            };
-            
-            /**
-             * BasecampController: Manages upgrades, currency, and checkpoints.
-             */
-            const BasecampController = {
-                populateUI() {
-                    DOM.harmonicEssenceDisplay.textContent = GameState.harmonicEssence.toLocaleString();
-                    DOM.upgradeList.innerHTML = '';
-                    Object.keys(GameData.upgrades).forEach(id => {
-                        const upgrade = GameData.upgrades[id];
-                        const currentLevel = GameState.playerUpgrades[id] || 0;
-                        const isMaxLevel = currentLevel >= upgrade.maxLevel;
-                        const cost = Math.floor(upgrade.cost * Math.pow(1.5, currentLevel));
-                        const canAfford = GameState.harmonicEssence >= cost;
-
-                        const card = document.createElement('div');
-                        card.className = 'p-4 rounded-lg bg-slate-100 dark:bg-slate-700 flex justify-between items-center';
-                        
-                        let levelDisplay = upgrade.maxLevel > 1 ? `<span class="text-sm font-bold ${isMaxLevel ? 'text-green-500' : 'text-slate-500'}">Lv. ${currentLevel}/${upgrade.maxLevel}</span>` : '';
-
-                        card.innerHTML = `
-                            <div>
-                                <h3 class="font-bold text-lg">${upgrade.name} ${levelDisplay}</h3>
-                                <p class="text-sm text-secondary">${upgrade.description}</p>
-                            </div>
-                            <button id="upgrade-${id}" class="bg-blue-500 text-white font-bold py-2 px-4 rounded-lg hover:bg-blue-600 disabled:bg-slate-400 disabled:cursor-not-allowed transition-colors">
-                                ${isMaxLevel ? '최대 레벨' : `${cost.toLocaleString()} <span style="color: var(--essence-color);">E</span>`}
-                            </button>`;
-                        DOM.upgradeList.appendChild(card);
-
-                        const btn = document.getElementById(`upgrade-${id}`);
-                        if (isMaxLevel || !canAfford) btn.disabled = true;
-                        btn.addEventListener('click', () => this.purchaseUpgrade(id, cost));
-                    });
-                },
-
-                purchaseUpgrade(id, cost) {
-                    if (GameState.harmonicEssence >= cost) {
-                        GameState.harmonicEssence -= cost;
-                        GameState.playerUpgrades[id] = (GameState.playerUpgrades[id] || 0) + 1;
-                        PersistenceManager.saveBasecampData();
-                        this.populateUI();
-                    }
-                },
-
-                applyUpgrades() {
-                    GameState.lives = 3 + (GameState.playerUpgrades.bonusLife || 0);
-                    GameState.isShieldActive = (GameState.playerUpgrades.startShield || 0) > 0;
-                },
-
-                calculateEssence() {
-                    const finalScore = GameState.totalScore + GameState.unbankedFragments;
-                    const essenceGained = Math.floor((finalScore / 100) + (GameState.level * 5));
-                    GameState.harmonicEssence += essenceGained;
-                },
-                
-                saveCheckpoint() {
-                    if (GameState.level <= GameState.baseCampLevel) return;
-                    GameState.baseCampLevel = GameState.level;
-                    PersistenceManager.saveCheckpointData();
-                    
-                    GameState.totalScore += GameState.unbankedFragments;
-                    GameState.unbankedFragments = 0;
-                    UIController.updateAll();
-                    AudioManager.playCampSound();
-                }
-            };
-
-            /**
-             * BestiaryController: Manages the bestiary modal and data.
-             */
-            const BestiaryController = {
-                populate() {
-                    DOM.bestiaryList.innerHTML = '';
-                    const encountered = JSON.parse(localStorage.getItem('encounteredAntagonists')) || [];
-                    const cleared = JSON.parse(localStorage.getItem('clearedBosses')) || [];
-                    Object.values(GameData.antagonistProfiles).forEach(profile => {
-                        const isEncountered = encountered.includes(profile.key);
-                        const isCleared = profile.type === 'boss' && cleared.includes(profile.key);
-                        
-                        const card = document.createElement('div');
-                        card.className = `p-4 rounded-lg flex items-start gap-4 relative ${isEncountered ? 'bg-slate-100 dark:bg-slate-700' : 'bg-slate-200 dark:bg-slate-900 filter grayscale opacity-60'}`;
-                        
-                        const iconHtml = isEncountered ? profile.icon : `<svg viewBox="0 0 100 100"><text x="50" y="65" font-size="50" text-anchor="middle" fill="currentColor">?</text></svg>`;
-                        const nameHtml = isEncountered ? profile.name : '???';
-                        const descHtml = isEncountered ? profile.description : '이 적과 마주쳐 패배하면 정보를 얻을 수 있습니다.';
-                        const clearMarkHtml = isCleared ? `<div class="bestiary-clear-mark">CLEAR</div>` : '';
-
-                        card.innerHTML = `
-                            <div class="w-16 h-16 flex-shrink-0" style="color: ${isEncountered ? profile.color : 'gray'}">${iconHtml}</div>
-                            <div class="text-left">
-                                <h3 class="font-bold text-lg">${nameHtml}</h3>
-                                <p class="text-sm text-secondary mt-1">${descHtml}</p>
-                            </div>
-                            ${clearMarkHtml}`;
-                        DOM.bestiaryList.appendChild(card);
-                    });
-                }
-            };
-            
-            /**
-             * SettingsController: Manages theme, audio settings, and modals.
-             */
-            const SettingsController = {
-                init() {
-                    // Theme
-                    const savedTheme = localStorage.getItem('theme');
-                    const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
-                    const isDark = savedTheme === 'dark' || (!savedTheme && prefersDark);
-                    this.toggleTheme(isDark);
-                    
-                    // Modals
-                    this.addEventListeners();
-                },
-
-                addEventListeners() {
-                    // Theme
-                    DOM.themeToggle.addEventListener('click', () => {
-                        const isDark = !document.documentElement.classList.contains('dark');
-                        localStorage.setItem('theme', isDark ? 'dark' : 'light');
-                        this.toggleTheme(isDark);
-                    });
-
-                    // BGM
-                    DOM.bgmToggle.addEventListener('click', async () => {
-                        await Tone.start();
-                        GameState.isBgmPlaying = !GameState.isBgmPlaying;
-                        localStorage.setItem('bgmState', GameState.isBgmPlaying ? 'on' : 'off');
-                        this.updateBgmToggleUI(GameState.isBgmPlaying);
-                        if (GameState.isBgmPlaying) AudioManager.setBgm(GameState.currentBgm || 'waiting');
-                        else AudioManager.stopBgm();
-                    });
-                    
-                    // Volume
-                    DOM.bgmVolumeSlider.addEventListener('input', e => { AudioManager.volumes.bgm.volume.value = e.target.value; localStorage.setItem('bgmVolume', e.target.value); });
-                    DOM.sfxVolumeSlider.addEventListener('input', e => { AudioManager.volumes.sfx.volume.value = e.target.value; localStorage.setItem('sfxVolume', e.target.value); });
-
-                    // Modal Buttons
-                    DOM.settingsBtn.addEventListener('click', () => DOM.settingsModal.classList.remove('hidden'));
-                    DOM.closeSettingsBtn.addEventListener('click', () => DOM.settingsModal.classList.add('hidden'));
-                    DOM.bestiaryBtn.addEventListener('click', () => { BestiaryController.populate(); DOM.bestiaryModal.classList.remove('hidden'); });
-                    DOM.closeBestiaryBtn.addEventListener('click', () => DOM.bestiaryModal.classList.add('hidden'));
-                    DOM.basecampBtn.addEventListener('click', () => { BasecampController.populateUI(); DOM.basecampModal.classList.remove('hidden'); });
-                    DOM.closeBasecampBtn.addEventListener('click', () => DOM.basecampModal.classList.add('hidden'));
-                },
-
-                toggleTheme(isDark) {
-                    document.documentElement.classList.toggle('dark', isDark);
-                    this.updateThemeToggleUI(isDark);
-                },
-
-                updateThemeToggleUI(isDark) {
-                    const handle = DOM.themeToggle.querySelector('span');
-                    if (isDark) {
-                        DOM.themeToggle.classList.remove('bg-gray-200', 'dark:bg-slate-600');
-                        DOM.themeToggle.classList.add('bg-teal-600');
-                        handle.classList.add('translate-x-5');
-                    } else {
-                        DOM.themeToggle.classList.remove('bg-teal-600');
-                        DOM.themeToggle.classList.add('bg-gray-200', 'dark:bg-slate-600');
-                        handle.classList.remove('translate-x-5');
-                    }
-                },
-                
-                updateBgmToggleUI(isPlaying) {
-                    const handle = DOM.bgmToggle.querySelector('span');
-                    if (isPlaying) {
-                        DOM.bgmToggle.classList.remove('bg-gray-200', 'dark:bg-slate-600');
-                        DOM.bgmToggle.classList.add('bg-teal-600');
-                        handle.classList.add('translate-x-5');
-                    } else {
-                        DOM.bgmToggle.classList.remove('bg-teal-600');
-                        DOM.bgmToggle.classList.add('bg-gray-200', 'dark:bg-slate-600');
-                        handle.classList.remove('translate-x-5');
-                    }
-                }
-            };
-            
-            /**
-             * PersistenceManager: Handles saving and loading data from localStorage.
-             */
-            const PersistenceManager = {
-                loadAll() {
-                    GameState.highScore = parseInt(localStorage.getItem('patternGameHighScore')) || 0;
-                    
-                    const campData = JSON.parse(localStorage.getItem('patternGameBaseCamp'));
-                    if (campData) {
-                        const today = new Date().toISOString().split('T')[0];
-                        if (campData.date === today) {
-                            GameState.baseCampLevel = campData.level;
-                            DOM.startBtn.textContent = `캠프 ${GameState.baseCampLevel}부터 시작`;
-                        } else {
-                            localStorage.removeItem('patternGameBaseCamp');
-                        }
-                    }
-
-                    GameState.harmonicEssence = parseInt(localStorage.getItem('harmonicEssence')) || 0;
-                    GameState.playerUpgrades = JSON.parse(localStorage.getItem('playerUpgrades')) || {};
-                },
-
-                saveAll() {
-                    const finalScore = GameState.totalScore + GameState.unbankedFragments;
-                    if (finalScore > GameState.highScore) {
-                        GameState.highScore = finalScore;
-                        localStorage.setItem('patternGameHighScore', GameState.highScore);
-                        confetti({ particleCount: 300, spread: 180, origin: { y: 0.6 }, gravity: 0.8, ticks: 300, scalar: 1.2 });
-                    }
-                    this.saveBasecampData();
-                },
-
-                saveBasecampData() {
-                    localStorage.setItem('harmonicEssence', GameState.harmonicEssence);
-                    localStorage.setItem('playerUpgrades', JSON.stringify(GameState.playerUpgrades));
-                },
-
-                saveCheckpointData() {
-                    const today = new Date().toISOString().split('T')[0];
-                    localStorage.setItem('patternGameBaseCamp', JSON.stringify({ level: GameState.baseCampLevel, date: today }));
-                },
-                
-                saveClearedBoss(bossKey) {
-                    let cleared = JSON.parse(localStorage.getItem('clearedBosses')) || [];
-                    if (!cleared.includes(bossKey)) {
-                        cleared.push(bossKey);
-                        localStorage.setItem('clearedBosses', JSON.stringify(cleared));
-                    }
-                },
-                
-                saveEncounteredAntagonist(key) {
-                    let encountered = JSON.parse(localStorage.getItem('encounteredAntagonists')) || [];
-                    if (!encountered.includes(key)) {
-                        encountered.push(key);
-                        localStorage.setItem('encounteredAntagonists', JSON.stringify(encountered));
-                    }
-                }
-            };
-
-            // --- Initialize the Game ---
-            GameManager.init();
-        });
-    </script>
-</body>
-</html>
+                 
