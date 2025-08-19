@@ -268,569 +268,1303 @@
         (function(){let d=new Date();function c(){try{(function(){if(new Date()-d>100){/*window.location.reload()*/}d=new Date()}).toString().indexOf('debugger')!==-1}catch(e){}setTimeout(c,100)}c();document.addEventListener('keydown',function(e){if(e.key==='F12'||(e.ctrlKey&&e.shiftKey&&e.key==='I')){e.preventDefault()}});document.addEventListener('contextmenu',function(e){e.preventDefault()})})();
         
         document.addEventListener('DOMContentLoaded', () => {
-            // --- Element Selectors ---
-            const tB=document.getElementById('theme-toggle');
-            const mC=document.getElementById('main-container'),sB=document.getElementById('start-btn'),gBs=document.querySelectorAll('.game-button'),gBd=document.querySelector('.game-board'),b=document.body,bT=document.getElementById('bgm-toggle'),iPI=document.getElementById('in-progress-indicator'),bD=document.getElementById('basecamp-display'),rSM=document.getElementById('rest-stage-modal');
-            const livesDisplay=document.getElementById('lives-display'),totalScoreDisplay=document.getElementById('total-score-display'),unbankedFragmentsDisplay=document.getElementById('unbanked-fragments-display'),timingFeedback=document.getElementById('timing-feedback');
-            const settingsBtn = document.getElementById('settings-btn'), settingsModal = document.getElementById('settings-modal'), closeSettingsBtn = document.getElementById('close-settings-btn');
-            const bgmVolumeSlider = document.getElementById('bgm-volume-slider'), sfxVolumeSlider = document.getElementById('sfx-volume-slider');
-            const bestiaryBtn = document.getElementById('bestiary-btn'), bestiaryModal = document.getElementById('bestiary-modal'), closeBestiaryBtn = document.getElementById('close-bestiary-btn'), bestiaryList = document.getElementById('bestiary-list');
-            const monsterIcon = document.getElementById('monster-icon'), monsterName = document.getElementById('monster-name'), monsterDesc = document.getElementById('monster-desc');
-            const hpBarFill = document.getElementById('monster-hp-bar-fill'), hpBarDamage = document.getElementById('monster-hp-bar-damage');
-            const sparkEffectLeft = document.getElementById('spark-effect-left');
-            const sparkEffectRight = document.getElementById('spark-effect-right');
-            const initialScreenButtons = document.getElementById('initial-screen-buttons'), inGameButtons = document.getElementById('in-game-buttons');
-            const pauseBtn = document.getElementById('pause-btn'), pauseModal = document.getElementById('pause-modal'), resumeBtn = document.getElementById('resume-btn');
-            const skillContainer = document.getElementById('skill-container'), skillBtn = document.getElementById('skill-btn'), skillGaugeFill = document.getElementById('skill-gauge-fill');
-            const basecampBtn = document.getElementById('basecamp-btn'), basecampModal = document.getElementById('basecamp-modal'), closeBasecampBtn = document.getElementById('close-basecamp-btn'), upgradeList = document.getElementById('upgrade-list'), harmonicEssenceDisplay = document.getElementById('harmonic-essence-display');
-            let sparkSide = 'left';
-            
-            const rhythmCanvas = document.getElementById('rhythm-display');
-            const rhythmCtx = rhythmCanvas.getContext('2d');
-            
-            // --- Animation State ---
-            let animationState = { id: null, startTime: 0, isRunning: false, mode: 'playback' };
-            
-            // --- Game State Variables ---
-            let gP=[], pP=[], l=0, hS=0, bCL=0, iP=false, c=0, iBP=false, cB='waiting', roundCounter = 0;
-            let lives=0,totalScore=0,unbankedFragments=0,lostFragments={amount:0,level:-1};
-            let gameTimings=[],playerTimings=[],patternStartTime=0, currentPatternDuration = 0;
-            let iPC = false; // isPlayerClicking
-            let lastPressedButtonIndex = -1;
-            let currentMonsterHP = 0, maxMonsterHP = 0;
-            let isPaused = false, pauseStartTime = 0;
-            let playerHistory = []; // For Mimic
-            let skillGauge = 0, maxSkillGauge = 100, isSkillReady = false, isShieldActive = false;
-            let harmonicEssence = 0;
-            let playerUpgrades = {};
-            let accumulatedDamage = 0;
 
-            // --- Game Configuration ---
-            const timingJudgement={
-                PERFECT:{window:80,text:"Perfect!",scoreMultiplier:2, damage: 3, skillGain: 25},
-                GREAT:{window:160,text:"Great",scoreMultiplier:1.5, damage: 2, skillGain: 10},
-                GOOD:{window:240,text:"Good",scoreMultiplier:1, damage: 1, skillGain: 0},
-                MISS:{window:Infinity, text:"Miss", scoreMultiplier:0, damage: 0, skillGain: 0},
-                WRONG:{text:"Wrong!", scoreMultiplier:0, damage: 0, skillGain: 0}
-            };
-            let s,ssI,eS,tUS,sBS,bCS, comboAttackSound, bossScream, shieldUpSound, shieldBreakSound, shuffleSound, sweepSound; // Sound synths
-            let bPs={}; // BGM players
-            let bgmVolume, sfxVolume;
-            const sl=ms=>new Promise(res=>setTimeout(res,ms)); // Sleep helper
-            
-            const buttonProperties = [
-                { class: 'bg-rose-400', glow: 'rgba(251, 113, 133, 0.7)', symbol: `<svg class="game-button-symbol" viewBox="0 0 32 32"><g><path class="symbol-shape" d="M16 2 L30 16 L16 30 L2 16 Z"/><g class="symbol-face" fill="#1e293b" opacity="0.6"><circle cx="12" cy="14" r="1.5"/><circle cx="20" cy="14" r="1.5"/><path class="mouth" d="M 12 22 Q 16 25 20 22" stroke="#1e293b" stroke-width="1.5" fill="none" stroke-linecap="round"/></g></g></svg>`, color: '#fb7185' },
-                { class: 'bg-sky-400', glow: 'rgba(56, 189, 248, 0.7)', symbol: `<svg class="game-button-symbol" viewBox="0 0 32 32"><g><path class="symbol-shape" d="M16 2 L30 30 L2 30 Z"/><g class="symbol-face" fill="#1e293b" opacity="0.6"><circle cx="12" cy="16" r="1.5"/><circle cx="20" cy="16" r="1.5"/><path class="mouth" d="M 12 23 Q 16 26 20 23" stroke="#1e293b" stroke-width="1.5" fill="none" stroke-linecap="round"/></g></g></svg>`, color: '#38bdf8' },
-                { class: 'bg-amber-400', glow: 'rgba(251, 191, 36, 0.7)', symbol: `<svg class="game-button-symbol" viewBox="0 0 32 32"><g><rect class="symbol-shape" x="4" y="4" width="24" height="24" rx="4"/><g class="symbol-face" fill="#1e293b" opacity="0.6"><circle cx="12" cy="13" r="1.5"/><circle cx="20" cy="13" r="1.5"/><path class="mouth" d="M 12 21 Q 16 24 20 21" stroke="#1e293b" stroke-width="1.5" fill="none" stroke-linecap="round"/></g></g></svg>`, color: '#facc15' },
-                { class: 'bg-emerald-400', glow: 'rgba(52, 211, 153, 0.7)', symbol: `<svg class="game-button-symbol" viewBox="0 0 32 32"><g><circle class="symbol-shape" cx="16" cy="16" r="14"/><g class="symbol-face" fill="#1e293b" opacity="0.6"><circle cx="12" cy="14" r="1.5"/><circle cx="20" cy="14" r="1.5"/><path class="mouth" d="M 12 22 Q 16 25 20 22" stroke="#1e293b" stroke-width="1.5" fill="none" stroke-linecap="round"/></g></g></svg>`, color: '#34d399' }
-            ];
-            let buttonMapping = [0, 1, 2, 3];
+            // --- Helper Functions ---
+            const sleep = ms => new Promise(res => setTimeout(res, ms));
 
-            // --- Dynamic Antagonist System ---
-            let currentAntagonist;
-            const antagonistProfiles = {
-                'Slime': { key: 'slime', name: '슬라임', type: 'normal', maxHp: 3, scoreMultiplier: 1.0, description: '가장 기본적인 적. 특별한 패턴 없이 무작위로 행동합니다.', icon: `<svg viewBox="0 0 100 100"><path d="M20 70 C 20 40, 80 40, 80 70 Q 50 90, 20 70 Z" fill="currentColor"/><circle cx="40" cy="60" r="5" fill="black"/><circle cx="60" cy="60" r="5" fill="black"/></svg>`, color: '#84cc16', generateNext: (pattern) => [1, 1, 1, 1] },
-                'Goblin': { key: 'goblin', name: '고블린', type: 'normal', maxHp: 5, scoreMultiplier: 1.2, description: '단순 반복(A-A)을 피하는 약간의 지능을 가졌습니다.', icon: `<svg viewBox="0 0 100 100"><path d="M50 20 L80 80 L20 80 Z" fill="currentColor"/><path d="M40 50 L60 50" stroke="black" stroke-width="4"/><path d="M30 70 Q 50 60, 70 70" fill="none" stroke="black" stroke-width="4"/></svg>`, color: '#16a34a', generateNext: (pattern) => { let weights = [1, 1, 1, 1]; if (pattern.length > 0) weights[pattern[pattern.length-1]] *= 0.2; return weights; } },
-                'Mimic': { key: 'mimic', name: '흉내쟁이', type: 'normal', maxHp: 6, scoreMultiplier: 1.4, description: '플레이어가 이전에 성공했던 패턴을 교묘하게 따라합니다.', icon: `<svg viewBox="0 0 100 100"><rect x="20" y="20" width="60" height="60" rx="10" fill="currentColor"/><rect x="30" y="10" width="40" height="20" rx="5" fill="currentColor"/><circle cx="50" cy="50" r="10" fill="black"/><path d="M35 65 H 65" stroke="black" stroke-width="5" stroke-linecap="round"/></svg>`, color: '#a16207', generateNext: (pattern) => [1, 1, 1, 1] },
-                'Conductor': { key: 'conductor', name: '변속자', type: 'normal', maxHp: 7, scoreMultiplier: 1.6, description: '한 패턴 내에서 노트의 속도를 자유자재로 바꿉니다.', icon: `<svg viewBox="0 0 100 100"><path d="M20 50 C 40 20, 60 80, 80 50" stroke="currentColor" stroke-width="8" fill="none"/></svg>`, color: '#7c3aed', specialMechanic: 'variableSpeed', generateNext: (pattern) => [1, 1, 1, 1] },
-                'The Destroyer': { key: 'destroyer', name: '파괴자', type: 'boss', maxHp: 10, scoreMultiplier: 1.5, description: '플레이어의 예측(A-B-A 패턴 등)을 파괴하는 데 집중합니다.', color: '#ef4444', icon: `<svg viewBox="0 0 100 100"><path d="M50 10 L90 50 L50 90 L10 50 Z M50 25 L75 50 L50 75 L25 50 Z" fill="currentColor"/></svg>`, generateNext: (pattern) => { let weights = [1, 1, 1, 1]; if (pattern.length < 2) return weights; const last = pattern[pattern.length - 1]; const secondLast = pattern[pattern.length - 2]; if (pattern.length >= 3 && pattern[pattern.length-3] === last) { weights[secondLast] *= 0.1; } weights[last] *= 0.5; return weights; } },
-                'The Rhythm Breaker': { key: 'rhythm_breaker', name: '리듬 파괴자', type: 'boss', maxHp: 15, scoreMultiplier: 2.0, description: 'A-B-A-B 같은 리듬 패턴을 집중적으로 공격합니다.', color: '#3b82f6', icon: `<svg viewBox="0 0 100 100"><path d="M20 80 L30 20 L40 70 L50 30 L60 80 L70 20 L80 80" stroke="currentColor" stroke-width="8" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg>`, generateNext: (pattern) => { let weights = [1, 1, 1, 1]; if (pattern.length < 4) return weights; const last = pattern[pattern.length - 1]; const secondLast = pattern[pattern.length - 2]; const thirdLast = pattern[pattern.length - 3]; const fourthLast = pattern[pattern.length - 4]; if (secondLast === fourthLast && last === thirdLast) { weights[secondLast] *= 0.05; } return weights; } },
-                'The Shuffler': { key: 'shuffler', name: '교란자', type: 'boss', maxHp: 12, scoreMultiplier: 1.8, description: '당신의 근육 기억을 비웃으며 버튼의 위치를 뒤섞습니다.', color: '#d946ef', icon: `<svg viewBox="0 0 100 100"><path d="M30 20 L70 80 M70 20 L30 80 M50 20 A 30 30 0 1 0 50 80" stroke="currentColor" stroke-width="8" fill="none"/></svg>`, specialMechanic: 'shuffleButtons', generateNext: (pattern) => [1,1,1,1] }
-            };
-            const normalMonsters = Object.values(antagonistProfiles).filter(p => p.type === 'normal');
-            const bossMonsters = Object.values(antagonistProfiles).filter(p => p.type === 'boss');
-
-            // --- Basecamp Upgrades ---
-            const upgrades = {
-                'bonusLife': { name: '강인함', description: '최대 생명력을 1 늘립니다.', cost: 500, maxLevel: 2 },
-                'startShield': { name: '이지스 쉴드', description: '게임을 시작할 때 실드를 하나 가지고 시작합니다.', cost: 1000, maxLevel: 1 },
-                'fragmentBonus': { name: '탐광자', description: '획득하는 조각의 양을 10% 늘립니다.', cost: 750, maxLevel: 3 },
-                'gaugeBonus': { name: '몰입', description: '스킬 게이지 획득량을 10% 늘립니다.', cost: 600, maxLevel: 3 }
+            // --- Element Selectors (Cached) ---
+            const DOM = {
+                body: document.body,
+                mainContainer: document.getElementById('main-container'),
+                startBtn: document.getElementById('start-btn'),
+                gameButtons: document.querySelectorAll('.game-button'),
+                gameBoard: document.querySelector('.game-board'),
+                themeToggle: document.getElementById('theme-toggle'),
+                bgmToggle: document.getElementById('bgm-toggle'),
+                inProgressIndicator: document.getElementById('in-progress-indicator'),
+                basecampDisplay: document.getElementById('basecamp-display'),
+                restStageModal: document.getElementById('rest-stage-modal'),
+                livesDisplay: document.getElementById('lives-display'),
+                totalScoreDisplay: document.getElementById('total-score-display'),
+                unbankedFragmentsDisplay: document.getElementById('unbanked-fragments-display'),
+                timingFeedback: document.getElementById('timing-feedback'),
+                settingsBtn: document.getElementById('settings-btn'),
+                settingsModal: document.getElementById('settings-modal'),
+                closeSettingsBtn: document.getElementById('close-settings-btn'),
+                bgmVolumeSlider: document.getElementById('bgm-volume-slider'),
+                sfxVolumeSlider: document.getElementById('sfx-volume-slider'),
+                bestiaryBtn: document.getElementById('bestiary-btn'),
+                bestiaryModal: document.getElementById('bestiary-modal'),
+                closeBestiaryBtn: document.getElementById('close-bestiary-btn'),
+                bestiaryList: document.getElementById('bestiary-list'),
+                monsterIcon: document.getElementById('monster-icon'),
+                monsterName: document.getElementById('monster-name'),
+                monsterDesc: document.getElementById('monster-desc'),
+                hpBarFill: document.getElementById('monster-hp-bar-fill'),
+                hpBarDamage: document.getElementById('monster-hp-bar-damage'),
+                sparkEffectLeft: document.getElementById('spark-effect-left'),
+                sparkEffectRight: document.getElementById('spark-effect-right'),
+                initialScreenButtons: document.getElementById('initial-screen-buttons'),
+                inGameButtons: document.getElementById('in-game-buttons'),
+                pauseBtn: document.getElementById('pause-btn'),
+                pauseModal: document.getElementById('pause-modal'),
+                resumeBtn: document.getElementById('resume-btn'),
+                skillContainer: document.getElementById('skill-container'),
+                skillBtn: document.getElementById('skill-btn'),
+                skillGaugeFill: document.getElementById('skill-gauge-fill'),
+                basecampBtn: document.getElementById('basecamp-btn'),
+                basecampModal: document.getElementById('basecamp-modal'),
+                closeBasecampBtn: document.getElementById('close-basecamp-btn'),
+                upgradeList: document.getElementById('upgrade-list'),
+                harmonicEssenceDisplay: document.getElementById('harmonic-essence-display'),
+                rhythmCanvas: document.getElementById('rhythm-display'),
+                get rhythmCtx() { return this.rhythmCanvas.getContext('2d'); }
             };
 
-            function selectNewAntagonist(isBossRound) {
-                const pool = isBossRound ? bossMonsters : normalMonsters;
-                currentAntagonist = pool[Math.floor(Math.random() * pool.length)];
-                monsterIcon.innerHTML = currentAntagonist.icon;
-                monsterIcon.style.color = currentAntagonist.color;
-                monsterName.textContent = currentAntagonist.name;
-                monsterDesc.textContent = currentAntagonist.description;
-                maxMonsterHP = currentAntagonist.maxHp;
-                currentMonsterHP = maxMonsterHP;
-                updateHealthBar();
-            }
-
-            function getNextStep(pattern) {
-                const weights = currentAntagonist.generateNext(pattern.slice());
-                const lastStep = pattern.length > 0 ? pattern[pattern.length - 1] : -1;
-                if (lastStep !== -1) { weights[lastStep] = 0; }
-                const totalWeight = weights.reduce((sum, w) => sum + w, 0);
-                if (totalWeight === 0) { const available = [0,1,2,3].filter(i => i !== lastStep); return available[Math.floor(Math.random() * available.length)]; }
-                let random = Math.random() * totalWeight;
-                for (let i = 0; i < weights.length; i++) { if (random < weights[i]) { return i; } random -= weights[i]; }
-                return 3; 
-            }
-
-            // --- System Initialization ---
-            const tT=(isD)=>{document.documentElement.classList.toggle('dark',isD);updateThemeToggleUI(isD)};
-            const sT=localStorage.getItem('theme'),pD=window.matchMedia('(prefers-color-scheme: dark)').matches;
-            if(sT==='dark'||(!sT&&pD)){tT(true)}else{tT(false)}
-            
-            rhythmCanvas.width = rhythmCanvas.offsetWidth * window.devicePixelRatio;
-            rhythmCanvas.height = rhythmCanvas.offsetHeight * window.devicePixelRatio;
-            rhythmCtx.scale(window.devicePixelRatio, window.devicePixelRatio);
-
-            lHS();sS();lBD();
-            const sBS_local=localStorage.getItem('bgmState');
-            if(sBS_local === 'off'){ iBP=false } else { iBP=true; if(Tone.context.state === 'running') pB(cB); }
-            updateBgmToggleUI(iBP);
-
-            renderButtons();
-            lBC();updateUI();
-            
-            function renderButtons() {
-                gBs.forEach((btn, index) => {
-                    const originalId = buttonMapping[index];
-                    const props = buttonProperties[originalId];
-                    btn.className = 'game-button';
-                    btn.classList.add(props.class);
-                    btn.style.setProperty('--glow-color', props.glow);
-                    btn.innerHTML = props.symbol;
-                });
-            }
-
-            function updateUI(){totalScoreDisplay.textContent=totalScore.toLocaleString();unbankedFragmentsDisplay.textContent=unbankedFragments>0?`+${unbankedFragments.toLocaleString()}`:'';if(bCL>0){bD.querySelector('span').textContent=bCL;bD.classList.remove('opacity-0')}else{bD.classList.add('opacity-0')}; updateSkillGaugeUI();}
-            function sS(){bgmVolume = new Tone.Volume(parseInt(localStorage.getItem('bgmVolume')) || -20).toDestination(); sfxVolume = new Tone.Volume(parseInt(localStorage.getItem('sfxVolume')) || 0).toDestination(); bgmVolumeSlider.value = bgmVolume.volume.value; sfxVolumeSlider.value = sfxVolume.volume.value; s=new Tone.Synth({oscillator:{type:'sine'},envelope:{attack:0.005,decay:0.1,sustain:0.3,release:1}}).connect(sfxVolume);ssI=new Tone.Synth({oscillator:{type:'triangle'},envelope:{attack:0.01,decay:0.2,sustain:0.2,release:0.2}}).connect(sfxVolume);eS=new Tone.PolySynth(Tone.Synth,{oscillator:{type:'square'},envelope:{attack:0.01,decay:0.4,sustain:0,release:0.4}}).connect(sfxVolume);const r=new Tone.Reverb(1.5).connect(sfxVolume);tUS=new Tone.Synth({oscillator:{type:'sine'},envelope:{attack:0.01,decay:0.3,sustain:0.1,release:0.7}}).connect(r);sBS=new Tone.Synth({oscillator:{type:'sine'},envelope:{attack:0.01,decay:0.2,release:0.2}}).connect(sfxVolume);sBS.volume.value=-6;bCS=new Tone.Synth({oscillator:{type:'fatsawtooth'},envelope:{attack:0.05,decay:0.5,sustain:0.4,release:0.8}}).connect(sfxVolume);bCS.volume.value=-10;const bV=-20;const wS=new Tone.PluckSynth({attackNoise:0.5,dampening:4000,resonance:0.7}).connect(bgmVolume);wS.volume.value=bV+8;bPs.waiting=new Tone.Sequence((t,n)=>{wS.triggerAttack(n,t)},["C4","E4","G4","C5","E5","G4"],"8n");const nB_synth=new Tone.MonoSynth({oscillator:{type:"fmsine"},envelope:{attack:0.01,decay:0.3,sustain:0.1,release:0.5}}).connect(bgmVolume);nB_synth.volume.value=bV;bPs.normal=new Tone.Sequence((t,n)=>{wS.triggerAttack(n.melody,t);if(n.bass){nB_synth.triggerAttackRelease(n.bass,"8n",t)}},[{melody:"C4",bass:"C2"},{melody:"E4",bass:null},{melody:"G4",bass:"C2"},{melody:"G4",bass:"G1"},{melody:"E4",bass:null},{melody:"C4",bass:"G1"}],"8n");const hK_synth=new Tone.MembraneSynth({octaves:4,pitchDecay:0.1}).connect(bgmVolume);hK_synth.volume.value=bV+2;const hB_synth=new Tone.MonoSynth({oscillator:{type:"sawtooth"},envelope:{attack:0.01,decay:0.3,sustain:0.1,release:0.5}}).connect(bgmVolume);hB_synth.volume.value=bV-4;bPs.hard=new Tone.Part((t,v)=>{if(v.kick)hK_synth.triggerAttackRelease("C1","8n",t);if(v.bass)hB_synth.triggerAttackRelease(v.bass,"8n",t)},[{time:"0:0",kick:true,bass:"C2"},{time:"0:2",bass:"C2"},{time:"0:3",kick:true},{time:"0:5",bass:"G1"},{time:"0:6",kick:true},{time:"0:8",bass:"G1"},{time:"0:9",kick:true},{time:"0:11",bass:"F1"}]);bPs.hard.loop=true;bPs.hard.loopEnd="1m";const vHK_synth=new Tone.MembraneSynth({octaves:6,pitchDecay:0.05}).connect(bgmVolume);vHK_synth.volume.value=bV;const vHH_synth=new Tone.MetalSynth({frequency:300,envelope:{attack:0.001,decay:0.05,release:0.01},harmonicity:4.1,modulationIndex:22,resonance:3000,octaves:1.5}).connect(bgmVolume);vHH_synth.volume.value=bV-10;bPs.veryHard=new Tone.Sequence((t,n)=>{vHK_synth.triggerAttackRelease("C1","8n",t);if(n==='CH')vHH_synth.triggerAttackRelease("C6","16n",t)},['C1','CH','C1','CH'],'4n');const gOS_synth=new Tone.AMSynth({harmonicity:1.5,envelope:{attack:0.01,decay:2,sustain:0.1,release:2}}).connect(bgmVolume);gOS_synth.volume.value=bV-5;bPs.gameover=new Tone.Sequence((t,n)=>{gOS_synth.triggerAttackRelease(n,"1n",t)},[["C3","E3"],["G3","B3"],["F3","A3"]],"1m");
-                comboAttackSound = new Tone.PolySynth(Tone.Synth, { oscillator: { type: 'fmsquare' }, envelope: { attack: 0.01, decay: 0.1, sustain: 0.1, release: 0.2 } }).connect(sfxVolume);
-                bossScream = new Tone.NoiseSynth({noise: {type: "pink"}, envelope: {attack: 0.2, decay: 1.5, sustain: 0, release: 1.5}}).connect(new Tone.Reverb(2.5).connect(sfxVolume));
-                shieldUpSound = new Tone.Synth({oscillator: {type: 'fmsquare'}, envelope: {attack: 0.01, decay: 0.2, sustain: 0.1, release: 0.5}}).connect(sfxVolume);
-                shieldBreakSound = new Tone.MetalSynth({frequency: 80, envelope: {attack:0.01, decay: 0.4, release: 0.2}, harmonicity: 2.5, modulationIndex: 40, resonance: 1500}).connect(sfxVolume);
-                shuffleSound = new Tone.NoiseSynth({noise: {type: 'white'}, envelope: {attack: 0.01, decay: 0.2, sustain: 0}}).connect(sfxVolume);
-                sweepSound = new Tone.Synth({ oscillator: { type: 'sawtooth' }, envelope: { attack: 0.01, decay: 0.5, sustain: 0.1, release: 0.2 } }).connect(sfxVolume);
-            }
-            function pB(s){if(!iBP)return;Object.values(bPs).forEach(p=>p.stop(0));cB=s;if(s==='waiting'){Tone.Transport.timeSignature=[6,8];Tone.Transport.bpm.value=90;bPs.waiting.start(0)}else if(s==='normal'){Tone.Transport.timeSignature=[6,8];Tone.Transport.bpm.value=100;bPs.normal.start(0)}else if(s==='hard'){Tone.Transport.timeSignature=[12,8];Tone.Transport.bpm.value=120;bPs.hard.start(0)}else if(s==='veryHard'){Tone.Transport.timeSignature=[4,4];Tone.Transport.bpm.value=140;bPs.veryHard.start(0)}else if(s==='gameover'){Tone.Transport.timeSignature=[6,8];Tone.Transport.bpm.value=70;bPs.gameover.start(0)}if(Tone.Transport.state!=='started'){Tone.Transport.start()}}
-            function sBgm(){if(Tone.Transport.state==='started'){Tone.Transport.stop()}Object.values(bPs).forEach(p=>p.stop(0))}
-            function lHS(){hS=parseInt(localStorage.getItem('patternGameHighScore'))||0;}
-            function lBC(){const sC_local=JSON.parse(localStorage.getItem('patternGameBaseCamp'));if(sC_local){const t=new Date().toISOString().split('T')[0];if(sC_local.date===t){bCL=sC_local.level;sB.textContent=`캠프 ${bCL}부터 시작`}else{localStorage.removeItem('patternGameBaseCamp')}} updateUI();}
-            function sBC(){if(l<=bCL)return;bCL=l;const t=new Date().toISOString().split('T')[0];localStorage.setItem('patternGameBaseCamp',JSON.stringify({level:bCL,date:t}));totalScore+=unbankedFragments;unbankedFragments=0;updateUI();const n=Tone.now();bCS.triggerAttackRelease("A3","2n",n);bCS.triggerAttackRelease("E4","2n",n+0.1);bCS.triggerAttackRelease("A4","2n",n+0.2);}
-            function sHS(){const finalScore=totalScore+unbankedFragments;if(finalScore>hS){hS=finalScore;localStorage.setItem('patternGameHighScore',hS);sC(true)}}
-            
-            // --- Event Listeners ---
-            tB.addEventListener('click',()=>{const isD=!document.documentElement.classList.contains('dark');localStorage.setItem('theme',isD?'dark':'light');tT(isD)});
-            sB.addEventListener('click',async()=>{await Tone.start();sG()});
-            bT.addEventListener('click',async()=>{await Tone.start();iBP=!iBP;localStorage.setItem('bgmState',iBP?'on':'off');updateBgmToggleUI(iBP);if(iBP){pB(cB||'waiting')}else{sBgm()}});
-            skillBtn.addEventListener('click', () => activateSkill());
-            basecampBtn.addEventListener('click', () => { basecampModal.classList.remove('hidden'); populateBasecampUI(); });
-            closeBasecampBtn.addEventListener('click', () => basecampModal.classList.add('hidden'));
-            
-            function updateThemeToggleUI(isDark) { const handle = tB.querySelector('span'); if(isDark){ tB.classList.remove('bg-gray-200', 'dark:bg-slate-600'); tB.classList.add('bg-teal-600'); handle.classList.add('translate-x-5'); } else { tB.classList.remove('bg-teal-600'); tB.classList.add('bg-gray-200', 'dark:bg-slate-600'); handle.classList.remove('translate-x-5'); } }
-            function updateBgmToggleUI(isPlaying) { const handle = bT.querySelector('span'); if(isPlaying){ bT.classList.remove('bg-gray-200', 'dark:bg-slate-600'); bT.classList.add('bg-teal-600'); handle.classList.add('translate-x-5'); } else { bT.classList.remove('bg-teal-600'); bT.classList.add('bg-gray-200', 'dark:bg-slate-600'); handle.classList.remove('translate-x-5'); } }
-
-            gBs.forEach((btn, index)=>{btn.addEventListener('click',e=>{if(!iP||iPC)return;iPC=true;pT(index)})});
-            
-            // --- Core Game Logic ---
-            async function sG() {
-                mC.classList.add('game-started');
-                initialScreenButtons.classList.add('hidden');
-                inGameButtons.classList.remove('hidden');
-                
-                applyUpgrades();
-
-                gP = []; pP = []; totalScore = 0; unbankedFragments = 0;
-                skillGauge = 0; isSkillReady = false;
-                lostFragments = { amount: 0, level: -1 };
-                
-                if (bCL > 0) { l = bCL; roundCounter = bCL; gP = []; for(let i=1; i<=bCL; i++){ selectNewAntagonist((i % 4) === 0); for(let j=0; j < currentAntagonist.maxHp; j++) gP.push(getNextStep(gP)); } } else { l = 0; roundCounter = 0; }
-                
-                livesDisplay.innerHTML = '';
-                for (let i = 0; i < lives; i++) { const heart = document.createElement('div'); heart.innerHTML = `<svg class="w-6 h-6 text-rose-500" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M3.172 5.172a4 4 0 015.656 0L10 6.343l1.172-1.171a4 4 0 115.656 5.656L10 17.657l-6.828-6.829a4 4 0 010-5.656z" clip-rule="evenodd"></path></svg>`; livesDisplay.appendChild(heart) }
-                
-                updateUI();
-                sB.classList.add('hidden');
-                iPI.classList.remove('hidden');
-                skillContainer.classList.remove('hidden');
-                await sl(500);
-                await nL()
-            }
-
-            async function nL() {
-                if (animationState.id) { cancelAnimationFrame(animationState.id); animationState.isRunning = false; }
-                const W = rhythmCanvas.offsetWidth, H = rhythmCanvas.offsetHeight;
-                rhythmCtx.clearRect(0, 0, W, H);
-                pP = []; c = 0; l++; roundCounter++; iP = false; gameTimings = []; playerTimings = [];
-                accumulatedDamage = 0;
-                
-                const isBossRound = (roundCounter % 4) === 0;
-                if(isBossRound) { b.classList.add('boss-warning-flash'); bossScream.triggerAttackRelease("2n"); await sl(1500); b.classList.remove('boss-warning-flash'); }
-                
-                selectNewAntagonist(isBossRound);
-
-                if (currentAntagonist.specialMechanic === 'shuffleButtons') {
-                    await shuffleButtons();
+            // --- Game Data & Configuration ---
+            const GameData = {
+                timingJudgement: {
+                    PERFECT: { window: 80, text: "Perfect!", scoreMultiplier: 2, damage: 3, skillGain: 25 },
+                    GREAT: { window: 160, text: "Great", scoreMultiplier: 1.5, damage: 2, skillGain: 10 },
+                    GOOD: { window: 240, text: "Good", scoreMultiplier: 1, damage: 1, skillGain: 0 },
+                    MISS: { window: Infinity, text: "Miss", scoreMultiplier: 0, damage: 0, skillGain: 0 },
+                    WRONG: { text: "Wrong!", scoreMultiplier: 0, damage: 0, skillGain: 0 }
+                },
+                buttonProperties: [
+                    { class: 'bg-rose-400', glow: 'rgba(251, 113, 133, 0.7)', symbol: `<svg class="game-button-symbol" viewBox="0 0 32 32"><g><path class="symbol-shape" d="M16 2 L30 16 L16 30 L2 16 Z"/><g class="symbol-face" fill="#1e293b" opacity="0.6"><circle cx="12" cy="14" r="1.5"/><circle cx="20" cy="14" r="1.5"/><path class="mouth" d="M 12 22 Q 16 25 20 22" stroke="#1e293b" stroke-width="1.5" fill="none" stroke-linecap="round"/></g></g></svg>`, color: '#fb7185' },
+                    { class: 'bg-sky-400', glow: 'rgba(56, 189, 248, 0.7)', symbol: `<svg class="game-button-symbol" viewBox="0 0 32 32"><g><path class="symbol-shape" d="M16 2 L30 30 L2 30 Z"/><g class="symbol-face" fill="#1e293b" opacity="0.6"><circle cx="12" cy="16" r="1.5"/><circle cx="20" cy="16" r="1.5"/><path class="mouth" d="M 12 23 Q 16 26 20 23" stroke="#1e293b" stroke-width="1.5" fill="none" stroke-linecap="round"/></g></g></svg>`, color: '#38bdf8' },
+                    { class: 'bg-amber-400', glow: 'rgba(251, 191, 36, 0.7)', symbol: `<svg class="game-button-symbol" viewBox="0 0 32 32"><g><rect class="symbol-shape" x="4" y="4" width="24" height="24" rx="4"/><g class="symbol-face" fill="#1e293b" opacity="0.6"><circle cx="12" cy="13" r="1.5"/><circle cx="20" cy="13" r="1.5"/><path class="mouth" d="M 12 21 Q 16 24 20 21" stroke="#1e293b" stroke-width="1.5" fill="none" stroke-linecap="round"/></g></g></svg>`, color: '#facc15' },
+                    { class: 'bg-emerald-400', glow: 'rgba(52, 211, 153, 0.7)', symbol: `<svg class="game-button-symbol" viewBox="0 0 32 32"><g><circle class="symbol-shape" cx="16" cy="16" r="14"/><g class="symbol-face" fill="#1e293b" opacity="0.6"><circle cx="12" cy="14" r="1.5"/><circle cx="20" cy="14" r="1.5"/><path class="mouth" d="M 12 22 Q 16 25 20 22" stroke="#1e293b" stroke-width="1.5" fill="none" stroke-linecap="round"/></g></g></svg>`, color: '#34d399' }
+                ],
+                antagonistProfiles: {
+                    'Slime': { key: 'slime', name: '슬라임', type: 'normal', maxHp: 3, scoreMultiplier: 1.0, description: '가장 기본적인 적. 특별한 패턴 없이 무작위로 행동합니다.', icon: `<svg viewBox="0 0 100 100"><path d="M20 70 C 20 40, 80 40, 80 70 Q 50 90, 20 70 Z" fill="currentColor"/><circle cx="40" cy="60" r="5" fill="black"/><circle cx="60" cy="60" r="5" fill="black"/></svg>`, color: '#84cc16', generateNext: (pattern) => [1, 1, 1, 1] },
+                    'Goblin': { key: 'goblin', name: '고블린', type: 'normal', maxHp: 5, scoreMultiplier: 1.2, description: '단순 반복(A-A)을 피하는 약간의 지능을 가졌습니다.', icon: `<svg viewBox="0 0 100 100"><path d="M50 20 L80 80 L20 80 Z" fill="currentColor"/><path d="M40 50 L60 50" stroke="black" stroke-width="4"/><path d="M30 70 Q 50 60, 70 70" fill="none" stroke="black" stroke-width="4"/></svg>`, color: '#16a34a', generateNext: (pattern) => { let weights = [1, 1, 1, 1]; if (pattern.length > 0) weights[pattern[pattern.length-1]] *= 0.2; return weights; } },
+                    'Mimic': { key: 'mimic', name: '흉내쟁이', type: 'normal', maxHp: 6, scoreMultiplier: 1.4, description: '플레이어가 이전에 성공했던 패턴을 교묘하게 따라합니다.', icon: `<svg viewBox="0 0 100 100"><rect x="20" y="20" width="60" height="60" rx="10" fill="currentColor"/><rect x="30" y="10" width="40" height="20" rx="5" fill="currentColor"/><circle cx="50" cy="50" r="10" fill="black"/><path d="M35 65 H 65" stroke="black" stroke-width="5" stroke-linecap="round"/></svg>`, color: '#a16207', generateNext: (pattern) => [1, 1, 1, 1] },
+                    'Conductor': { key: 'conductor', name: '변속자', type: 'normal', maxHp: 7, scoreMultiplier: 1.6, description: '한 패턴 내에서 노트의 속도를 자유자재로 바꿉니다.', icon: `<svg viewBox="0 0 100 100"><path d="M20 50 C 40 20, 60 80, 80 50" stroke="currentColor" stroke-width="8" fill="none"/></svg>`, color: '#7c3aed', specialMechanic: 'variableSpeed', generateNext: (pattern) => [1, 1, 1, 1] },
+                    'The Destroyer': { key: 'destroyer', name: '파괴자', type: 'boss', maxHp: 10, scoreMultiplier: 1.5, description: '플레이어의 예측(A-B-A 패턴 등)을 파괴하는 데 집중합니다.', color: '#ef4444', icon: `<svg viewBox="0 0 100 100"><path d="M50 10 L90 50 L50 90 L10 50 Z M50 25 L75 50 L50 75 L25 50 Z" fill="currentColor"/></svg>`, generateNext: (pattern) => { let weights = [1, 1, 1, 1]; if (pattern.length < 2) return weights; const last = pattern[pattern.length - 1]; const secondLast = pattern[pattern.length - 2]; if (pattern.length >= 3 && pattern[pattern.length-3] === last) { weights[secondLast] *= 0.1; } weights[last] *= 0.5; return weights; } },
+                    'The Rhythm Breaker': { key: 'rhythm_breaker', name: '리듬 파괴자', type: 'boss', maxHp: 15, scoreMultiplier: 2.0, description: 'A-B-A-B 같은 리듬 패턴을 집중적으로 공격합니다.', color: '#3b82f6', icon: `<svg viewBox="0 0 100 100"><path d="M20 80 L30 20 L40 70 L50 30 L60 80 L70 20 L80 80" stroke="currentColor" stroke-width="8" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg>`, generateNext: (pattern) => { let weights = [1, 1, 1, 1]; if (pattern.length < 4) return weights; const last = pattern[pattern.length - 1]; const secondLast = pattern[pattern.length - 2]; const thirdLast = pattern[pattern.length - 3]; const fourthLast = pattern[pattern.length - 4]; if (secondLast === fourthLast && last === thirdLast) { weights[secondLast] *= 0.05; } return weights; } },
+                    'The Shuffler': { key: 'shuffler', name: '교란자', type: 'boss', maxHp: 12, scoreMultiplier: 1.8, description: '당신의 근육 기억을 비웃으며 버튼의 위치를 뒤섞습니다.', color: '#d946ef', icon: `<svg viewBox="0 0 100 100"><path d="M30 20 L70 80 M70 20 L30 80 M50 20 A 30 30 0 1 0 50 80" stroke="currentColor" stroke-width="8" fill="none"/></svg>`, specialMechanic: 'shuffleButtons', generateNext: (pattern) => [1,1,1,1] }
+                },
+                get normalMonsters() { return Object.values(this.antagonistProfiles).filter(p => p.type === 'normal') },
+                get bossMonsters() { return Object.values(this.antagonistProfiles).filter(p => p.type === 'boss') },
+                upgrades: {
+                    'bonusLife': { name: '강인함', description: '최대 생명력을 1 늘립니다.', cost: 500, maxLevel: 2 },
+                    'startShield': { name: '이지스 쉴드', description: '게임을 시작할 때 실드를 하나 가지고 시작합니다.', cost: 1000, maxLevel: 1 },
+                    'fragmentBonus': { name: '탐광자', description: '획득하는 조각의 양을 10% 늘립니다.', cost: 750, maxLevel: 3 },
+                    'gaugeBonus': { name: '몰입', description: '스킬 게이지 획득량을 10% 늘립니다.', cost: 600, maxLevel: 3 }
                 }
-
-                if (l >= 1 && l <= 8) pB('normal'); else if (l >= 9 && l <= 16) pB('hard'); else if (l >= 17) pB('veryHard');
-                
-                if (currentAntagonist.key === 'mimic' && playerHistory.length > 0) { gP = [...playerHistory[Math.floor(Math.random() * playerHistory.length)]]; } else { gP = []; for(let i = 0; i < currentAntagonist.maxHp; i++) { gP.push(getNextStep(gP)); } }
-                
-                updateUI();
-                pPtt()
-            }
+            };
             
-            function pPtt() {
-                gBd.classList.remove('dancing', 'idle', 'combo-1', 'combo-2', 'combo-3');
-                monsterIcon.classList.remove('dancing');
-                gBs.forEach(btn => { btn.classList.remove('active', 'pulse'); btn.classList.add('disabled', 'desaturated'); });
-                let cumulativeTime = 0;
-                const bS = 700, sDP = 80, mS_speed = 150;
-                const sL = Math.floor((l - 1) / 4);
-                const pI_base = Math.max(mS_speed, bS - (sL * sDP));
+            // --- Centralized Game State ---
+            const GameState = {
+                current: 'MAIN_MENU', // MAIN_MENU, LOADING, PATTERN_PLAYBACK, PLAYER_INPUT, ROUND_SUCCESS, ROUND_FAIL, PAUSED, GAME_OVER
+                level: 0,
+                roundCounter: 0,
+                combo: 0,
+                highScore: 0,
+                baseCampLevel: 0,
                 
-                gP.forEach(originalId => {
-                    let pI = pI_base;
-                    if (currentAntagonist.specialMechanic === 'variableSpeed') { pI = pI_base * (Math.random() * 0.8 + 0.6); }
-                    setTimeout(() => { const currentIndex = buttonMapping.indexOf(originalId); aB(currentIndex, false) }, cumulativeTime);
-                    gameTimings.push(cumulativeTime + pI / 2);
-                    cumulativeTime += pI;
-                });
+                // In-run state
+                lives: 0,
+                totalScore: 0,
+                unbankedFragments: 0,
+                lostFragments: { amount: 0, level: -1 },
                 
-                currentPatternDuration = cumulativeTime;
-                startRhythmAnimation('playback', currentPatternDuration);
-                setTimeout(() => {
-                    if (animationState.id) { cancelAnimationFrame(animationState.id); animationState.isRunning = false; }
-                    iP = true; iPC = false; patternStartTime = performance.now(); gBd.classList.add('idle');
-                    gBs.forEach(btn => { btn.classList.remove('disabled', 'desaturated'); btn.classList.add('pulse'); setTimeout(() => btn.classList.remove('pulse'), 400) });
-                    startRhythmAnimation('input', currentPatternDuration)
-                }, currentPatternDuration + 100)
-            }
-
-            function pT(clickedIndex){ lastPressedButtonIndex = clickedIndex; const originalId=buttonMapping[clickedIndex]; playerTimings.push(performance.now()-patternStartTime); aB(clickedIndex,true); pP.push(originalId); cA(pP.length-1) }
-            
-            function setExpression(buttonIndex, expression) {
-                if (buttonIndex < 0 || buttonIndex >= gBs.length) return;
-                const btn = gBs[buttonIndex];
-                const mouth = btn.querySelector('.mouth');
-                if (!mouth) return;
-                let happyPath, sadPath;
-                if (buttonMapping[buttonIndex] === 1) { happyPath = "M 12 23 Q 16 26 20 23"; sadPath = "M 12 24 Q 16 21 20 24"; } else if (buttonMapping[buttonIndex] === 2) { happyPath = "M 12 21 Q 16 24 20 21"; sadPath = "M 12 22 Q 16 19 20 22"; } else { happyPath = "M 12 22 Q 16 25 20 22"; sadPath = "M 12 23 Q 16 20 20 23"; }
-                if (expression === 'happy') { mouth.setAttribute('d', happyPath); } else if (expression === 'sad') { mouth.setAttribute('d', sadPath); }
-            }
-
-            function updateHealthBar() { const hpPercent = (currentMonsterHP / maxMonsterHP) * 100; hpBarFill.style.width = `${hpPercent}%`; setTimeout(() => { hpBarDamage.style.width = `${hpPercent}%`; }, 200); }
-
-            function cA(cI) {
-                gBd.classList.remove('idle'); gBd.classList.add('dancing');
-                let cBI = gP[cI];
-                if (pP[cI] !== cBI) {
-                    if (isShieldActive) { breakShield(); showTimingFeedback("MISS"); c++; if (pP.length === gP.length) { iP = false; lCS(); } else { iPC = false; } return; }
-                    setExpression(lastPressedButtonIndex, 'sad'); showTimingFeedback("WRONG"); playerFail(); return;
-                }
-                const correctTime = gameTimings[cI]; const playerTime = playerTimings[cI] % currentPatternDuration; const diff = Math.abs(playerTime - correctTime);
-                let judgement = "MISS";
-                if (diff <= timingJudgement.PERFECT.window) judgement = "PERFECT"; else if (diff <= timingJudgement.GREAT.window) judgement = "GREAT"; else if (diff <= timingJudgement.GOOD.window) judgement = "GOOD";
-                const judgementInfo = timingJudgement[judgement];
-                if(judgement !== "MISS") { 
-                    setExpression(lastPressedButtonIndex, 'happy'); 
-                    accumulatedDamage += judgementInfo.damage;
-                } else { 
-                    setExpression(lastPressedButtonIndex, 'sad'); 
-                }
-                showTimingFeedback(judgement);
+                // Turn-specific state
+                gamePattern: [],
+                playerPattern: [],
+                gameTimings: [],
+                playerTimings: [],
+                patternStartTime: 0,
+                currentPatternDuration: 0,
+                lastPressedButtonIndex: -1,
+                accumulatedDamage: 0,
                 
-                let skillGainMultiplier = 1 + (playerUpgrades.gaugeBonus || 0) * 0.1;
-                if (!isSkillReady) { skillGauge = Math.min(maxSkillGauge, skillGauge + judgementInfo.skillGain * skillGainMultiplier); updateSkillGaugeUI(); }
+                // Player state
+                isPlayerClicking: false,
+                playerHistory: [],
                 
-                let fragmentMultiplier = 1 + (playerUpgrades.fragmentBonus || 0) * 0.1;
-                let fragmentsToAdd = (judgement !== "MISS") ? Math.round(l * 5 * judgementInfo.scoreMultiplier) : l;
-                unbankedFragments += Math.round(fragmentsToAdd * currentAntagonist.scoreMultiplier * fragmentMultiplier);
-                updateUI();
+                // Antagonist state
+                currentAntagonist: null,
+                currentMonsterHP: 0,
+                maxMonsterHP: 0,
 
-                c++;
-                 if (c > 15) { gBd.classList.add('combo-3'); monsterIcon.classList.add('dancing'); } else if (c > 8) { gBd.classList.add('combo-2'); } else if (c > 3) { gBd.classList.add('combo-1'); }
-                if (pP.length === gP.length) { iP = false; lCS(); } else { iPC = false; }
-            }
+                // Skill state
+                skillGauge: 0,
+                maxSkillGauge: 100,
+                isSkillReady: false,
+                isShieldActive: false,
 
-            function showTimingFeedback(judgement){const j=timingJudgement[judgement]||{text:"MISS"};timingFeedback.textContent=j.text;timingFeedback.className=`feedback-${judgement.toLowerCase()}`;timingFeedback.classList.add('timing-feedback-animation');timingFeedback.onanimationend=()=>{timingFeedback.classList.remove('timing-feedback-animation');timingFeedback.textContent=''}}
-            
-            async function lCS() {
-                iP = false; gBd.classList.remove('dancing', 'idle', 'combo-1', 'combo-2', 'combo-3'); monsterIcon.classList.remove('dancing');
-                if (animationState.id) { cancelAnimationFrame(animationState.id); animationState.isRunning = false; }
+                // Meta-progression state
+                harmonicEssence: 0,
+                playerUpgrades: {},
                 
-                ssI.triggerAttackRelease(['C5', 'E5', 'G5'], '8n');
-                b.classList.add('success-flash');
-                setTimeout(() => b.classList.remove('success-flash'), 400);
-                await sl(500);
+                // System state
+                isBgmPlaying: true,
+                currentBgm: 'waiting',
+                pauseStartTime: 0,
+                buttonMapping: [0, 1, 2, 3],
 
-                if (accumulatedDamage > 0) {
-                    monsterIcon.classList.add('monster-hit-animation');
-                    const now = Tone.now();
-                    comboAttackSound.triggerAttackRelease(['C5', 'E5', 'G5'], '8n', now);
-                    currentMonsterHP = Math.max(0, currentMonsterHP - accumulatedDamage);
-                    updateHealthBar();
-                    accumulatedDamage = 0;
-                    await sl(400);
-                    monsterIcon.classList.remove('monster-hit-animation');
-                }
+                // Animation state
+                animation: { id: null, startTime: 0, isRunning: false, mode: 'playback' }
+            };
 
-                playerHistory.push([...gP]); if (playerHistory.length > 10) playerHistory.shift();
-                if (l === lostFragments.level) { unbankedFragments += lostFragments.amount; lostFragments = { amount: 0, level: -1 }; }
-                if (currentAntagonist.type === 'boss') { let cleared = JSON.parse(localStorage.getItem('clearedBosses')) || []; if (!cleared.includes(currentAntagonist.key)) { cleared.push(currentAntagonist.key); localStorage.setItem('clearedBosses', JSON.stringify(cleared)); } }
-                updateUI(); await sl(800);
-                if (roundCounter % 4 === 0) { sBC(); await sRS(true); await nL(); } else { await nL(); }
-            }
-            
-            async function playerFail() {
-                iP = false; gBd.classList.remove('dancing', 'idle', 'combo-1', 'combo-2', 'combo-3'); monsterIcon.classList.remove('dancing');
-                if (animationState.id) { cancelAnimationFrame(animationState.id); animationState.isRunning = false; }
-                accumulatedDamage = 0;
+            // --- "Modules" for Code Organization ---
 
-                monsterIcon.classList.add('monster-taunt-animation');
-                monsterIcon.addEventListener('animationend', () => {
-                    monsterIcon.classList.remove('monster-taunt-animation');
-                }, { once: true });
-
-                let encountered = JSON.parse(localStorage.getItem('encounteredAntagonists')) || []; if (!encountered.includes(currentAntagonist.key)) { encountered.push(currentAntagonist.key); localStorage.setItem('encounteredAntagonists', JSON.stringify(encountered)); }
-                const heartToBreak = livesDisplay.lastChild; if (heartToBreak) { heartToBreak.classList.add('heart-break'); heartToBreak.addEventListener('animationend', () => heartToBreak.remove(), { once: true }); }
-                lives--; eS.triggerAttackRelease(['C3', 'C#3'], '4n'); b.classList.add('game-over-flash'); setTimeout(() => b.classList.remove('game-over-flash'), 400);
-                if (unbankedFragments > 0) { lostFragments = { amount: unbankedFragments, level: l }; const lostText = document.createElement('div'); lostText.textContent = `-${unbankedFragments}`; lostText.className = 'absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 text-4xl font-bold fragment-lost-animation pointer-events-none'; gBd.appendChild(lostText); setTimeout(() => lostText.remove(), 1500); unbankedFragments = 0; }
-                updateUI();
-                if (lives > 0) {
-                    await sl(1000);
-                    await sGRS();
-
-                    if (animationState.id) { cancelAnimationFrame(animationState.id); animationState.isRunning = false; }
-                    const W = rhythmCanvas.offsetWidth, H = rhythmCanvas.offsetHeight;
-                    rhythmCtx.clearRect(0, 0, W, H);
-
-                    pP = [];
-                    c = 0;
-                    iP = false;
-                    gameTimings = [];
-                    playerTimings = [];
-                    accumulatedDamage = 0;
+            /**
+             * GameManager: Controls the main game loop and state transitions.
+             */
+            const GameManager = {
+                init() {
+                    SettingsController.init();
+                    PersistenceManager.loadAll();
+                    UIController.init();
+                    AudioManager.init();
                     
-                    updateUI();
-                    pPtt();
-                } else {
-                    trueGameOver();
-                }
-            }
+                    this.addEventListeners();
+                },
 
-            function trueGameOver(){
-                if (animationState.id) { cancelAnimationFrame(animationState.id); animationState.isRunning = false; }
-                mC.classList.remove('game-started'); initialScreenButtons.classList.remove('hidden'); inGameButtons.classList.add('hidden');
-                calculateEssence(); sBD();
-                sHS(); pB('gameover');
-                unbankedFragmentsDisplay.textContent=`최종 점수: ${totalScore.toLocaleString()}`;
-                iPI.classList.add('hidden'); sB.classList.remove('hidden','disabled'); sB.textContent='다시 시작';
-                skillContainer.classList.add('hidden');
-                iP=false;iPC=false
-            }
-
-            async function sRS(isBossClear){return new Promise(async resolve=>{
-                const announcer = document.getElementById('announcer'); const title = document.getElementById('rest-title'); const subtitle = document.getElementById('rest-subtitle');
-                if (isBossClear) { title.textContent = "보스 처치!"; subtitle.textContent = "화톳불에서 다음 도전을 준비합니다."; announcer.innerHTML = `<svg viewBox="0 0 100 100"><path d="M50 10 L60 40 L90 40 L65 60 L75 90 L50 70 L25 90 L35 60 L10 40 L40 40 Z" fill="gold"/></svg>`; } else { title.textContent = `다음 상대: ${currentAntagonist.name}`; subtitle.textContent = currentAntagonist.description; announcer.innerHTML = currentAntagonist.icon; announcer.style.color = currentAntagonist.color; }
-                rSM.classList.remove('hidden'); const cB_rest=document.getElementById('rest-continue-btn'); cB_rest.onclick=()=>{rSM.classList.add('hidden');resolve()}
-            })}
-            
-            async function sGRS() {
-                const countdownCircle = document.createElement('div');
-                countdownCircle.style.position = 'absolute';
-                countdownCircle.style.top = '50%';
-                countdownCircle.style.left = '50%';
-                countdownCircle.style.transform = 'translate(-50%, -50%)';
-                countdownCircle.style.borderRadius = '50%';
-                countdownCircle.style.backgroundColor = 'var(--text-highlight)';
-                countdownCircle.style.opacity = '0.7';
-                gBd.appendChild(countdownCircle);
-
-                sweepSound.frequency.value = "C4";
-                sweepSound.frequency.rampTo("C6", 0.5);
-                sweepSound.triggerAttack();
-
-                countdownCircle.animate([
-                    { width: '80%', height: '80%', opacity: 0.7 },
-                    { width: '0%', height: '0%', opacity: 0 }
-                ], {
-                    duration: 800,
-                    easing: 'ease-in'
-                });
-
-                await sl(800);
-                countdownCircle.remove();
-                
-                ssI.triggerAttackRelease('G5', '8n');
-                b.classList.add('success-flash');
-                setTimeout(() => b.classList.remove('success-flash'), 400);
-                
-                await sl(200);
-            }
-            
-            function createSpark(color) {
-                const container = sparkSide === 'left' ? sparkEffectLeft : sparkEffectRight;
-                for (let i = 0; i < 5; i++) { const spark = document.createElement('div'); spark.className = 'spark'; const size = Math.random() * 8 + 4; spark.style.width = `${size}px`; spark.style.height = `${size}px`; spark.style.backgroundColor = color; const startY = 50 + (Math.random() * 40 - 20); spark.style.top = `${startY}%`; const duration = Math.random() * 0.4 + 0.4; if (sparkSide === 'left') { spark.style.left = '90%'; const endX = Math.random() * -100 - 50; const endY = (Math.random() * 200) - 100; spark.animate([{ transform: 'translate(0, 0) scale(1)', opacity: 1 },{ transform: `translate(${endX}px, ${endY}px) scale(0)`, opacity: 0 }],{ duration: duration * 1000, easing: 'ease-out' }); } else { spark.style.right = '90%'; const endX = Math.random() * 100 + 50; const endY = (Math.random() * 200) - 100; spark.animate([{ transform: 'translate(0, 0) scale(1)', opacity: 1 },{ transform: `translate(${endX}px, ${endY}px) scale(0)`, opacity: 0 }],{ duration: duration * 1000, easing: 'ease-out' }); } container.appendChild(spark); setTimeout(() => spark.remove(), duration * 1000); }
-                sparkSide = sparkSide === 'left' ? 'right' : 'left';
-            }
-
-            const ns=['C4','E4','G4','A4'];
-            function aB(buttonIndex,isP){
-                const btn = gBs[buttonIndex]; const originalId = buttonMapping[buttonIndex];
-                if(!isP){btn.classList.remove('desaturated')}
-                btn.classList.add('active'); const gS=15+c*4;const gSp=2+c*1; btn.style.boxShadow=`0 0 ${gS}px ${gSp}px var(--glow-color)`;
-                if(isP){ const n=Tone.Frequency(ns[originalId]).transpose(c*1); s.triggerAttackRelease(n,'8n'); createSpark(buttonProperties[originalId].color); }else{ s.triggerAttackRelease(ns[originalId],'8n') }
-                setTimeout(()=>{btn.classList.remove('active');btn.style.boxShadow='';if(!isP){btn.classList.add('desaturated')}},300)
-            }
-
-            function sC(isHS){confetti({particleCount:isHS?300:150,spread:isHS?180:90,origin:{y:0.6},gravity:0.8,ticks:300,scalar:1.2})}
-            
-            // --- Skill System Logic ---
-            function updateSkillGaugeUI() { const percent = (skillGauge / maxSkillGauge) * 100; skillGaugeFill.style.width = `${percent}%`; if (skillGauge >= maxSkillGauge && !isSkillReady) { isSkillReady = true; skillBtn.disabled = false; skillBtn.classList.add('ready'); } else if (skillGauge < maxSkillGauge) { isSkillReady = false; skillBtn.disabled = true; skillBtn.classList.remove('ready'); } }
-            function activateSkill() { if (!isSkillReady || isShieldActive) return; isShieldActive = true; isSkillReady = false; skillGauge = 0; updateSkillGaugeUI(); shieldUpSound.triggerAttackRelease("C5", "8n"); const shieldIndicator = document.createElement('div'); shieldIndicator.id = 'shield-indicator'; shieldIndicator.innerHTML = `<svg class="w-8 h-8 text-blue-400" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M10 1.944A11.954 11.954 0 012.166 5.02.997.997 0 001 6v5a9 9 0 009 9 9 9 0 009-9V6a.997.997 0 00-1.166-.98A11.954 11.954 0 0110 1.944z" clip-rule="evenodd"></path></svg>`; shieldIndicator.className = 'absolute -top-2 -right-2'; livesDisplay.appendChild(shieldIndicator); }
-            function breakShield() { isShieldActive = false; shieldBreakSound.triggerAttackRelease("C3", "4n"); const shieldIndicator = document.getElementById('shield-indicator'); if (shieldIndicator) { shieldIndicator.classList.add('shield-break-animation'); shieldIndicator.addEventListener('animationend', () => shieldIndicator.remove()); } }
-            async function shuffleButtons() {
-                shuffleSound.triggerAttackRelease('2n');
-                // Fisher-Yates shuffle
-                for (let i = buttonMapping.length - 1; i > 0; i--) {
-                    const j = Math.floor(Math.random() * (i + 1));
-                    [buttonMapping[i], buttonMapping[j]] = [buttonMapping[j], buttonMapping[i]];
-                }
-                gBs.forEach(btn => btn.classList.add('shuffling'));
-                await sl(400);
-                renderButtons();
-                gBs.forEach(btn => btn.classList.remove('shuffling'));
-            }
-
-            // --- Basecamp Logic ---
-            function lBD() { // loadBasecampData
-                harmonicEssence = parseInt(localStorage.getItem('harmonicEssence')) || 0;
-                playerUpgrades = JSON.parse(localStorage.getItem('playerUpgrades')) || {};
-            }
-            function sBD() { // saveBasecampData
-                localStorage.setItem('harmonicEssence', harmonicEssence);
-                localStorage.setItem('playerUpgrades', JSON.stringify(playerUpgrades));
-            }
-            function calculateEssence() {
-                const essenceGained = Math.floor((totalScore / 100) + (l * 5));
-                harmonicEssence += essenceGained;
-            }
-            function populateBasecampUI() {
-                harmonicEssenceDisplay.textContent = harmonicEssence.toLocaleString();
-                upgradeList.innerHTML = '';
-                Object.keys(upgrades).forEach(id => {
-                    const upgrade = upgrades[id];
-                    const currentLevel = playerUpgrades[id] || 0;
-                    const isMaxLevel = currentLevel >= upgrade.maxLevel;
-                    const cost = Math.floor(upgrade.cost * Math.pow(1.5, currentLevel));
-                    const canAfford = harmonicEssence >= cost;
-
-                    const card = document.createElement('div');
-                    card.className = 'p-4 rounded-lg bg-slate-100 dark:bg-slate-700 flex justify-between items-center';
+                addEventListeners() {
+                    DOM.startBtn.addEventListener('click', async () => {
+                        await Tone.start(); // Required for audio context
+                        this.setState('STARTING_GAME');
+                    });
                     
-                    let levelDisplay = '';
-                    if (upgrade.maxLevel > 1) {
-                        levelDisplay = `<span class="text-sm font-bold ${isMaxLevel ? 'text-green-500' : 'text-slate-500'}">Lv. ${currentLevel}/${upgrade.maxLevel}</span>`;
+                    DOM.gameButtons.forEach((btn, index) => {
+                        btn.addEventListener('click', e => {
+                            if (GameState.current !== 'PLAYER_INPUT' || GameState.isPlayerClicking) return;
+                            GameState.isPlayerClicking = true;
+                            PlayerController.handleInput(index);
+                        });
+                    });
+
+                    DOM.pauseBtn.addEventListener('click', () => this.setState('PAUSED'));
+                    DOM.resumeBtn.addEventListener('click', () => this.setState('RESUMING'));
+                },
+
+                async setState(newState) {
+                    GameState.current = newState;
+                    
+                    switch (newState) {
+                        case 'STARTING_GAME':
+                            await this.handleStartGame();
+                            break;
+                        case 'NEXT_LEVEL':
+                            await this.handleNextLevel();
+                            break;
+                        case 'PATTERN_PLAYBACK':
+                            EnemyController.playPattern();
+                            break;
+                        case 'PLAYER_INPUT':
+                            PlayerController.enableInput();
+                            break;
+                        case 'ROUND_SUCCESS':
+                            await this.handleRoundSuccess();
+                            break;
+                        case 'ROUND_FAIL':
+                            await this.handleRoundFail();
+                            break;
+                        case 'GAME_OVER':
+                            this.handleGameOver();
+                            break;
+                        case 'PAUSED':
+                            this.handlePause();
+                            break;
+                        case 'RESUMING':
+                            this.handleResume();
+                            break;
+                    }
+                },
+
+                async handleStartGame() {
+                    UIController.showGameScreen();
+                    BasecampController.applyUpgrades();
+                    
+                    // Reset run-specific state
+                    GameState.gamePattern = [];
+                    GameState.playerPattern = [];
+                    GameState.totalScore = 0;
+                    GameState.unbankedFragments = 0;
+                    GameState.skillGauge = 0;
+                    GameState.lostFragments = { amount: 0, level: -1 };
+
+                    if (GameState.baseCampLevel > 0) {
+                        GameState.level = GameState.baseCampLevel;
+                        GameState.roundCounter = GameState.baseCampLevel;
+                        // Pre-populate a long pattern to simulate starting from a checkpoint
+                        for (let i = 1; i <= GameState.baseCampLevel; i++) {
+                            EnemyController.selectNewAntagonist((i % 4) === 0);
+                            for (let j = 0; j < GameState.maxMonsterHP; j++) {
+                                GameState.gamePattern.push(EnemyController.getNextStep(GameState.gamePattern));
+                            }
+                        }
+                    } else {
+                        GameState.level = 0;
+                        GameState.roundCounter = 0;
+                    }
+                    
+                    UIController.renderHearts();
+                    UIController.updateAll();
+                    await sleep(500);
+                    this.setState('NEXT_LEVEL');
+                },
+
+                async handleNextLevel() {
+                    UIController.clearRhythmCanvas();
+                    GameState.playerPattern = [];
+                    GameState.combo = 0;
+                    GameState.level++;
+                    GameState.roundCounter++;
+                    GameState.gameTimings = [];
+                    GameState.playerTimings = [];
+                    GameState.accumulatedDamage = 0;
+                    
+                    const isBossRound = (GameState.roundCounter % 4) === 0;
+                    if (isBossRound) {
+                        await UIController.showBossWarning();
+                    }
+                    
+                    EnemyController.selectNewAntagonist(isBossRound);
+
+                    if (GameState.currentAntagonist.specialMechanic === 'shuffleButtons') {
+                        await PlayerController.shuffleButtons();
+                    }
+                    
+                    AudioManager.updateBgm();
+                    
+                    if (GameState.currentAntagonist.key === 'mimic' && GameState.playerHistory.length > 0) {
+                        GameState.gamePattern = [...GameState.playerHistory[Math.floor(Math.random() * GameState.playerHistory.length)]];
+                    } else {
+                        GameState.gamePattern = [];
+                        for (let i = 0; i < GameState.maxMonsterHP; i++) {
+                            GameState.gamePattern.push(EnemyController.getNextStep(GameState.gamePattern));
+                        }
+                    }
+                    
+                    UIController.updateAll();
+                    this.setState('PATTERN_PLAYBACK');
+                },
+                
+                async handleRoundSuccess() {
+                    UIController.resetButtonAndMonsterStates();
+                    UIController.stopRhythmAnimation();
+                    AudioManager.playSuccessSound();
+                    UIController.flashScreen('success');
+                    await sleep(500);
+
+                    if (GameState.accumulatedDamage > 0) {
+                        await EnemyController.takeDamage();
                     }
 
-                    card.innerHTML = `
-                        <div>
-                            <h3 class="font-bold text-lg">${upgrade.name} ${levelDisplay}</h3>
-                            <p class="text-sm text-secondary">${upgrade.description}</p>
-                        </div>
-                        <button id="upgrade-${id}" class="bg-blue-500 text-white font-bold py-2 px-4 rounded-lg hover:bg-blue-600 disabled:bg-slate-400 disabled:cursor-not-allowed transition-colors">
-                            ${isMaxLevel ? '최대 레벨' : `${cost.toLocaleString()} <span style="color: var(--essence-color);">E</span>`}
-                        </button>
-                    `;
-                    upgradeList.appendChild(card);
+                    GameState.playerHistory.push([...GameState.gamePattern]);
+                    if (GameState.playerHistory.length > 10) GameState.playerHistory.shift();
 
-                    const btn = document.getElementById(`upgrade-${id}`);
-                    if (isMaxLevel || !canAfford) {
-                        btn.disabled = true;
+                    if (GameState.level === GameState.lostFragments.level) {
+                        GameState.unbankedFragments += GameState.lostFragments.amount;
+                        GameState.lostFragments = { amount: 0, level: -1 };
                     }
-                    btn.addEventListener('click', () => purchaseUpgrade(id, cost));
-                });
-            }
-            function purchaseUpgrade(id, cost) {
-                if (harmonicEssence >= cost) {
-                    harmonicEssence -= cost;
-                    playerUpgrades[id] = (playerUpgrades[id] || 0) + 1;
-                    sBD();
-                    populateBasecampUI();
+                    
+                    if (GameState.currentAntagonist.type === 'boss') {
+                        PersistenceManager.saveClearedBoss(GameState.currentAntagonist.key);
+                    }
+                    
+                    UIController.updateAll();
+                    await sleep(800);
+                    
+                    if (GameState.roundCounter % 4 === 0) {
+                        BasecampController.saveCheckpoint();
+                        await UIController.showRestStageModal(true);
+                        this.setState('NEXT_LEVEL');
+                    } else {
+                        this.setState('NEXT_LEVEL');
+                    }
+                },
+
+                async handleRoundFail() {
+                    UIController.resetButtonAndMonsterStates();
+                    UIController.stopRhythmAnimation();
+                    GameState.accumulatedDamage = 0;
+
+                    UIController.showMonsterTaunt();
+                    PersistenceManager.saveEncounteredAntagonist(GameState.currentAntagonist.key);
+                    
+                    UIController.breakHeart();
+                    GameState.lives--;
+                    AudioManager.playFailSound();
+                    UIController.flashScreen('fail');
+
+                    if (GameState.unbankedFragments > 0) {
+                        GameState.lostFragments = { amount: GameState.unbankedFragments, level: GameState.level };
+                        UIController.showLostFragments(GameState.unbankedFragments);
+                        GameState.unbankedFragments = 0;
+                    }
+                    UIController.updateAll();
+                    
+                    if (GameState.lives > 0) {
+                        await sleep(1000);
+                        await UIController.showGetReadySequence();
+                        GameState.playerPattern = [];
+                        GameState.combo = 0;
+                        GameState.gameTimings = [];
+                        GameState.playerTimings = [];
+                        GameState.accumulatedDamage = 0;
+                        UIController.updateAll();
+                        this.setState('PATTERN_PLAYBACK');
+                    } else {
+                        this.setState('GAME_OVER');
+                    }
+                },
+
+                handleGameOver() {
+                    UIController.stopRhythmAnimation();
+                    UIController.showMainMenuScreen();
+                    BasecampController.calculateEssence();
+                    PersistenceManager.saveAll();
+                    AudioManager.setBgm('gameover');
+                    UIController.updateAllForGameOver();
+                },
+
+                handlePause() {
+                    if (GameState.current !== 'PLAYER_INPUT' && GameState.current !== 'PATTERN_PLAYBACK') return;
+                    GameState.pauseStartTime = performance.now();
+                    Tone.Transport.pause();
+                    UIController.togglePause(true);
+                },
+
+                handleResume() {
+                    const pauseDuration = performance.now() - GameState.pauseStartTime;
+                    GameState.patternStartTime += pauseDuration;
+                    GameState.animation.startTime += pauseDuration;
+                    Tone.Transport.start();
+                    UIController.togglePause(false);
+                    // Set state back to what it was before pausing
+                    GameState.current = 'PLAYER_INPUT'; // Assume we only pause during input for simplicity
+                    UIController.animateRhythm();
                 }
-            }
-            function applyUpgrades() {
-                lives = 3 + (playerUpgrades.bonusLife || 0);
-                isShieldActive = (playerUpgrades.startShield || 0) > 0;
-                if (isShieldActive) {
-                    // This is a simplified way to show the shield at the start.
-                    // A better implementation would call activateSkill's UI part.
+            };
+            
+            /**
+             * UIController: Handles all DOM manipulation and visual feedback.
+             */
+            const UIController = {
+                sparkSide: 'left',
+
+                init() {
+                    this.setupCanvas();
+                    this.renderButtons();
+                    this.updateAll();
+                },
+                
+                setupCanvas() {
+                    DOM.rhythmCanvas.width = DOM.rhythmCanvas.offsetWidth * window.devicePixelRatio;
+                    DOM.rhythmCanvas.height = DOM.rhythmCanvas.offsetHeight * window.devicePixelRatio;
+                    DOM.rhythmCtx.scale(window.devicePixelRatio, window.devicePixelRatio);
+                },
+
+                renderButtons() {
+                    DOM.gameButtons.forEach((btn, index) => {
+                        const originalId = GameState.buttonMapping[index];
+                        const props = GameData.buttonProperties[originalId];
+                        btn.className = 'game-button';
+                        btn.classList.add(props.class);
+                        btn.style.setProperty('--glow-color', props.glow);
+                        btn.innerHTML = props.symbol;
+                    });
+                },
+
+                updateAll() {
+                    DOM.totalScoreDisplay.textContent = GameState.totalScore.toLocaleString();
+                    DOM.unbankedFragmentsDisplay.textContent = GameState.unbankedFragments > 0 ? `+${GameState.unbankedFragments.toLocaleString()}` : '';
+                    if (GameState.baseCampLevel > 0) {
+                        DOM.basecampDisplay.querySelector('span').textContent = GameState.baseCampLevel;
+                        DOM.basecampDisplay.classList.remove('opacity-0');
+                    } else {
+                        DOM.basecampDisplay.classList.add('opacity-0');
+                    }
+                    this.updateSkillGauge();
+                },
+                
+                updateAllForGameOver() {
+                    const finalScore = GameState.totalScore + GameState.unbankedFragments;
+                    DOM.unbankedFragmentsDisplay.textContent = `최종 점수: ${finalScore.toLocaleString()}`;
+                    DOM.startBtn.textContent = '다시 시작';
+                },
+
+                renderHearts() {
+                    DOM.livesDisplay.innerHTML = '';
+                    for (let i = 0; i < GameState.lives; i++) {
+                        const heart = document.createElement('div');
+                        heart.innerHTML = `<svg class="w-6 h-6 text-rose-500" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M3.172 5.172a4 4 0 015.656 0L10 6.343l1.172-1.171a4 4 0 115.656 5.656L10 17.657l-6.828-6.829a4 4 0 010-5.656z" clip-rule="evenodd"></path></svg>`;
+                        DOM.livesDisplay.appendChild(heart);
+                    }
+                    if (GameState.isShieldActive) PlayerController.addShieldIndicator();
+                },
+
+                updateHealthBar() {
+                    const hpPercent = (GameState.currentMonsterHP / GameState.maxMonsterHP) * 100;
+                    DOM.hpBarFill.style.width = `${hpPercent}%`;
                     setTimeout(() => {
-                        const shieldIndicator = document.createElement('div');
-                        shieldIndicator.id = 'shield-indicator';
-                        shieldIndicator.innerHTML = `<svg class="w-8 h-8 text-blue-400" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M10 1.944A11.954 11.954 0 012.166 5.02.997.997 0 001 6v5a9 9 0 009 9 9 9 0 009-9V6a.997.997 0 00-1.166-.98A11.954 11.954 0 0110 1.944z" clip-rule="evenodd"></path></svg>`;
-                        shieldIndicator.className = 'absolute -top-2 -right-2';
-                        livesDisplay.appendChild(shieldIndicator);
-                    }, 100);
-                } else {
-                    const existingShield = document.getElementById('shield-indicator');
-                    if (existingShield) existingShield.remove();
+                        DOM.hpBarDamage.style.width = `${hpPercent}%`;
+                    }, 200);
+                },
+
+                updateSkillGauge() {
+                    const percent = (GameState.skillGauge / GameState.maxSkillGauge) * 100;
+                    DOM.skillGaugeFill.style.width = `${percent}%`;
+                    if (GameState.skillGauge >= GameState.maxSkillGauge && !GameState.isSkillReady) {
+                        GameState.isSkillReady = true;
+                        DOM.skillBtn.disabled = false;
+                        DOM.skillBtn.classList.add('ready');
+                    } else if (GameState.skillGauge < GameState.maxSkillGauge) {
+                        GameState.isSkillReady = false;
+                        DOM.skillBtn.disabled = true;
+                        DOM.skillBtn.classList.remove('ready');
+                    }
+                },
+
+                showGameScreen() {
+                    DOM.mainContainer.classList.add('game-started');
+                    DOM.initialScreenButtons.classList.add('hidden');
+                    DOM.inGameButtons.classList.remove('hidden');
+                    DOM.startBtn.classList.add('hidden');
+                    DOM.inProgressIndicator.classList.remove('hidden');
+                    DOM.skillContainer.classList.remove('hidden');
+                },
+                
+                showMainMenuScreen() {
+                    DOM.mainContainer.classList.remove('game-started');
+                    DOM.initialScreenButtons.classList.remove('hidden');
+                    DOM.inGameButtons.classList.add('hidden');
+                    DOM.inProgressIndicator.classList.add('hidden');
+                    DOM.startBtn.classList.remove('hidden');
+                    DOM.skillContainer.classList.add('hidden');
+                },
+
+                async showBossWarning() {
+                    DOM.body.classList.add('boss-warning-flash');
+                    AudioManager.playBossScream();
+                    await sleep(1500);
+                    DOM.body.classList.remove('boss-warning-flash');
+                },
+                
+                flashScreen(type) {
+                    const className = type === 'success' ? 'success-flash' : 'game-over-flash';
+                    DOM.body.classList.add(className);
+                    setTimeout(() => DOM.body.classList.remove(className), 400);
+                },
+
+                showTimingFeedback(judgement) {
+                    const j = GameData.timingJudgement[judgement] || { text: "MISS" };
+                    DOM.timingFeedback.textContent = j.text;
+                    DOM.timingFeedback.className = `feedback-${judgement.toLowerCase()}`;
+                    DOM.timingFeedback.classList.add('timing-feedback-animation');
+                    DOM.timingFeedback.onanimationend = () => {
+                        DOM.timingFeedback.classList.remove('timing-feedback-animation');
+                        DOM.timingFeedback.textContent = '';
+                    };
+                },
+                
+                breakHeart() {
+                    const heartToBreak = DOM.livesDisplay.lastChild;
+                    if (heartToBreak) {
+                        heartToBreak.classList.add('heart-break');
+                        heartToBreak.addEventListener('animationend', () => heartToBreak.remove(), { once: true });
+                    }
+                },
+                
+                showLostFragments(amount) {
+                    const lostText = document.createElement('div');
+                    lostText.textContent = `-${amount}`;
+                    lostText.className = 'absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 text-4xl font-bold fragment-lost-animation pointer-events-none';
+                    DOM.gameBoard.appendChild(lostText);
+                    setTimeout(() => lostText.remove(), 1500);
+                },
+
+                resetButtonAndMonsterStates() {
+                    DOM.gameBoard.classList.remove('dancing', 'idle', 'combo-1', 'combo-2', 'combo-3');
+                    DOM.monsterIcon.classList.remove('dancing');
+                },
+                
+                showMonsterTaunt() {
+                    DOM.monsterIcon.classList.add('monster-taunt-animation');
+                    DOM.monsterIcon.addEventListener('animationend', () => {
+                        DOM.monsterIcon.classList.remove('monster-taunt-animation');
+                    }, { once: true });
+                },
+
+                async showGetReadySequence() {
+                    const countdownCircle = document.createElement('div');
+                    countdownCircle.style.cssText = `position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); border-radius: 50%; background-color: var(--text-highlight); opacity: 0.7;`;
+                    DOM.gameBoard.appendChild(countdownCircle);
+                    
+                    AudioManager.playSweepSound();
+                    
+                    countdownCircle.animate([
+                        { width: '80%', height: '80%', opacity: 0.7 },
+                        { width: '0%', height: '0%', opacity: 0 }
+                    ], { duration: 800, easing: 'ease-in' });
+                    
+                    await sleep(800);
+                    countdownCircle.remove();
+                    AudioManager.playSuccessIndicatorSound();
+                    this.flashScreen('success');
+                    await sleep(200);
+                },
+                
+                async showRestStageModal(isBossClear) {
+                    return new Promise(resolve => {
+                        const announcer = document.getElementById('announcer');
+                        const title = document.getElementById('rest-title');
+                        const subtitle = document.getElementById('rest-subtitle');
+                        if (isBossClear) {
+                            title.textContent = "보스 처치!";
+                            subtitle.textContent = "화톳불에서 다음 도전을 준비합니다.";
+                            announcer.innerHTML = `<svg viewBox="0 0 100 100"><path d="M50 10 L60 40 L90 40 L65 60 L75 90 L50 70 L25 90 L35 60 L10 40 L40 40 Z" fill="gold"/></svg>`;
+                        } else {
+                            // This part is not currently used but kept for future expansion
+                            title.textContent = `다음 상대: ${GameState.currentAntagonist.name}`;
+                            subtitle.textContent = GameState.currentAntagonist.description;
+                            announcer.innerHTML = GameState.currentAntagonist.icon;
+                            announcer.style.color = GameState.currentAntagonist.color;
+                        }
+                        DOM.restStageModal.classList.remove('hidden');
+                        document.getElementById('rest-continue-btn').onclick = () => {
+                            DOM.restStageModal.classList.add('hidden');
+                            resolve();
+                        };
+                    });
+                },
+
+                createSpark(color) {
+                    const container = this.sparkSide === 'left' ? DOM.sparkEffectLeft : DOM.sparkEffectRight;
+                    for (let i = 0; i < 5; i++) {
+                        const spark = document.createElement('div');
+                        spark.className = 'spark';
+                        const size = Math.random() * 8 + 4;
+                        spark.style.width = `${size}px`;
+                        spark.style.height = `${size}px`;
+                        spark.style.backgroundColor = color;
+                        const startY = 50 + (Math.random() * 40 - 20);
+                        spark.style.top = `${startY}%`;
+                        const duration = Math.random() * 0.4 + 0.4;
+                        let endX, endY;
+                        if (this.sparkSide === 'left') {
+                            spark.style.left = '90%';
+                            endX = Math.random() * -100 - 50;
+                            endY = (Math.random() * 200) - 100;
+                        } else {
+                            spark.style.right = '90%';
+                            endX = Math.random() * 100 + 50;
+                            endY = (Math.random() * 200) - 100;
+                        }
+                        spark.animate(
+                            [{ transform: 'translate(0, 0) scale(1)', opacity: 1 }, { transform: `translate(${endX}px, ${endY}px) scale(0)`, opacity: 0 }],
+                            { duration: duration * 1000, easing: 'ease-out' }
+                        );
+                        container.appendChild(spark);
+                        setTimeout(() => spark.remove(), duration * 1000);
+                    }
+                    this.sparkSide = this.sparkSide === 'left' ? 'right' : 'left';
+                },
+                
+                togglePause(isPaused) {
+                    DOM.mainContainer.classList.toggle('paused', isPaused);
+                    DOM.pauseModal.style.display = isPaused ? 'flex' : 'none';
+                    if (!isPaused) {
+                        DOM.gameBoard.classList.add('idle');
+                    } else {
+                        DOM.gameBoard.classList.remove('dancing', 'idle');
+                    }
+                },
+                
+                // Rhythm Canvas Animation
+                animateRhythm() {
+                    if (GameState.current === 'PAUSED' || !GameState.animation.isRunning) return;
+
+                    const W = DOM.rhythmCanvas.offsetWidth;
+                    const H = DOM.rhythmCanvas.offsetHeight;
+                    const elapsedTime = performance.now() - GameState.animation.startTime;
+                    let progress = elapsedTime / GameState.currentPatternDuration;
+
+                    if (GameState.animation.mode === 'input') {
+                        progress %= 1.0;
+                    } else {
+                        progress = Math.min(progress, 1);
+                    }
+                    
+                    const ctx = DOM.rhythmCtx;
+                    ctx.clearRect(0, 0, W, H);
+                    
+                    // Background lines
+                    ctx.strokeStyle = getComputedStyle(document.documentElement).getPropertyValue('--rhythm-line') + '30';
+                    ctx.lineWidth = 1;
+                    for (let i = 0; i < 8; i++) {
+                        const y = (H / 8) * i;
+                        ctx.beginPath(); ctx.moveTo(0, y); ctx.lineTo(W, y); ctx.stroke();
+                    }
+
+                    // Main pattern line
+                    ctx.strokeStyle = getComputedStyle(document.documentElement).getPropertyValue('--rhythm-line');
+                    ctx.lineWidth = 2;
+                    ctx.beginPath();
+                    ctx.moveTo(0, H / 2);
+                    for (let i = 0; i < GameState.gameTimings.length; i++) {
+                        const time = GameState.gameTimings[i];
+                        const prevTime = i > 0 ? GameState.gameTimings[i-1] : 0;
+                        const x = (time / GameState.currentPatternDuration) * W;
+                        const prevX = (prevTime / GameState.currentPatternDuration) * W;
+                        ctx.lineTo(prevX, H / 2); ctx.lineTo(x, H / 2); ctx.lineTo(x, H / 4); ctx.lineTo(x, H * 3 / 4); ctx.lineTo(x, H / 2);
+                    }
+                    ctx.lineTo(W, H / 2);
+                    ctx.stroke();
+
+                    // Note markers
+                    for (let i = 0; i < GameState.gameTimings.length; i++) {
+                        const x = (GameState.gameTimings[i] / GameState.currentPatternDuration) * W;
+                        ctx.strokeStyle = getComputedStyle(document.documentElement).getPropertyValue('--rhythm-line');
+                        ctx.lineWidth = 4;
+                        ctx.beginPath(); ctx.moveTo(x, H / 4); ctx.lineTo(x, H * 3 / 4); ctx.stroke();
+                    }
+                    
+                    // Player input markers
+                    if (GameState.animation.mode === 'input') {
+                        for (let i = 0; i < GameState.playerTimings.length; i++) {
+                            const x = (GameState.playerTimings[i] % GameState.currentPatternDuration / GameState.currentPatternDuration) * W;
+                            ctx.fillStyle = '#ffffff';
+                            ctx.beginPath(); ctx.arc(x, H / 2, 5, 0, Math.PI * 2); ctx.fill();
+                        }
+                    }
+
+                    // Playhead
+                    const playheadX = progress * W;
+                    ctx.strokeStyle = getComputedStyle(document.documentElement).getPropertyValue('--rhythm-playhead');
+                    ctx.lineWidth = 2;
+                    ctx.beginPath(); ctx.moveTo(playheadX, 0); ctx.lineTo(playheadX, H); ctx.stroke();
+                    
+                    if ((GameState.animation.mode === 'playback' && progress >= 1)) {
+                        GameState.animation.isRunning = false;
+                    } else {
+                        GameState.animation.id = requestAnimationFrame(() => this.animateRhythm());
+                    }
+                },
+
+                startRhythmAnimation(mode, totalDuration) {
+                    GameState.animation = {
+                        startTime: performance.now(),
+                        isRunning: true,
+                        mode: mode,
+                        id: GameState.animation.id
+                    };
+                    GameState.currentPatternDuration = totalDuration;
+                    if (GameState.animation.id) cancelAnimationFrame(GameState.animation.id);
+                    this.animateRhythm();
+                },
+
+                stopRhythmAnimation() {
+                    if (GameState.animation.id) cancelAnimationFrame(GameState.animation.id);
+                    GameState.animation.isRunning = false;
+                },
+                
+                clearRhythmCanvas() {
+                    this.stopRhythmAnimation();
+                    const W = DOM.rhythmCanvas.offsetWidth;
+                    const H = DOM.rhythmCanvas.offsetHeight;
+                    DOM.rhythmCtx.clearRect(0, 0, W, H);
                 }
-            }
+            };
+            
+            /**
+             * AudioManager: Handles all Tone.js logic and sound playback.
+             */
+            const AudioManager = {
+                synths: {},
+                bgm: {},
+                volumes: {},
 
-            // --- Modal Logic ---
-            bestiaryBtn.addEventListener('click', () => { populateBestiary(); bestiaryModal.classList.remove('hidden'); });
-            closeBestiaryBtn.addEventListener('click', () => { bestiaryModal.classList.add('hidden'); });
+                init() {
+                    const bgmVol = parseInt(localStorage.getItem('bgmVolume')) || -20;
+                    const sfxVol = parseInt(localStorage.getItem('sfxVolume')) || 0;
 
-            function populateBestiary() {
-                bestiaryList.innerHTML = '';
-                const encountered = JSON.parse(localStorage.getItem('encounteredAntagonists')) || [];
-                const cleared = JSON.parse(localStorage.getItem('clearedBosses')) || [];
-                Object.values(antagonistProfiles).forEach(profile => {
-                    const isEncountered = encountered.includes(profile.key);
-                    const isCleared = profile.type === 'boss' && cleared.includes(profile.key);
-                    const card = document.createElement('div');
-                    card.className = `p-4 rounded-lg flex items-start gap-4 relative ${isEncountered ? 'bg-slate-100 dark:bg-slate-700' : 'bg-slate-200 dark:bg-slate-900 filter grayscale opacity-60'}`;
-                    const iconContainer = document.createElement('div');
-                    iconContainer.className = 'w-16 h-16 flex-shrink-0';
-                    iconContainer.style.color = isEncountered ? profile.color : 'gray';
-                    iconContainer.innerHTML = isEncountered ? profile.icon : `<svg viewBox="0 0 100 100"><text x="50" y="65" font-size="50" text-anchor="middle" fill="currentColor">?</text></svg>`;
-                    const textContainer = document.createElement('div');
-                    textContainer.className = 'text-left';
-                    const name = document.createElement('h3');
-                    name.className = 'font-bold text-lg';
-                    name.textContent = isEncountered ? profile.name : '???';
-                    const description = document.createElement('p');
-                    description.className = 'text-sm text-secondary mt-1';
-                    description.textContent = isEncountered ? profile.description : '이 적과 마주쳐 패배하면 정보를 얻을 수 있습니다.';
-                    textContainer.appendChild(name); textContainer.appendChild(description); card.appendChild(iconContainer); card.appendChild(textContainer);
-                    if(isCleared) { const clearMark = document.createElement('div'); clearMark.className = 'bestiary-clear-mark'; clearMark.textContent = 'CLEAR'; card.appendChild(clearMark); }
-                    bestiaryList.appendChild(card);
-                });
-            }
+                    this.volumes.bgm = new Tone.Volume(bgmVol).toDestination();
+                    this.volumes.sfx = new Tone.Volume(sfxVol).toDestination();
 
-            settingsBtn.addEventListener('click', () => settingsModal.classList.remove('hidden'));
-            closeSettingsBtn.addEventListener('click', () => settingsModal.classList.add('hidden'));
-            bgmVolumeSlider.addEventListener('input', (e) => { bgmVolume.volume.value = e.target.value; localStorage.setItem('bgmVolume', e.target.value); });
-            sfxVolumeSlider.addEventListener('input', (e) => { sfxVolume.volume.value = e.target.value; localStorage.setItem('sfxVolume', e.target.value); });
+                    DOM.bgmVolumeSlider.value = bgmVol;
+                    DOM.sfxVolumeSlider.value = sfxVol;
 
-            pauseBtn.addEventListener('click', () => { if (!iP) return; isPaused = true; pauseStartTime = performance.now(); Tone.Transport.pause(); gBd.classList.remove('dancing', 'idle'); mC.classList.add('paused'); pauseModal.style.display = 'flex'; });
-            resumeBtn.addEventListener('click', () => { if (!isPaused) return; const pauseDuration = performance.now() - pauseStartTime; patternStartTime += pauseDuration; animationState.startTime += pauseDuration; isPaused = false; Tone.Transport.start(); gBd.classList.add('idle'); mC.classList.remove('paused'); pauseModal.style.display = 'none'; requestAnimationFrame(animate); });
+                    this.synths.player = new Tone.Synth({ oscillator: { type: 'sine' }, envelope: { attack: 0.005, decay: 0.1, sustain: 0.3, release: 1 } }).connect(this.volumes.sfx);
+                    this.synths.success = new Tone.Synth({ oscillator: { type: 'triangle' }, envelope: { attack: 0.01, decay: 0.2, sustain: 0.2, release: 0.2 } }).connect(this.volumes.sfx);
+                    this.synths.fail = new Tone.PolySynth(Tone.Synth, { oscillator: { type: 'square' }, envelope: { attack: 0.01, decay: 0.4, sustain: 0, release: 0.4 } }).connect(this.volumes.sfx);
+                    this.synths.camp = new Tone.Synth({ oscillator: { type: 'fatsawtooth' }, envelope: { attack: 0.05, decay: 0.5, sustain: 0.4, release: 0.8 }, volume: -10 }).connect(this.volumes.sfx);
+                    this.synths.comboAttack = new Tone.PolySynth(Tone.Synth, { oscillator: { type: 'fmsquare' }, envelope: { attack: 0.01, decay: 0.1, sustain: 0.1, release: 0.2 } }).connect(this.volumes.sfx);
+                    this.synths.bossScream = new Tone.NoiseSynth({ noise: { type: "pink" }, envelope: { attack: 0.2, decay: 1.5, sustain: 0, release: 1.5 } }).connect(new Tone.Reverb(2.5).connect(this.volumes.sfx));
+                    this.synths.shieldUp = new Tone.Synth({ oscillator: { type: 'fmsquare' }, envelope: { attack: 0.01, decay: 0.2, sustain: 0.1, release: 0.5 } }).connect(this.volumes.sfx);
+                    this.synths.shieldBreak = new Tone.MetalSynth({ frequency: 80, envelope: { attack: 0.01, decay: 0.4, release: 0.2 }, harmonicity: 2.5, modulationIndex: 40, resonance: 1500 }).connect(this.volumes.sfx);
+                    this.synths.shuffle = new Tone.NoiseSynth({ noise: { type: 'white' }, envelope: { attack: 0.01, decay: 0.2, sustain: 0 } }).connect(this.volumes.sfx);
+                    this.synths.sweep = new Tone.Synth({ oscillator: { type: 'sawtooth' }, envelope: { attack: 0.01, decay: 0.5, sustain: 0.1, release: 0.2 } }).connect(this.volumes.sfx);
+                    
+                    // BGM Setup
+                    const bV = -20;
+                    const waitingSynth = new Tone.PluckSynth({ attackNoise: 0.5, dampening: 4000, resonance: 0.7, volume: bV + 8 }).connect(this.volumes.bgm);
+                    this.bgm.waiting = new Tone.Sequence((t, n) => { waitingSynth.triggerAttack(n, t) }, ["C4", "E4", "G4", "C5", "E5", "G4"], "8n");
+                    
+                    const normalBass = new Tone.MonoSynth({ oscillator: { type: "fmsine" }, envelope: { attack: 0.01, decay: 0.3, sustain: 0.1, release: 0.5 }, volume: bV }).connect(this.volumes.bgm);
+                    this.bgm.normal = new Tone.Sequence((t, n) => { waitingSynth.triggerAttack(n.melody, t); if (n.bass) { normalBass.triggerAttackRelease(n.bass, "8n", t) } }, [{ melody: "C4", bass: "C2" }, { melody: "E4", bass: null }, { melody: "G4", bass: "C2" }, { melody: "G4", bass: "G1" }, { melody: "E4", bass: null }, { melody: "C4", bass: "G1" }], "8n");
 
-            // --- Rhythm Animation Canvas ---
-            function animate(){
-                if (isPaused || !animationState.isRunning) return;
-                const W=rhythmCanvas.offsetWidth;const H=rhythmCanvas.offsetHeight; const elapsedTime=performance.now()-animationState.startTime; let progress=elapsedTime/currentPatternDuration;
-                if(animationState.mode==='input'){progress%=1.0}else{progress=Math.min(progress,1)}
-                rhythmCtx.clearRect(0,0,W,H); rhythmCtx.strokeStyle=getComputedStyle(document.documentElement).getPropertyValue('--rhythm-line')+'30'; rhythmCtx.lineWidth=1;
-                for(let i=0;i<8;i++){const y=(H/8)*i;rhythmCtx.beginPath();rhythmCtx.moveTo(0,y);rhythmCtx.lineTo(W,y);rhythmCtx.stroke()}
-                rhythmCtx.strokeStyle=getComputedStyle(document.documentElement).getPropertyValue('--rhythm-line'); rhythmCtx.lineWidth=2; rhythmCtx.beginPath(); rhythmCtx.moveTo(0,H/2);
-                for(let i=0;i<gameTimings.length;i++){const time=gameTimings[i];const prevTime=i>0?gameTimings[i-1]:0;const x=(time/currentPatternDuration)*W;const prevX=(prevTime/currentPatternDuration)*W;rhythmCtx.lineTo(prevX,H/2);rhythmCtx.lineTo(x,H/2);rhythmCtx.lineTo(x,H/4);rhythmCtx.lineTo(x,H*3/4);rhythmCtx.lineTo(x,H/2)}
-                rhythmCtx.lineTo(W,H/2); rhythmCtx.stroke();
-                for(let i=0;i<gameTimings.length;i++){const x=(gameTimings[i]/currentPatternDuration)*W;rhythmCtx.strokeStyle=getComputedStyle(document.documentElement).getPropertyValue('--rhythm-line');rhythmCtx.lineWidth=4;rhythmCtx.beginPath();rhythmCtx.moveTo(x,H/4);rhythmCtx.lineTo(x,H*3/4);rhythmCtx.stroke()}
-                if(animationState.mode==='input'){for(let i=0;i<playerTimings.length;i++){const x=(playerTimings[i]%currentPatternDuration/currentPatternDuration)*W;rhythmCtx.fillStyle='#ffffff';rhythmCtx.beginPath();rhythmCtx.arc(x,H/2,5,0,Math.PI*2);rhythmCtx.fill()}}
-                const playheadX=progress*W; rhythmCtx.strokeStyle=getComputedStyle(document.documentElement).getPropertyValue('--rhythm-playhead'); rhythmCtx.lineWidth=2; rhythmCtx.beginPath(); rhythmCtx.moveTo(playheadX,0); rhythmCtx.lineTo(playheadX,H); rhythmCtx.stroke();
-                if((animationState.mode === 'playback' && progress >= 1)) { animationState.isRunning = false; } else { animationState.id = requestAnimationFrame(animate); }
-            }
-            function startRhythmAnimation(mode, totalDuration) { animationState.startTime = performance.now(); animationState.isRunning = true; animationState.mode = mode; currentPatternDuration = totalDuration; if (animationState.id) cancelAnimationFrame(animationState.id); animate(); }
+                    const hardKick = new Tone.MembraneSynth({ octaves: 4, pitchDecay: 0.1, volume: bV + 2 }).connect(this.volumes.bgm);
+                    const hardBass = new Tone.MonoSynth({ oscillator: { type: "sawtooth" }, envelope: { attack: 0.01, decay: 0.3, sustain: 0.1, release: 0.5 }, volume: bV - 4 }).connect(this.volumes.bgm);
+                    this.bgm.hard = new Tone.Part((t, v) => { if (v.kick) hardKick.triggerAttackRelease("C1", "8n", t); if (v.bass) hardBass.triggerAttackRelease(v.bass, "8n", t) }, [{ time: "0:0", kick: true, bass: "C2" }, { time: "0:2", bass: "C2" }, { time: "0:3", kick: true }, { time: "0:5", bass: "G1" }, { time: "0:6", kick: true }, { time: "0:8", bass: "G1" }, { time: "0:9", kick: true }, { time: "0:11", bass: "F1" }]);
+                    this.bgm.hard.loop = true; this.bgm.hard.loopEnd = "1m";
+
+                    const vhKick = new Tone.MembraneSynth({ octaves: 6, pitchDecay: 0.05, volume: bV }).connect(this.volumes.bgm);
+                    const vhHihat = new Tone.MetalSynth({ frequency: 300, envelope: { attack: 0.001, decay: 0.05, release: 0.01 }, harmonicity: 4.1, modulationIndex: 22, resonance: 3000, octaves: 1.5, volume: bV - 10 }).connect(this.volumes.bgm);
+                    this.bgm.veryHard = new Tone.Sequence((t, n) => { vhKick.triggerAttackRelease("C1", "8n", t); if (n === 'CH') vhHihat.triggerAttackRelease("C6", "16n", t) }, ['C1', 'CH', 'C1', 'CH'], '4n');
+
+                    const gameOverSynth = new Tone.AMSynth({ harmonicity: 1.5, envelope: { attack: 0.01, decay: 2, sustain: 0.1, release: 2 }, volume: bV - 5 }).connect(this.volumes.bgm);
+                    this.bgm.gameover = new Tone.Sequence((t, n) => { gameOverSynth.triggerAttackRelease(n, "1n", t) }, [["C3", "E3"], ["G3", "B3"], ["F3", "A3"]], "1m");
+
+                    const bgmState = localStorage.getItem('bgmState');
+                    GameState.isBgmPlaying = (bgmState === 'off') ? false : true;
+                    if (GameState.isBgmPlaying && Tone.context.state === 'running') this.setBgm('waiting');
+                },
+
+                setBgm(state) {
+                    if (!GameState.isBgmPlaying) return;
+                    Object.values(this.bgm).forEach(p => p.stop(0));
+                    GameState.currentBgm = state;
+                    
+                    if (state === 'waiting') { Tone.Transport.timeSignature = [6, 8]; Tone.Transport.bpm.value = 90; this.bgm.waiting.start(0); }
+                    else if (state === 'normal') { Tone.Transport.timeSignature = [6, 8]; Tone.Transport.bpm.value = 100; this.bgm.normal.start(0); }
+                    else if (state === 'hard') { Tone.Transport.timeSignature = [12, 8]; Tone.Transport.bpm.value = 120; this.bgm.hard.start(0); }
+                    else if (state === 'veryHard') { Tone.Transport.timeSignature = [4, 4]; Tone.Transport.bpm.value = 140; this.bgm.veryHard.start(0); }
+                    else if (state === 'gameover') { Tone.Transport.timeSignature = [6, 8]; Tone.Transport.bpm.value = 70; this.bgm.gameover.start(0); }
+                    
+                    if (Tone.Transport.state !== 'started') Tone.Transport.start();
+                },
+                
+                stopBgm() {
+                    if (Tone.Transport.state === 'started') Tone.Transport.stop();
+                    Object.values(this.bgm).forEach(p => p.stop(0));
+                },
+
+                updateBgm() {
+                    const l = GameState.level;
+                    if (l >= 1 && l <= 8) this.setBgm('normal');
+                    else if (l >= 9 && l <= 16) this.setBgm('hard');
+                    else if (l >= 17) this.setBgm('veryHard');
+                },
+                
+                playNote(originalId, isPlayer) {
+                    const notes = ['C4', 'E4', 'G4', 'A4'];
+                    const combo = GameState.combo;
+                    if (isPlayer) {
+                        const note = Tone.Frequency(notes[originalId]).transpose(combo * 1);
+                        this.synths.player.triggerAttackRelease(note, '8n');
+                        UIController.createSpark(GameData.buttonProperties[originalId].color);
+                    } else {
+                        this.synths.player.triggerAttackRelease(notes[originalId], '8n');
+                    }
+                },
+                
+                playSuccessSound() { this.synths.success.triggerAttackRelease(['C5', 'E5', 'G5'], '8n'); },
+                playSuccessIndicatorSound() { this.synths.success.triggerAttackRelease('G5', '8n'); },
+                playFailSound() { this.synths.fail.triggerAttackRelease(['C3', 'C#3'], '4n'); },
+                playCampSound() { const n = Tone.now(); this.synths.camp.triggerAttackRelease("A3", "2n", n); this.synths.camp.triggerAttackRelease("E4", "2n", n + 0.1); this.synths.camp.triggerAttackRelease("A4", "2n", n + 0.2); },
+                playComboAttackSound() { const now = Tone.now(); this.synths.comboAttack.triggerAttackRelease(['C5', 'E5', 'G5'], '8n', now); },
+                playBossScream() { this.synths.bossScream.triggerAttackRelease("2n"); },
+                playShieldUpSound() { this.synths.shieldUp.triggerAttackRelease("C5", "8n"); },
+                playShieldBreakSound() { this.synths.shieldBreak.triggerAttackRelease("C3", "4n"); },
+                playShuffleSound() { this.synths.shuffle.triggerAttackRelease('2n'); },
+                playSweepSound() { this.synths.sweep.frequency.value = "C4"; this.synths.sweep.frequency.rampTo("C6", 0.5); this.synths.sweep.triggerAttack(); },
+            };
+            
+            /**
+             * EnemyController: Manages antagonist selection, pattern generation, and state.
+             */
+            const EnemyController = {
+                selectNewAntagonist(isBossRound) {
+                    const pool = isBossRound ? GameData.bossMonsters : GameData.normalMonsters;
+                    GameState.currentAntagonist = pool[Math.floor(Math.random() * pool.length)];
+                    
+                    DOM.monsterIcon.innerHTML = GameState.currentAntagonist.icon;
+                    DOM.monsterIcon.style.color = GameState.currentAntagonist.color;
+                    DOM.monsterName.textContent = GameState.currentAntagonist.name;
+                    DOM.monsterDesc.textContent = GameState.currentAntagonist.description;
+                    
+                    GameState.maxMonsterHP = GameState.currentAntagonist.maxHp;
+                    GameState.currentMonsterHP = GameState.maxMonsterHP;
+                    UIController.updateHealthBar();
+                },
+
+                getNextStep(pattern) {
+                    const weights = GameState.currentAntagonist.generateNext(pattern.slice());
+                    const lastStep = pattern.length > 0 ? pattern[pattern.length - 1] : -1;
+                    if (lastStep !== -1) { weights[lastStep] = 0; }
+                    
+                    const totalWeight = weights.reduce((sum, w) => sum + w, 0);
+                    if (totalWeight === 0) {
+                        const available = [0, 1, 2, 3].filter(i => i !== lastStep);
+                        return available[Math.floor(Math.random() * available.length)];
+                    }
+                    
+                    let random = Math.random() * totalWeight;
+                    for (let i = 0; i < weights.length; i++) {
+                        if (random < weights[i]) return i;
+                        random -= weights[i];
+                    }
+                    return 3;
+                },
+                
+                playPattern() {
+                    UIController.resetButtonAndMonsterStates();
+                    DOM.gameButtons.forEach(btn => btn.classList.add('disabled', 'desaturated'));
+                    
+                    let cumulativeTime = 0;
+                    const baseSpeed = 700, speedDecrementPerStage = 80, minSpeed = 150;
+                    const stage = Math.floor((GameState.level - 1) / 4);
+                    const patternIntervalBase = Math.max(minSpeed, baseSpeed - (stage * speedDecrementPerStage));
+                    
+                    GameState.gamePattern.forEach(originalId => {
+                        let interval = patternIntervalBase;
+                        if (GameState.currentAntagonist.specialMechanic === 'variableSpeed') {
+                            interval = patternIntervalBase * (Math.random() * 0.8 + 0.6);
+                        }
+                        setTimeout(() => {
+                            const currentIndex = GameState.buttonMapping.indexOf(originalId);
+                            this.animateButton(currentIndex, false);
+                        }, cumulativeTime);
+                        GameState.gameTimings.push(cumulativeTime + interval / 2);
+                        cumulativeTime += interval;
+                    });
+                    
+                    GameState.currentPatternDuration = cumulativeTime;
+                    UIController.startRhythmAnimation('playback', GameState.currentPatternDuration);
+                    
+                    setTimeout(() => {
+                        UIController.stopRhythmAnimation();
+                        GameManager.setState('PLAYER_INPUT');
+                    }, GameState.currentPatternDuration + 100);
+                },
+
+                animateButton(buttonIndex, isPlayer) {
+                    const btn = DOM.gameButtons[buttonIndex];
+                    const originalId = GameState.buttonMapping[buttonIndex];
+                    
+                    if (!isPlayer) { btn.classList.remove('desaturated'); }
+                    btn.classList.add('active');
+                    
+                    const glowSize = 15 + GameState.combo * 4;
+                    const glowSpread = 2 + GameState.combo * 1;
+                    btn.style.boxShadow = `0 0 ${glowSize}px ${glowSpread}px var(--glow-color)`;
+                    
+                    AudioManager.playNote(originalId, isPlayer);
+                    
+                    setTimeout(() => {
+                        btn.classList.remove('active');
+                        btn.style.boxShadow = '';
+                        if (!isPlayer) { btn.classList.add('desaturated'); }
+                    }, 300);
+                },
+                
+                async takeDamage() {
+                    DOM.monsterIcon.classList.add('monster-hit-animation');
+                    AudioManager.playComboAttackSound();
+                    GameState.currentMonsterHP = Math.max(0, GameState.currentMonsterHP - GameState.accumulatedDamage);
+                    UIController.updateHealthBar();
+                    GameState.accumulatedDamage = 0;
+                    await sleep(400);
+                    DOM.monsterIcon.classList.remove('monster-hit-animation');
+                }
+            };
+            
+            /**
+             * PlayerController: Handles player input, timing, skills, and state.
+             */
+            const PlayerController = {
+                enableInput() {
+                    GameState.isPlayerClicking = false;
+                    GameState.patternStartTime = performance.now();
+                    DOM.gameBoard.classList.add('idle');
+                    DOM.gameButtons.forEach(btn => {
+                        btn.classList.remove('disabled', 'desaturated');
+                        btn.classList.add('pulse');
+                        setTimeout(() => btn.classList.remove('pulse'), 400);
+                    });
+                    UIController.startRhythmAnimation('input', GameState.currentPatternDuration);
+                },
+                
+                handleInput(clickedIndex) {
+                    GameState.lastPressedButtonIndex = clickedIndex;
+                    const originalId = GameState.buttonMapping[clickedIndex];
+                    GameState.playerTimings.push(performance.now() - GameState.patternStartTime);
+                    EnemyController.animateButton(clickedIndex, true);
+                    GameState.playerPattern.push(originalId);
+                    this.checkAnswer(GameState.playerPattern.length - 1);
+                },
+
+                checkAnswer(currentIndex) {
+                    DOM.gameBoard.classList.remove('idle');
+                    DOM.gameBoard.classList.add('dancing');
+
+                    const correctButtonId = GameState.gamePattern[currentIndex];
+                    const playerButtonId = GameState.playerPattern[currentIndex];
+
+                    if (playerButtonId !== correctButtonId) {
+                        if (GameState.isShieldActive) {
+                            this.breakShield();
+                            UIController.showTimingFeedback("MISS");
+                            GameState.combo++;
+                            if (GameState.playerPattern.length === GameState.gamePattern.length) {
+                                GameManager.setState('ROUND_SUCCESS');
+                            } else {
+                                GameState.isPlayerClicking = false;
+                            }
+                            return;
+                        }
+                        this.setExpression(GameState.lastPressedButtonIndex, 'sad');
+                        UIController.showTimingFeedback("WRONG");
+                        GameManager.setState('ROUND_FAIL');
+                        return;
+                    }
+                    
+                    const correctTime = GameState.gameTimings[currentIndex];
+                    const playerTime = GameState.playerTimings[currentIndex] % GameState.currentPatternDuration;
+                    const diff = Math.abs(playerTime - correctTime);
+
+                    let judgement = "MISS";
+                    if (diff <= GameData.timingJudgement.PERFECT.window) judgement = "PERFECT";
+                    else if (diff <= GameData.timingJudgement.GREAT.window) judgement = "GREAT";
+                    else if (diff <= GameData.timingJudgement.GOOD.window) judgement = "GOOD";
+                    
+                    const judgementInfo = GameData.timingJudgement[judgement];
+                    
+                    if (judgement !== "MISS") {
+                        this.setExpression(GameState.lastPressedButtonIndex, 'happy');
+                        GameState.accumulatedDamage += judgementInfo.damage;
+                    } else {
+                        this.setExpression(GameState.lastPressedButtonIndex, 'sad');
+                    }
+                    UIController.showTimingFeedback(judgement);
+
+                    const skillGainMultiplier = 1 + (GameState.playerUpgrades.gaugeBonus || 0) * 0.1;
+                    if (!GameState.isSkillReady) {
+                        GameState.skillGauge = Math.min(GameState.maxSkillGauge, GameState.skillGauge + judgementInfo.skillGain * skillGainMultiplier);
+                    }
+
+                    const fragmentMultiplier = 1 + (GameState.playerUpgrades.fragmentBonus || 0) * 0.1;
+                    const fragmentsToAdd = (judgement !== "MISS") ? Math.round(GameState.level * 5 * judgementInfo.scoreMultiplier) : GameState.level;
+                    GameState.unbankedFragments += Math.round(fragmentsToAdd * GameState.currentAntagonist.scoreMultiplier * fragmentMultiplier);
+                    
+                    GameState.combo++;
+                    if (GameState.combo > 15) DOM.gameBoard.classList.add('combo-3');
+                    else if (GameState.combo > 8) DOM.gameBoard.classList.add('combo-2');
+                    else if (GameState.combo > 3) DOM.gameBoard.classList.add('combo-1');
+
+                    UIController.updateAll();
+
+                    if (GameState.playerPattern.length === GameState.gamePattern.length) {
+                        GameManager.setState('ROUND_SUCCESS');
+                    } else {
+                        GameState.isPlayerClicking = false;
+                    }
+                },
+                
+                setExpression(buttonIndex, expression) {
+                    if (buttonIndex < 0 || buttonIndex >= DOM.gameButtons.length) return;
+                    const btn = DOM.gameButtons[buttonIndex];
+                    const mouth = btn.querySelector('.mouth');
+                    if (!mouth) return;
+                    
+                    const mapping = GameState.buttonMapping[buttonIndex];
+                    let happyPath, sadPath;
+                    if (mapping === 1) { happyPath = "M 12 23 Q 16 26 20 23"; sadPath = "M 12 24 Q 16 21 20 24"; }
+                    else if (mapping === 2) { happyPath = "M 12 21 Q 16 24 20 21"; sadPath = "M 12 22 Q 16 19 20 22"; }
+                    else { happyPath = "M 12 22 Q 16 25 20 22"; sadPath = "M 12 23 Q 16 20 20 23"; }
+
+                    mouth.setAttribute('d', expression === 'happy' ? happyPath : sadPath);
+                },
+
+                activateSkill() {
+                    if (!GameState.isSkillReady || GameState.isShieldActive) return;
+                    GameState.isShieldActive = true;
+                    GameState.isSkillReady = false;
+                    GameState.skillGauge = 0;
+                    UIController.updateSkillGauge();
+                    AudioManager.playShieldUpSound();
+                    this.addShieldIndicator();
+                },
+                
+                addShieldIndicator() {
+                    const existing = document.getElementById('shield-indicator');
+                    if (existing) existing.remove();
+                    const shieldIndicator = document.createElement('div');
+                    shieldIndicator.id = 'shield-indicator';
+                    shieldIndicator.innerHTML = `<svg class="w-8 h-8 text-blue-400" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M10 1.944A11.954 11.954 0 012.166 5.02.997.997 0 001 6v5a9 9 0 009 9 9 9 0 009-9V6a.997.997 0 00-1.166-.98A11.954 11.954 0 0110 1.944z" clip-rule="evenodd"></path></svg>`;
+                    shieldIndicator.className = 'absolute -top-2 -right-2';
+                    DOM.livesDisplay.appendChild(shieldIndicator);
+                },
+
+                breakShield() {
+                    GameState.isShieldActive = false;
+                    AudioManager.playShieldBreakSound();
+                    const shieldIndicator = document.getElementById('shield-indicator');
+                    if (shieldIndicator) {
+                        shieldIndicator.classList.add('shield-break-animation');
+                        shieldIndicator.addEventListener('animationend', () => shieldIndicator.remove());
+                    }
+                },
+                
+                async shuffleButtons() {
+                    AudioManager.playShuffleSound();
+                    // Fisher-Yates shuffle
+                    for (let i = GameState.buttonMapping.length - 1; i > 0; i--) {
+                        const j = Math.floor(Math.random() * (i + 1));
+                        [GameState.buttonMapping[i], GameState.buttonMapping[j]] = [GameState.buttonMapping[j], GameState.buttonMapping[i]];
+                    }
+                    DOM.gameButtons.forEach(btn => btn.classList.add('shuffling'));
+                    await sleep(400);
+                    UIController.renderButtons();
+                    DOM.gameButtons.forEach(btn => btn.classList.remove('shuffling'));
+                }
+            };
+            
+            /**
+             * BasecampController: Manages upgrades, currency, and checkpoints.
+             */
+            const BasecampController = {
+                populateUI() {
+                    DOM.harmonicEssenceDisplay.textContent = GameState.harmonicEssence.toLocaleString();
+                    DOM.upgradeList.innerHTML = '';
+                    Object.keys(GameData.upgrades).forEach(id => {
+                        const upgrade = GameData.upgrades[id];
+                        const currentLevel = GameState.playerUpgrades[id] || 0;
+                        const isMaxLevel = currentLevel >= upgrade.maxLevel;
+                        const cost = Math.floor(upgrade.cost * Math.pow(1.5, currentLevel));
+                        const canAfford = GameState.harmonicEssence >= cost;
+
+                        const card = document.createElement('div');
+                        card.className = 'p-4 rounded-lg bg-slate-100 dark:bg-slate-700 flex justify-between items-center';
+                        
+                        let levelDisplay = upgrade.maxLevel > 1 ? `<span class="text-sm font-bold ${isMaxLevel ? 'text-green-500' : 'text-slate-500'}">Lv. ${currentLevel}/${upgrade.maxLevel}</span>` : '';
+
+                        card.innerHTML = `
+                            <div>
+                                <h3 class="font-bold text-lg">${upgrade.name} ${levelDisplay}</h3>
+                                <p class="text-sm text-secondary">${upgrade.description}</p>
+                            </div>
+                            <button id="upgrade-${id}" class="bg-blue-500 text-white font-bold py-2 px-4 rounded-lg hover:bg-blue-600 disabled:bg-slate-400 disabled:cursor-not-allowed transition-colors">
+                                ${isMaxLevel ? '최대 레벨' : `${cost.toLocaleString()} <span style="color: var(--essence-color);">E</span>`}
+                            </button>`;
+                        DOM.upgradeList.appendChild(card);
+
+                        const btn = document.getElementById(`upgrade-${id}`);
+                        if (isMaxLevel || !canAfford) btn.disabled = true;
+                        btn.addEventListener('click', () => this.purchaseUpgrade(id, cost));
+                    });
+                },
+
+                purchaseUpgrade(id, cost) {
+                    if (GameState.harmonicEssence >= cost) {
+                        GameState.harmonicEssence -= cost;
+                        GameState.playerUpgrades[id] = (GameState.playerUpgrades[id] || 0) + 1;
+                        PersistenceManager.saveBasecampData();
+                        this.populateUI();
+                    }
+                },
+
+                applyUpgrades() {
+                    GameState.lives = 3 + (GameState.playerUpgrades.bonusLife || 0);
+                    GameState.isShieldActive = (GameState.playerUpgrades.startShield || 0) > 0;
+                },
+
+                calculateEssence() {
+                    const finalScore = GameState.totalScore + GameState.unbankedFragments;
+                    const essenceGained = Math.floor((finalScore / 100) + (GameState.level * 5));
+                    GameState.harmonicEssence += essenceGained;
+                },
+                
+                saveCheckpoint() {
+                    if (GameState.level <= GameState.baseCampLevel) return;
+                    GameState.baseCampLevel = GameState.level;
+                    PersistenceManager.saveCheckpointData();
+                    
+                    GameState.totalScore += GameState.unbankedFragments;
+                    GameState.unbankedFragments = 0;
+                    UIController.updateAll();
+                    AudioManager.playCampSound();
+                }
+            };
+
+            /**
+             * BestiaryController: Manages the bestiary modal and data.
+             */
+            const BestiaryController = {
+                populate() {
+                    DOM.bestiaryList.innerHTML = '';
+                    const encountered = JSON.parse(localStorage.getItem('encounteredAntagonists')) || [];
+                    const cleared = JSON.parse(localStorage.getItem('clearedBosses')) || [];
+                    Object.values(GameData.antagonistProfiles).forEach(profile => {
+                        const isEncountered = encountered.includes(profile.key);
+                        const isCleared = profile.type === 'boss' && cleared.includes(profile.key);
+                        
+                        const card = document.createElement('div');
+                        card.className = `p-4 rounded-lg flex items-start gap-4 relative ${isEncountered ? 'bg-slate-100 dark:bg-slate-700' : 'bg-slate-200 dark:bg-slate-900 filter grayscale opacity-60'}`;
+                        
+                        const iconHtml = isEncountered ? profile.icon : `<svg viewBox="0 0 100 100"><text x="50" y="65" font-size="50" text-anchor="middle" fill="currentColor">?</text></svg>`;
+                        const nameHtml = isEncountered ? profile.name : '???';
+                        const descHtml = isEncountered ? profile.description : '이 적과 마주쳐 패배하면 정보를 얻을 수 있습니다.';
+                        const clearMarkHtml = isCleared ? `<div class="bestiary-clear-mark">CLEAR</div>` : '';
+
+                        card.innerHTML = `
+                            <div class="w-16 h-16 flex-shrink-0" style="color: ${isEncountered ? profile.color : 'gray'}">${iconHtml}</div>
+                            <div class="text-left">
+                                <h3 class="font-bold text-lg">${nameHtml}</h3>
+                                <p class="text-sm text-secondary mt-1">${descHtml}</p>
+                            </div>
+                            ${clearMarkHtml}`;
+                        DOM.bestiaryList.appendChild(card);
+                    });
+                }
+            };
+            
+            /**
+             * SettingsController: Manages theme, audio settings, and modals.
+             */
+            const SettingsController = {
+                init() {
+                    // Theme
+                    const savedTheme = localStorage.getItem('theme');
+                    const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+                    const isDark = savedTheme === 'dark' || (!savedTheme && prefersDark);
+                    this.toggleTheme(isDark);
+                    
+                    // Modals
+                    this.addEventListeners();
+                },
+
+                addEventListeners() {
+                    // Theme
+                    DOM.themeToggle.addEventListener('click', () => {
+                        const isDark = !document.documentElement.classList.contains('dark');
+                        localStorage.setItem('theme', isDark ? 'dark' : 'light');
+                        this.toggleTheme(isDark);
+                    });
+
+                    // BGM
+                    DOM.bgmToggle.addEventListener('click', async () => {
+                        await Tone.start();
+                        GameState.isBgmPlaying = !GameState.isBgmPlaying;
+                        localStorage.setItem('bgmState', GameState.isBgmPlaying ? 'on' : 'off');
+                        this.updateBgmToggleUI(GameState.isBgmPlaying);
+                        if (GameState.isBgmPlaying) AudioManager.setBgm(GameState.currentBgm || 'waiting');
+                        else AudioManager.stopBgm();
+                    });
+                    
+                    // Volume
+                    DOM.bgmVolumeSlider.addEventListener('input', e => { AudioManager.volumes.bgm.volume.value = e.target.value; localStorage.setItem('bgmVolume', e.target.value); });
+                    DOM.sfxVolumeSlider.addEventListener('input', e => { AudioManager.volumes.sfx.volume.value = e.target.value; localStorage.setItem('sfxVolume', e.target.value); });
+
+                    // Modal Buttons
+                    DOM.settingsBtn.addEventListener('click', () => DOM.settingsModal.classList.remove('hidden'));
+                    DOM.closeSettingsBtn.addEventListener('click', () => DOM.settingsModal.classList.add('hidden'));
+                    DOM.bestiaryBtn.addEventListener('click', () => { BestiaryController.populate(); DOM.bestiaryModal.classList.remove('hidden'); });
+                    DOM.closeBestiaryBtn.addEventListener('click', () => DOM.bestiaryModal.classList.add('hidden'));
+                    DOM.basecampBtn.addEventListener('click', () => { BasecampController.populateUI(); DOM.basecampModal.classList.remove('hidden'); });
+                    DOM.closeBasecampBtn.addEventListener('click', () => DOM.basecampModal.classList.add('hidden'));
+                },
+
+                toggleTheme(isDark) {
+                    document.documentElement.classList.toggle('dark', isDark);
+                    this.updateThemeToggleUI(isDark);
+                },
+
+                updateThemeToggleUI(isDark) {
+                    const handle = DOM.themeToggle.querySelector('span');
+                    if (isDark) {
+                        DOM.themeToggle.classList.remove('bg-gray-200', 'dark:bg-slate-600');
+                        DOM.themeToggle.classList.add('bg-teal-600');
+                        handle.classList.add('translate-x-5');
+                    } else {
+                        DOM.themeToggle.classList.remove('bg-teal-600');
+                        DOM.themeToggle.classList.add('bg-gray-200', 'dark:bg-slate-600');
+                        handle.classList.remove('translate-x-5');
+                    }
+                },
+                
+                updateBgmToggleUI(isPlaying) {
+                    const handle = DOM.bgmToggle.querySelector('span');
+                    if (isPlaying) {
+                        DOM.bgmToggle.classList.remove('bg-gray-200', 'dark:bg-slate-600');
+                        DOM.bgmToggle.classList.add('bg-teal-600');
+                        handle.classList.add('translate-x-5');
+                    } else {
+                        DOM.bgmToggle.classList.remove('bg-teal-600');
+                        DOM.bgmToggle.classList.add('bg-gray-200', 'dark:bg-slate-600');
+                        handle.classList.remove('translate-x-5');
+                    }
+                }
+            };
+            
+            /**
+             * PersistenceManager: Handles saving and loading data from localStorage.
+             */
+            const PersistenceManager = {
+                loadAll() {
+                    GameState.highScore = parseInt(localStorage.getItem('patternGameHighScore')) || 0;
+                    
+                    const campData = JSON.parse(localStorage.getItem('patternGameBaseCamp'));
+                    if (campData) {
+                        const today = new Date().toISOString().split('T')[0];
+                        if (campData.date === today) {
+                            GameState.baseCampLevel = campData.level;
+                            DOM.startBtn.textContent = `캠프 ${GameState.baseCampLevel}부터 시작`;
+                        } else {
+                            localStorage.removeItem('patternGameBaseCamp');
+                        }
+                    }
+
+                    GameState.harmonicEssence = parseInt(localStorage.getItem('harmonicEssence')) || 0;
+                    GameState.playerUpgrades = JSON.parse(localStorage.getItem('playerUpgrades')) || {};
+                },
+
+                saveAll() {
+                    const finalScore = GameState.totalScore + GameState.unbankedFragments;
+                    if (finalScore > GameState.highScore) {
+                        GameState.highScore = finalScore;
+                        localStorage.setItem('patternGameHighScore', GameState.highScore);
+                        confetti({ particleCount: 300, spread: 180, origin: { y: 0.6 }, gravity: 0.8, ticks: 300, scalar: 1.2 });
+                    }
+                    this.saveBasecampData();
+                },
+
+                saveBasecampData() {
+                    localStorage.setItem('harmonicEssence', GameState.harmonicEssence);
+                    localStorage.setItem('playerUpgrades', JSON.stringify(GameState.playerUpgrades));
+                },
+
+                saveCheckpointData() {
+                    const today = new Date().toISOString().split('T')[0];
+                    localStorage.setItem('patternGameBaseCamp', JSON.stringify({ level: GameState.baseCampLevel, date: today }));
+                },
+                
+                saveClearedBoss(bossKey) {
+                    let cleared = JSON.parse(localStorage.getItem('clearedBosses')) || [];
+                    if (!cleared.includes(bossKey)) {
+                        cleared.push(bossKey);
+                        localStorage.setItem('clearedBosses', JSON.stringify(cleared));
+                    }
+                },
+                
+                saveEncounteredAntagonist(key) {
+                    let encountered = JSON.parse(localStorage.getItem('encounteredAntagonists')) || [];
+                    if (!encountered.includes(key)) {
+                        encountered.push(key);
+                        localStorage.setItem('encounteredAntagonists', JSON.stringify(encountered));
+                    }
+                }
+            };
+
+            // --- Initialize the Game ---
+            GameManager.init();
         });
     </script>
 </body>
