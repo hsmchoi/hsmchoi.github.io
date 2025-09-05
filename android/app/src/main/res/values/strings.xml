@@ -1,7 +1,0 @@
-<?xml version='1.0' encoding='utf-8'?>
-<resources>
-    <string name="app_name">PTG</string>
-    <string name="title_activity_main">PTG</string>
-    <string name="package_name">com.example.quarterview</string>
-    <string name="custom_url_scheme">com.example.quarterview</string>
-</resources>
