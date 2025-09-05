@@ -478,7 +478,7 @@
                     switch(step) {
                         case 'input': return (
                             <div className="flex-grow flex flex-col gap-4 p-4">
-                                <textarea id="lyrics-input" value={lyrics} onChange={(e) => setLyrics(e.target.value)} placeholder="이곳에 가사를 붙여넣으세요..." className="w-full flex-grow p-4 rounded-lg resize-none outline-none focus:ring-2" style={{backgroundColor: 'var(--surface-color)', borderColor: 'var(--surface-border-color)', ringColor: 'var(--primary-color)'}}></textarea>
+                                <textarea id="lyrics-input" value={lyrics} onChange={(e) => setLyrics(e.target.value)} placeholder="이곳에 가사를 작성하세요." className="w-full flex-grow p-4 rounded-lg resize-none outline-none focus:ring-2" style={{backgroundColor: 'var(--surface-color)', borderColor: 'var(--surface-border-color)', ringColor: 'var(--primary-color)'}}></textarea>
                                 <div className="grid grid-cols-2 gap-4">
                                     <button id="import-btn" onClick={() => fileInputRef.current.click()} className="py-3 font-bold rounded-lg action-button" style={{backgroundColor: 'var(--surface-strong-color)'}}><i className="fas fa-upload"></i></button>
                                     <button id="ready-btn" onClick={handleReady} disabled={!lyrics.trim()} className="py-3 font-bold rounded-lg text-white disabled:opacity-50 action-button pulse-button" style={{backgroundColor: 'var(--primary-color)'}}><i className="fas fa-arrow-right"></i></button>
