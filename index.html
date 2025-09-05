@@ -312,8 +312,7 @@
             const lastLine = timedLines[timedLines.length - 1]; if (!lastLine) return;
             if (lastLine.text !== "🎵") { setCurrentTimingLine(prev => Math.max(0, prev - 1)); }
             setTimedLines(prev => prev.slice(0, -1));
-            const newElapsedTime = timedLines.length > 1 ? timedLines[timedLines.length - 2].endTime : 0;
-            setElapsedTime(newElapsedTime);
+            // Bug Fix: elapsedTime을 변경하는 코드를 제거하여 시간 흐름을 유지합니다.
         }, [timedLines, isPlaying]);
 
         const handleLineClick = useCallback((lineIndex) => {
@@ -564,6 +563,7 @@
                                     </div>
                                 </div>
                             );
+                        // 'edit' case will now render the improved component
                         case 'edit': return <TimingEditScreen hook={hook} formatTime={formatTime} />;
                         case 'result': return (
                              <div className="flex-grow flex flex-col justify-center items-center text-center gap-6 p-4">
@@ -608,13 +608,14 @@
         );
     }
     
-    // --- Timing Edit Screen UI Component ---
+    // --- [수정됨] Timing Edit Screen UI Component ---
     const TimingEditScreen = ({ hook, formatTime }) => {
         const { timedLines, handleAdjustTiming, handleInsertInstrumental, handleDeleteLine, handleUpdateLineText, 
                 isPlaying, setIsPlaying, elapsedTime, setPlayerTime, currentPreviewIndex } = hook;
         
         const [editingIndex, setEditingIndex] = useState(null);
-        const [editText, setEditText] = useState("");
+        // 편집 상태를 객체 또는 문자열로 관리하도록 변경
+        const [editContent, setEditContent] = useState(null); 
         const lineRefs = useRef([]);
         const listRef = useRef(null);
 
@@ -623,30 +624,27 @@
                 lineRefs.current[currentPreviewIndex].scrollIntoView({ behavior: 'smooth', block: 'center' });
             }
         }, [currentPreviewIndex, isPlaying]);
-
+        
+        // 편집 시작 시, 원본 데이터를 상태에 그대로 저장
         const startEditing = (index, content) => {
             setEditingIndex(index);
-            if (typeof content === 'object' && content !== null) {
-                setEditText(`${content.original}\n${content.translation}\n(${content.pronunciation})`);
-            } else {
-                setEditText(content);
-            }
+            setEditContent(content);
         };
-
+        
+        // '저장' 버튼 클릭 시 상태에 있는 데이터를 그대로 업데이트
         const commitEditing = (index) => {
-            const originalContent = timedLines[index].text;
-            if (typeof originalContent === 'object' && originalContent !== null) {
-                const lines = editText.split('\n').map(l => l.trim());
-                const newContent = {
-                    original: lines[0] || '',
-                    translation: lines[1] || '',
-                    pronunciation: (lines[2] || '').replace(/[()]/g, '')
-                };
-                handleUpdateLineText(index, newContent);
-            } else {
-                handleUpdateLineText(index, editText);
-            }
+            handleUpdateLineText(index, editContent);
             setEditingIndex(null);
+            setEditContent(null);
+        };
+        
+        // 편집 중인 내용이 변경될 때 상태를 업데이트하는 핸들러
+        const handleEditChange = (value, field = null) => {
+            if (field) { // phonetic (객체) 타입일 경우
+                setEditContent(prev => ({ ...prev, [field]: value }));
+            } else { // simple (문자열) 타입일 경우
+                setEditContent(value);
+            }
         };
 
         const totalDuration = timedLines.length > 0 ? timedLines[timedLines.length - 1].endTime : 0;
@@ -678,9 +676,28 @@
                                 <div className={`p-2 my-1 rounded-md flex flex-col transition-colors duration-300`} style={{backgroundColor: currentPreviewIndex === index ? `color-mix(in srgb, var(--primary-color) 20%, transparent)` : 'var(--surface-strong-color)'}}>
                                     <div className="flex items-start gap-2">
                                         <span className="font-bold text-sm w-6 text-center pt-1" style={{color: 'var(--text-secondary-color)'}}>{index + 1}</span>
+                                        
+                                        {/* --- [수정됨] 편집 UI 로직 --- */}
                                         {editingIndex === index ? (
-                                            <textarea value={editText} onChange={e => setEditText(e.target.value)} onBlur={() => commitEditing(index)} onKeyDown={e => e.key === 'Enter' && !e.shiftKey && commitEditing(index)} autoFocus className="flex-grow bg-transparent outline-none p-1 rounded-md h-24 resize-none" style={{backgroundColor: 'var(--surface-color)'}} />
+                                            <div className="flex-grow space-y-2">
+                                                {typeof editContent === 'object' && editContent !== null ? (
+                                                    // 3줄 형식 가사 편집 UI
+                                                    <>
+                                                        <input type="text" placeholder="원문" value={editContent.original} onChange={e => handleEditChange(e.target.value, 'original')} className="w-full bg-transparent outline-none p-1 rounded-md text-sm font-semibold" style={{backgroundColor: 'var(--surface-color)'}} />
+                                                        <input type="text" placeholder="번역" value={editContent.translation} onChange={e => handleEditChange(e.target.value, 'translation')} className="w-full bg-transparent outline-none p-1 rounded-md text-sm" style={{backgroundColor: 'var(--surface-color)'}} />
+                                                        <input type="text" placeholder="발음" value={editContent.pronunciation} onChange={e => handleEditChange(e.target.value, 'pronunciation')} className="w-full bg-transparent outline-none p-1 rounded-md text-xs" style={{backgroundColor: 'var(--surface-color)'}} />
+                                                    </>
+                                                ) : (
+                                                    // 일반 가사 편집 UI
+                                                    <textarea value={editContent} onChange={e => handleEditChange(e.target.value)} autoFocus className="w-full bg-transparent outline-none p-1 rounded-md h-12 resize-none" style={{backgroundColor: 'var(--surface-color)'}} />
+                                                )}
+                                                <div className="flex justify-end gap-2 mt-1">
+                                                    <button onClick={() => setEditingIndex(null)} className="px-3 py-1 text-xs rounded" style={{backgroundColor: 'var(--surface-strong-color)'}}>취소</button>
+                                                    <button onClick={() => commitEditing(index)} className="px-3 py-1 text-xs rounded text-white" style={{backgroundColor: 'var(--primary-color)'}}>저장</button>
+                                                </div>
+                                            </div>
                                         ) : (
+                                            // 일반 보기 UI
                                             <div id={`edit-line-${index}-text`} className="flex-grow p-1 cursor-pointer" onClick={() => startEditing(index, lineContent)}>
                                               {typeof lineContent === 'object' && lineContent !== null ? (
                                                 <div className="space-y-1">
@@ -691,6 +708,8 @@
                                               ) : ( <span>{lineContent}</span> )}
                                             </div>
                                         )}
+                                        {/* --- 편집 UI 로직 끝 --- */}
+                                        
                                         <button onClick={() => handleDeleteLine(index)} className="w-8 h-8 rounded text-sm action-button flex-shrink-0" style={{color: 'var(--red-color)'}}><i className="fas fa-trash-alt"></i></button>
                                     </div>
                                     <div className="flex items-center justify-end gap-2 mt-1">
