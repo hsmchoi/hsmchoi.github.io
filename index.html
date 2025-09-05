@@ -66,7 +66,7 @@
         /* GSAP가 제어하므로 복잡한 CSS Transition 제거 */
         .lyrics-line-container { height: 10em; display: flex; align-items: center; justify-content: center; position: relative; }
         .lyrics-line { position: absolute; will-change: transform, opacity; text-align: center; padding: 0 var(--space-md); }
-        .lyrics-line.current { color: var(--amber-color); font-size: var(--font-size-lg); font-weight: 700; }
+        .lyrics-line.current { color: var(--amber-color); font-size: var(--font-size-md); font-weight: 700; line-height: 1.5; }
         .lyrics-line.past { color: var(--text-secondary-color); }
         .lyrics-line.next { color: var(--primary-color); }
         .lyrics-line.current .char { display: inline-block; } /* SplitText를 위해 추가 */
@@ -78,7 +78,7 @@
         .action-button { transition: transform 0.2s ease-in-out; }
         .action-button:active { transform: scale(0.95); }
         
-        .tutorial-overlay { position: fixed; top: 0; left: 0; right: 0; bottom: 0; z-index: 1000; transition: all 0.3s ease-in-out; display: flex; align-items: center; justify-content: center; background-color: rgba(0,0,0,0.7); }
+        .tutorial-overlay { position: fixed; top: 0; left: 0; right: 0; bottom: 0; z-index: 1000; transition: all 0.3s ease-in-out; display: flex; align-items: center; justify-content: center; background-color: rgba(0,0,0,0.7); backdrop-filter: blur(5px); }
         .tutorial-popover { position: relative; background-color: var(--surface-color); padding: var(--space-lg); border-radius: var(--space-md); width: 280px; box-shadow: 0 5px 15px rgba(0,0,0,0.3); z-index: 1001; transition: all 0.3s ease-in-out; }
         
         .theme-modal-overlay { position: fixed; top: 0; left: 0; right: 0; bottom: 0; background-color: rgba(0,0,0,0.6); backdrop-filter: blur(5px); z-index: 1100; display: flex; align-items: center; justify-content: center; }
@@ -165,12 +165,46 @@
         const [currentTimingLine, setCurrentTimingLine] = useState(0);
         const [countdown, setCountdown] = useState(null);
         const [exportFilename, setExportFilename] = useState("lyric-flow-data");
+        const [lyricType, setLyricType] = useState('simple'); // 'simple' or 'phonetic'
+        const [showPhoneticConfirm, setShowPhoneticConfirm] = useState(false);
         
         const timerRef = useRef(null);
         const startTimeRef = useRef(null);
         const fileInputRef = useRef(null);
 
-        const lyricsLines = useMemo(() => lyrics.split('\n').filter(line => line.trim() !== ''), [lyrics]);
+        const parsePhoneticLyrics = (rawText) => {
+            const lines = rawText.split('\n').map(l => l.trim());
+            const result = [];
+            let i = 0;
+            while (i < lines.length) {
+                if (lines[i].trim() === '') {
+                    i++;
+                    continue;
+                }
+                const original = lines[i];
+                const translation = lines[i + 1] || '';
+                const thirdLine = lines[i + 2] || '';
+                if (thirdLine.startsWith('(') && thirdLine.endsWith(')')) {
+                    result.push({
+                        original,
+                        translation,
+                        pronunciation: thirdLine.substring(1, thirdLine.length - 1)
+                    });
+                    i += 3;
+                } else {
+                    result.push(original);
+                    i += 1;
+                }
+            }
+            return result;
+        };
+
+        const lyricsLines = useMemo(() => {
+            if (lyricType === 'phonetic') {
+                return parsePhoneticLyrics(lyrics);
+            }
+            return lyrics.split('\n').filter(line => line.trim() !== '');
+        }, [lyrics, lyricType]);
         
         const currentPreviewIndex = useMemo(() => {
             if (!timedLines || timedLines.length === 0) return -1;
@@ -206,10 +240,37 @@
         const handleReset = useCallback(() => {
              setIsPlaying(false); setElapsedTime(0); setStep('input'); setLyrics(''); 
              setTimedLines([]); setCurrentTimingLine(0); setCountdown(null);
+             setLyricType('simple'); setShowPhoneticConfirm(false);
         }, []);
 
-        const handleReady = useCallback(() => { if (lyrics.trim()) setStep('ready'); }, [lyrics]);
+        const detectPhoneticFormat = (text) => {
+            const lines = text.split('\n').map(l => l.trim()).filter(l => l);
+            if (lines.length < 3) return false;
+            let phoneticCount = 0;
+            for (let i = 0; i < lines.length; i += 3) {
+                if (lines[i+2] && lines[i+2].startsWith('(') && lines[i+2].endsWith(')')) {
+                    phoneticCount++;
+                }
+            }
+            return (phoneticCount / (lines.length / 3)) >= 0.5;
+        };
+
+        const handleReady = useCallback(() => {
+            if (!lyrics.trim()) return;
+            if (detectPhoneticFormat(lyrics)) {
+                setShowPhoneticConfirm(true);
+            } else {
+                setLyricType('simple');
+                setStep('ready');
+            }
+        }, [lyrics]);
         
+        const handlePhoneticConfirm = (isPhonetic) => {
+            setLyricType(isPhonetic ? 'phonetic' : 'simple');
+            setStep('ready');
+            setShowPhoneticConfirm(false);
+        };
+
         const runCountdown = useCallback(() => {
             setCountdown(3);
             const countdownInterval = setInterval(() => {
@@ -238,7 +299,7 @@
             if (currentTimingLine + 1 >= lyricsLines.length) {
                 setIsPlaying(false); setStep('result'); 
             } else { setCurrentTimingLine(prev => prev + 1); }
-        }, [isPlaying, countdown, currentTimingLine, lyricsLines.length, elapsedTime]);
+        }, [isPlaying, countdown, currentTimingLine, lyricsLines, elapsedTime]);
         
         const handleAddInstrumentalDuringTiming = useCallback(() => {
             if (!isPlaying || countdown !== null) return;
@@ -290,11 +351,11 @@
 
         const handleExport = useCallback(() => {
            const finalFilename = exportFilename.trim() || "lyric-flow-data";
-           const data = { lyrics: timedLines.map(l => l.text).join('\n'), timedLines };
+           const data = { lyricType, lyrics, timedLines };
            const jsonString = `data:text/json;charset=utf-8,${encodeURIComponent(JSON.stringify(data, null, 2))}`;
            const link = document.createElement("a");
            link.href = jsonString; link.download = `${finalFilename}.json`; link.click();
-        }, [exportFilename, timedLines]);
+        }, [exportFilename, timedLines, lyrics, lyricType]);
         
         const handleFileImport = useCallback((event) => {
             const file = event.target.files[0]; if (!file) return;
@@ -302,6 +363,12 @@
             reader.onload = (e) => {
                 try {
                     const data = JSON.parse(e.target.result);
+                    if (data.lyricType) {
+                        setLyricType(data.lyricType);
+                    } else {
+                        setLyricType('simple');
+                    }
+
                     if (data.lyrics && Array.isArray(data.timedLines)) {
                         setLyrics(data.lyrics); setTimedLines(data.timedLines); setStep('result');
                     } else if (typeof data.lyrics === 'string') {
@@ -312,7 +379,7 @@
             reader.readAsText(file); event.target.value = null;
         }, []);
 
-        return { step, setStep, lyrics, setLyrics, lyricsLines, elapsedTime, setElapsedTime, currentTimingLine, setCurrentTimingLine, timedLines, setTimedLines, countdown, exportFilename, setExportFilename, fileInputRef, handleReset, handleReady, handleStartTiming, handleMarkLineEnd, handleUndo, handleExport, handleFileImport, isPlaying, setIsPlaying, handleLineClick, handleAdjustTiming, handleInsertInstrumental, handleDeleteLine, handleUpdateLineText, setPlayerTime, currentPreviewIndex,  handleAddInstrumentalDuringTiming, handleTogglePlay };
+        return { step, setStep, lyrics, setLyrics, lyricsLines, elapsedTime, setElapsedTime, currentTimingLine, setCurrentTimingLine, timedLines, setTimedLines, countdown, exportFilename, setExportFilename, fileInputRef, handleReset, handleReady, handleStartTiming, handleMarkLineEnd, handleUndo, handleExport, handleFileImport, isPlaying, setIsPlaying, handleLineClick, handleAdjustTiming, handleInsertInstrumental, handleDeleteLine, handleUpdateLineText, setPlayerTime, currentPreviewIndex, handleAddInstrumentalDuringTiming, handleTogglePlay, showPhoneticConfirm, handlePhoneticConfirm };
     };
 
     // --- Main Application Component (연출 강화의 핵심) ---
@@ -323,7 +390,7 @@
             countdown, exportFilename, setExportFilename, fileInputRef,
             handleReset, handleReady, handleStartTiming, 
             handleMarkLineEnd, handleUndo, handleExport, handleFileImport, isPlaying, setIsPlaying,
-            handleLineClick, handleAddInstrumentalDuringTiming, handleTogglePlay
+            handleLineClick, handleAddInstrumentalDuringTiming, handleTogglePlay, showPhoneticConfirm, handlePhoneticConfirm
         } = hook;
 
         const mainContainer = useRef();
@@ -343,7 +410,6 @@
         const changeTheme = (themeId) => {
             const curtain = document.getElementById('theme-transition-curtain');
             
-            // This is a trick to get the future background color
             const tempEl = document.createElement('div');
             tempEl.style.display = 'none';
             tempEl.className = themeId;
@@ -379,70 +445,29 @@
             const currentLine = q(".lyrics-line.current")[0];
             const nextLines = q(".lyrics-line.next");
             
-            gsap.to(pastLines, { 
-                autoAlpha: 0, 
-                y: "-150%", 
-                scale: 0.8, 
-                duration: 0.5, 
-                ease: "power2.inOut",
-                stagger: 0.05
-            });
+            gsap.to(pastLines, { autoAlpha: 0, y: "-150%", scale: 0.8, duration: 0.5, ease: "power2.inOut", stagger: 0.05 });
 
             if (currentLine) {
-                 gsap.to(currentLine, { 
-                    autoAlpha: 1, 
-                    y: "0%", 
-                    scale: 1.1, 
-                    duration: 0.5, 
-                    ease: "power2.inOut" 
-                });
-                const split = SplitText.create(currentLine, { type: "chars" });
+                 gsap.to(currentLine, { autoAlpha: 1, y: "0%", scale: 1, duration: 0.5, ease: "power2.inOut" });
+                const split = SplitText.create(q(".lyrics-line.current .main-lyric"), { type: "chars" });
                 gsap.from(split.chars, {
-                    duration: 0.6,
-                    opacity: 0,
-                    y: 20,
-                    ease: "back.out(1.4)",
-                    stagger: { amount: 0.4 },
+                    duration: 0.6, opacity: 0, y: 20, ease: "back.out(1.4)", stagger: { amount: 0.4 },
                     onComplete: () => split.revert()
                 });
             }
 
-            gsap.to(nextLines, { 
-                autoAlpha: 0.5, 
-                y: "150%", 
-                scale: 0.9, 
-                duration: 0.5, 
-                ease: "power2.inOut" 
-            });
+            gsap.to(nextLines, { autoAlpha: 0.5, y: "150%", scale: 0.9, duration: 0.5, ease: "power2.inOut" });
 
         }, [currentTimingLine, step]);
 
         // --- 연출 강화: 타이밍 버튼 클릭 효과 (리플) ---
         const enhancedMarkLineEnd = (e) => {
-            handleMarkLineEnd(); // Call original logic first
-            const button = e.currentTarget;
-            const rect = button.getBoundingClientRect();
+            handleMarkLineEnd();
             const ripple = document.createElement("div");
             ripple.id = "ripple-effect";
             document.body.appendChild(ripple);
-            
-            gsap.fromTo(ripple, 
-                { 
-                    left: e.clientX, 
-                    top: e.clientY, 
-                    xPercent: -50, 
-                    yPercent: -50, 
-                    scale: 0, 
-                    opacity: 0.7 
-                },
-                { 
-                    scale: 5, 
-                    opacity: 0, 
-                    duration: 0.7, 
-                    ease: "power2.out", 
-                    onComplete: () => ripple.remove() 
-                }
-            );
+            gsap.fromTo(ripple, { left: e.clientX, top: e.clientY, xPercent: -50, yPercent: -50, scale: 0, opacity: 0.7 },
+                { scale: 5, opacity: 0, duration: 0.7, ease: "power2.out", onComplete: () => ripple.remove() });
         };
 
         const formatTime = (ms) => {
@@ -460,17 +485,26 @@
             { title: "결과 확인", content: "타이밍 작업이 완료되었습니다! 이제 작업물을 내보내거나 세부 편집을 할 수 있습니다.", isEnd: true },
         ], []);
         
-        const startTutorial = () => {
-            hook.handleReset();
-            hook.setLyrics("이것은 샘플 가사입니다.\n다음 라인으로 넘어갑니다.\n튜토리얼을 즐겨보세요.");
-            setTutorialStep(0);
-        };
-        const endTutorial = () => {
-            setTutorialStep(null);
-            hook.handleReset();
-        };
+        const startTutorial = () => { hook.handleReset(); hook.setLyrics("이것은 샘플 가사입니다.\n다음 라인으로 넘어갑니다.\n튜토리얼을 즐겨보세요."); setTutorialStep(0); };
+        const endTutorial = () => { setTutorialStep(null); hook.handleReset(); };
         const advanceTutorial = (direction) => { /* Omitting for brevity as it's complex and unchanged */ };
 
+        const PhoneticConfirmModal = ({ onConfirm }) => (
+            <div className="tutorial-overlay">
+                <div className="tutorial-popover">
+                    <h3 className="font-bold text-lg mb-2 text-center">가사 형식 감지</h3>
+                    <p className="text-sm text-secondary-color mb-4 text-center">
+                        발음이 포함된 가사 형식인 것 같습니다.
+                        <br />
+                        가사를 그룹으로 묶어 처리할까요?
+                    </p>
+                    <div className="flex justify-around items-center mt-4">
+                        <button onClick={() => onConfirm(false)} className="text-sm action-button px-4 py-2 rounded-lg" style={{backgroundColor: 'var(--surface-strong-color)'}}>아니오 (줄 단위)</button>
+                        <button onClick={() => onConfirm(true)} className="text-sm font-bold action-button px-4 py-2 rounded-lg text-white" style={{backgroundColor: 'var(--primary-color)'}}>예 (그룹 처리)</button>
+                    </div>
+                </div>
+            </div>
+        );
 
         const renderStepContent = () => {
             return <div ref={stepContentRef} className="flex-grow flex flex-col h-full w-full">
@@ -508,7 +542,15 @@
                                                 if (index < currentTimingLine) styleClass += ' past';
                                                 else if (index === currentTimingLine) styleClass += ' current';
                                                 else styleClass += ' next';
-                                                return <p key={index} className={styleClass}>{line}</p>;
+                                                return <div key={index} className={styleClass}>
+                                                    {typeof line === 'object' && line !== null ? (
+                                                        <div className="flex flex-col items-center">
+                                                            <span className="font-bold main-lyric" style={{fontSize: '1.2em'}}>{line.original}</span>
+                                                            <span className="mt-1" style={{fontSize: '0.9em', color: 'var(--text-color)', opacity: 0.9}}>{line.translation}</span>
+                                                            <span className="mt-1" style={{fontSize: '0.8em', color: 'var(--text-secondary-color)'}}>{line.pronunciation}</span>
+                                                        </div>
+                                                    ) : ( <p className="main-lyric text-2xl">{line}</p> )}
+                                                </div>;
                                             })}
                                         </div>
                                         <div className="flex-shrink-0 flex flex-col gap-3 mt-4">
@@ -554,19 +596,12 @@
                                 </button>
                             </>
                         )}
-                        {step === 'timing' && (
-                            <button onClick={() => setIsLyricListVisible(true)} className="text-secondary hover:text-white text-xl action-button">
-                                <i className="fas fa-list-ul"></i>
-                            </button>
-                        )}
-                        {step === 'edit' && (
-                            <button onClick={() => { hook.setIsPlaying(false); hook.setStep('result'); }} className="text-secondary hover:text-white text-md font-bold action-button">
-                                완료
-                            </button>
-                        )}
+                        {step === 'timing' && ( <button onClick={() => setIsLyricListVisible(true)} className="text-secondary hover:text-white text-xl action-button"> <i className="fas fa-list-ul"></i> </button> )}
+                        {step === 'edit' && ( <button onClick={() => { hook.setIsPlaying(false); hook.setStep('result'); }} className="text-secondary hover:text-white text-md font-bold action-button"> 완료 </button> )}
                     </div>
                 </AppHeader>
                 <main className="page-content flex flex-col">{renderStepContent()}</main>
+                {showPhoneticConfirm && <PhoneticConfirmModal onConfirm={handlePhoneticConfirm} />}
                 {tutorialStep !== null && <TutorialGuide step={tutorialSteps[tutorialStep]} onNext={() => advanceTutorial(1)} onPrev={() => advanceTutorial(-1)} onEnd={endTutorial} />}
                 {showThemeModal && <ThemeSelector onSelect={changeTheme} onClose={() => setShowThemeModal(false)} />}
             </div>
@@ -585,20 +620,32 @@
 
         useEffect(() => {
             if (isPlaying && currentPreviewIndex >= 0 && currentPreviewIndex < lineRefs.current.length && lineRefs.current[currentPreviewIndex]) {
-                lineRefs.current[currentPreviewIndex].scrollIntoView({
-                    behavior: 'smooth',
-                    block: 'center',
-                });
+                lineRefs.current[currentPreviewIndex].scrollIntoView({ behavior: 'smooth', block: 'center' });
             }
         }, [currentPreviewIndex, isPlaying]);
 
-        const startEditing = (index, text) => {
+        const startEditing = (index, content) => {
             setEditingIndex(index);
-            setEditText(text);
+            if (typeof content === 'object' && content !== null) {
+                setEditText(`${content.original}\n${content.translation}\n(${content.pronunciation})`);
+            } else {
+                setEditText(content);
+            }
         };
 
         const commitEditing = (index) => {
-            handleUpdateLineText(index, editText);
+            const originalContent = timedLines[index].text;
+            if (typeof originalContent === 'object' && originalContent !== null) {
+                const lines = editText.split('\n').map(l => l.trim());
+                const newContent = {
+                    original: lines[0] || '',
+                    translation: lines[1] || '',
+                    pronunciation: (lines[2] || '').replace(/[()]/g, '')
+                };
+                handleUpdateLineText(index, newContent);
+            } else {
+                handleUpdateLineText(index, editText);
+            }
             setEditingIndex(null);
         };
 
@@ -618,25 +665,33 @@
                 <div id="edit-list" ref={listRef} className="flex-grow overflow-y-auto rounded-lg p-1 pb-24" style={{backgroundColor: 'var(--surface-color)'}}>
                     <div className="flex justify-center items-center my-1">
                         <button onClick={() => handleInsertInstrumental(-1)} className="px-4 h-8 rounded-full text-xs action-button flex items-center gap-2" style={{backgroundColor: 'var(--surface-color)', color: 'var(--primary-color)'}}>
-                            <i className="fas fa-music"></i>
-                            <span>전주 추가</span>
+                            <i className="fas fa-music"></i> <span>전주 추가</span>
                         </button>
                     </div>
                     {timedLines.map((line, index) => {
                         const startTime = index === 0 ? 0 : timedLines[index - 1].endTime;
                         const duration = line.endTime - startTime;
+                        const lineContent = line.text;
 
                         return (
                             <div key={index} ref={el => lineRefs.current[index] = el}>
                                 <div className={`p-2 my-1 rounded-md flex flex-col transition-colors duration-300`} style={{backgroundColor: currentPreviewIndex === index ? `color-mix(in srgb, var(--primary-color) 20%, transparent)` : 'var(--surface-strong-color)'}}>
-                                    <div className="flex items-center gap-2">
-                                        <span className="font-bold text-sm w-6 text-center" style={{color: 'var(--text-secondary-color)'}}>{index + 1}</span>
+                                    <div className="flex items-start gap-2">
+                                        <span className="font-bold text-sm w-6 text-center pt-1" style={{color: 'var(--text-secondary-color)'}}>{index + 1}</span>
                                         {editingIndex === index ? (
-                                            <input type="text" value={editText} onChange={e => setEditText(e.target.value)} onBlur={() => commitEditing(index)} onKeyDown={e => e.key === 'Enter' && commitEditing(index)} autoFocus className="flex-grow bg-transparent outline-none p-1 rounded" style={{backgroundColor: 'var(--surface-color)'}} />
+                                            <textarea value={editText} onChange={e => setEditText(e.target.value)} onBlur={() => commitEditing(index)} onKeyDown={e => e.key === 'Enter' && !e.shiftKey && commitEditing(index)} autoFocus className="flex-grow bg-transparent outline-none p-1 rounded-md h-24 resize-none" style={{backgroundColor: 'var(--surface-color)'}} />
                                         ) : (
-                                            <span id={`edit-line-${index}-text`} className="flex-grow p-1" onClick={() => startEditing(index, line.text)}>{line.text}</span>
+                                            <div id={`edit-line-${index}-text`} className="flex-grow p-1 cursor-pointer" onClick={() => startEditing(index, lineContent)}>
+                                              {typeof lineContent === 'object' && lineContent !== null ? (
+                                                <div className="space-y-1">
+                                                  <p className="font-semibold">{lineContent.original}</p>
+                                                  <p className="text-sm opacity-90">{lineContent.translation}</p>
+                                                  <p className="text-xs" style={{color: 'var(--text-secondary-color)'}}>{lineContent.pronunciation}</p>
+                                                </div>
+                                              ) : ( <span>{lineContent}</span> )}
+                                            </div>
                                         )}
-                                        <button onClick={() => handleDeleteLine(index)} className="w-8 h-8 rounded text-sm action-button" style={{color: 'var(--red-color)'}}><i className="fas fa-trash-alt"></i></button>
+                                        <button onClick={() => handleDeleteLine(index)} className="w-8 h-8 rounded text-sm action-button flex-shrink-0" style={{color: 'var(--red-color)'}}><i className="fas fa-trash-alt"></i></button>
                                     </div>
                                     <div className="flex items-center justify-end gap-2 mt-1">
                                         <span className="text-xs font-mono" style={{color: 'var(--text-secondary-color)'}}>{(duration/1000).toFixed(2)}s</span>
@@ -649,8 +704,7 @@
                                 </div>
                                 <div className="flex justify-center items-center my-1">
                                      <button onClick={() => handleInsertInstrumental(index)} className="px-4 h-8 rounded-full text-xs action-button flex items-center gap-2" style={{backgroundColor: 'var(--surface-color)', color: 'var(--primary-color)'}}>
-                                        <i className="fas fa-music"></i>
-                                        <span>간주 추가</span>
+                                        <i className="fas fa-music"></i> <span>간주 추가</span>
                                      </button>
                                 </div>
                             </div>
