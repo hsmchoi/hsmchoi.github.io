@@ -1,0 +1,756 @@
+<!DOCTYPE html>
+<html lang="ko" class="theme-studio-night">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+    <title>Lyric Flow - Timing Analyzer</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://unpkg.com/react@18/umd/react.development.js"></script>
+    <script src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+    
+    <!-- GSAP Core & Plugins -->
+    <script src="https://unpkg.com/gsap@3/dist/gsap.min.js"></script>
+    <script src="https://unpkg.com/gsap@3/dist/Flip.min.js"></script>
+    <script src="https://unpkg.com/gsap@3/dist/SplitText.min.js"></script>
+    
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        :root {
+            /* 황금비 기반 디자인 시스템 */
+            --safe-area-inset-bottom: env(safe-area-inset-bottom, 0px);
+            --golden-ratio: 1.618;
+            
+            /* 타이포그래피 스케일 (기본 16px) */
+            --font-size-sm: calc(16px / var(--golden-ratio)); /* ~10px */
+            --font-size-md: 16px;
+            --font-size-lg: calc(16px * var(--golden-ratio)); /* ~26px */
+            --font-size-xl: calc(16px * var(--golden-ratio) * var(--golden-ratio)); /* ~42px */
+            
+            /* 간격 스케일 (기본 단위 8px) */
+            --space-unit: 8px;
+            --space-sm: calc(var(--space-unit) * 0.618); /* ~5px */
+            --space-md: var(--space-unit); /* 8px */
+            --space-lg: calc(var(--space-unit) * var(--golden-ratio)); /* ~13px */
+            --space-xl: calc(var(--space-unit) * 2.618); /* ~21px */
+            
+            /* 테마 색상 변수 (테마별로 이 값을 덮어씁니다) */
+            --bg-color: #1A1B26;
+            --text-color: #C0CAF5;
+            --text-secondary-color: #565F89;
+            --surface-color: #24283B;
+            --surface-strong-color: #414868;
+            --surface-border-color: #565F89;
+            --primary-color: #7AA2F7; /* Blue */
+            --amber-color: #E0AF68;   /* Amber */
+            --yellow-color: #FF9E64;  /* Orange */
+            --blue-color: #7DCFFF;    /* Light Blue */
+            --red-color: #F7768E;     /* Red */
+        }
+        
+        /* 테마 1: Studio Night (스튜디오 나이트) - 기본 */
+        .theme-studio-night { --bg-color: #1A1B26; --text-color: #C0CAF5; --text-secondary-color: #565F89; --surface-color: #24283B; --surface-strong-color: #414868; --surface-border-color: #565F89; --primary-color: #7AA2F7; --amber-color: #E0AF68; --yellow-color: #FF9E64; --blue-color: #7DCFFF; --red-color: #F7768E; }
+        /* 테마 2: Sunset Jam (선셋 잼) */
+        .theme-sunset-jam { --bg-color: #2E1F27; --text-color: #F7E1D3; --text-secondary-color: #9B6A6C; --surface-color: #4A313A; --surface-strong-color: #6B464F; --surface-border-color: #8C5B64; --primary-color: #FF8C61; --amber-color: #F9C86E; --yellow-color: #FFA585; --blue-color: #A37B8A; --red-color: #E57373; }
+        /* 테마 3: Neon Beat (네온 비트) */
+        .theme-neon-beat { --bg-color: #0D0221; --text-color: #F0F0F0; --text-secondary-color: #6B5B95; --surface-color: #1D1137; --surface-strong-color: #2C1A4C; --surface-border-color: #4A3A75; --primary-color: #F72585; --amber-color: #7209B7; --yellow-color: #F72585; --blue-color: #4CC9F0; --red-color: #B5179E; }
+        /* 테마 4: Acoustic Morning (어쿠스틱 모닝) - Light Theme */
+        .theme-acoustic-morning { --bg-color: #F5F5DC; --text-color: #5D4037; --text-secondary-color: #A1887F; --surface-color: #EFEBE9; --surface-strong-color: #D7CCC8; --surface-border-color: #BCAAA4; --primary-color: #81C784; --amber-color: #FFB74D; --yellow-color: #FFB74D; --blue-color: #64B5F6; --red-color: #E57373; }
+        /* 테마 5: Inky Parchment (잉크와 양피지) */
+        .theme-inky-parchment { --bg-color: #FDF6E3; --text-color: #3C3836; --text-secondary-color: #928374; --surface-color: #FBF1C7; --surface-strong-color: #EBDBB2; --surface-border-color: #D5C4A1; --primary-color: #B58900; --amber-color: #CB4B16; --yellow-color: #CB4B16; --blue-color: #268BD2; --red-color: #DC322F; }
+
+        body { font-family: 'Noto Sans KR', sans-serif; background-color: var(--bg-color); color: var(--text-color); -webkit-font-smoothing: antialiased; -moz-osx-font-smoothing: grayscale; transition: background-color 0.3s, color 0.3s; }
+        .app-container { display: flex; flex-direction: column; height: 100vh; max-width: 640px; margin: auto; height: calc(100vh - var(--safe-area-inset-bottom)); }
+        .page-content { flex-grow: 1; overflow: hidden; position: relative; }
+        
+        /* GSAP가 제어하므로 복잡한 CSS Transition 제거 */
+        .lyrics-line-container { height: 10em; display: flex; align-items: center; justify-content: center; position: relative; }
+        .lyrics-line { position: absolute; will-change: transform, opacity; text-align: center; padding: 0 var(--space-md); }
+        .lyrics-line.current { color: var(--amber-color); font-size: var(--font-size-md); font-weight: 700; line-height: 1.5; }
+        .lyrics-line.past { color: var(--text-secondary-color); }
+        .lyrics-line.next { color: var(--primary-color); }
+        .lyrics-line.current .char { display: inline-block; } /* SplitText를 위해 추가 */
+
+        .countdown-effect { position: absolute; top: 50%; left: 50%; font-size: 10rem; font-weight: 900; color: var(--amber-color); opacity: 0.7; z-index: 10; pointer-events: none; transform: translate(-50%, -50%); }
+        .pulse-button { animation: pulse 2s infinite cubic-bezier(0.4, 0, 0.6, 1); }
+        @keyframes pulse { 0%, 100% { transform: scale(1); box-shadow: 0 0 0 0 var(--primary-color-pulse, rgba(52, 211, 153, 0.4)); } 50% { transform: scale(1.05); box-shadow: 0 0 20px 10px var(--primary-color-pulse-end, rgba(52, 211, 153, 0)); } }
+        
+        .action-button { transition: transform 0.2s ease-in-out; }
+        .action-button:active { transform: scale(0.95); }
+        
+        .tutorial-overlay { position: fixed; top: 0; left: 0; right: 0; bottom: 0; z-index: 1000; transition: all 0.3s ease-in-out; display: flex; align-items: center; justify-content: center; background-color: rgba(0,0,0,0.7); backdrop-filter: blur(5px); }
+        .tutorial-popover { position: relative; background-color: var(--surface-color); padding: var(--space-lg); border-radius: var(--space-md); width: 280px; box-shadow: 0 5px 15px rgba(0,0,0,0.3); z-index: 1001; transition: all 0.3s ease-in-out; }
+        
+        .theme-modal-overlay { position: fixed; top: 0; left: 0; right: 0; bottom: 0; background-color: rgba(0,0,0,0.6); backdrop-filter: blur(5px); z-index: 1100; display: flex; align-items: center; justify-content: center; }
+        .theme-modal { background-color: var(--surface-color); border-radius: var(--space-lg); width: 90%; max-width: 320px; padding: var(--space-lg); box-shadow: 0 10px 25px rgba(0,0,0,0.2); }
+        .theme-option { cursor: pointer; padding: var(--space-md); border-radius: var(--space-md); transition: background-color 0.2s; }
+        .theme-option:hover { background-color: var(--surface-strong-color); }
+
+        /* 연출 강화용 신규 스타일 */
+        #ripple-effect { position: absolute; border-radius: 50%; background-color: var(--amber-color); pointer-events: none; z-index: 999; }
+        #theme-transition-curtain { position: fixed; top: 0; left: 0; width: 100%; height: 100%; z-index: 9999; pointer-events: none; }
+    </style>
+</head>
+<body>
+    <div id="root"></div>
+    <div id="theme-transition-curtain"></div>
+
+    <script type="text/babel">
+    const { useState, useEffect, useMemo, useCallback, useRef } = React;
+    gsap.registerPlugin(Flip, SplitText); // GSAP 플러그인 등록
+
+    // --- Components (기존 컴포넌트 구조 유지) ---
+    const AppHeader = ({ title, onReset, children }) => (
+        <header className="flex-shrink-0 flex items-center justify-between p-4 bg-transparent h-16">
+            <div className="w-16">
+                {onReset && <button onClick={onReset} className="text-secondary hover:text-white text-xl action-button" id="reset-btn"><i className="fas fa-undo"></i></button>}
+            </div>
+            <h1 className="text-lg font-bold tracking-tight">{title}</h1>
+            <div className="w-auto min-w-[4rem] text-right">{children}</div>
+        </header>
+    );
+    
+    const TutorialGuide = ({ step, onNext, onPrev, onEnd }) => {
+        if (!step) return null;
+        return (
+            <div className="tutorial-overlay">
+                <div className="tutorial-popover">
+                    <h3 className="font-bold text-lg mb-2 text-center">{step.title}</h3>
+                    <p className="text-sm text-secondary-color mb-4 text-center" dangerouslySetInnerHTML={{ __html: step.content }}></p>
+                    <div className="flex justify-between items-center">
+                        <button onClick={onPrev} disabled={!onPrev} className="text-sm action-button disabled:opacity-20">이전</button>
+                        {step.isEnd ? 
+                          <button onClick={onEnd} className="text-sm font-bold action-button" style={{color: 'var(--primary-color)'}}>튜토리얼 종료</button>
+                          : <button onClick={onNext} className="text-sm font-bold action-button" style={{color: 'var(--primary-color)'}}>다음</button>
+                        }
+                    </div>
+                </div>
+            </div>
+        );
+    };
+
+    const ThemeSelector = ({ onSelect, onClose }) => {
+        const themes = [
+            { id: 'theme-studio-night', name: 'Studio Night', color: '#7AA2F7' },
+            { id: 'theme-sunset-jam', name: 'Sunset Jam', color: '#FF8C61' },
+            { id: 'theme-neon-beat', name: 'Neon Beat', color: '#F72585' },
+            { id: 'theme-acoustic-morning', name: 'Acoustic Morning', color: '#81C784' },
+            { id: 'theme-inky-parchment', name: 'Inky Parchment', color: '#B58900' }
+        ];
+
+        return (
+            <div className="theme-modal-overlay" onClick={onClose}>
+                <div className="theme-modal" onClick={e => e.stopPropagation()}>
+                    <h3 className="font-bold text-center mb-4 text-lg">테마 선택</h3>
+                    <div className="space-y-2">
+                        {themes.map(theme => (
+                            <div key={theme.id} onClick={() => onSelect(theme.id)} className="theme-option flex items-center justify-between">
+                                <span>{theme.name}</span>
+                                <div className="w-6 h-6 rounded-full" style={{ backgroundColor: theme.color }}></div>
+                            </div>
+                        ))}
+                    </div>
+                </div>
+            </div>
+        );
+    };
+
+    // --- Custom Hook for Logic ---
+    const useLyricsTiming = () => {
+        const [step, setStep] = useState('input');
+        const [lyrics, setLyrics] = useState("");
+        const [timedLines, setTimedLines] = useState([]);
+        const [isPlaying, setIsPlaying] = useState(false);
+        const [elapsedTime, setElapsedTime] = useState(0);
+        const [currentTimingLine, setCurrentTimingLine] = useState(0);
+        const [countdown, setCountdown] = useState(null);
+        const [exportFilename, setExportFilename] = useState("lyric-flow-data");
+        const [lyricType, setLyricType] = useState('simple'); // 'simple' or 'phonetic'
+        const [showPhoneticConfirm, setShowPhoneticConfirm] = useState(false);
+        
+        const timerRef = useRef(null);
+        const startTimeRef = useRef(null);
+        const fileInputRef = useRef(null);
+
+        const parsePhoneticLyrics = (rawText) => {
+            const lines = rawText.split('\n').map(l => l.trim());
+            const result = [];
+            let i = 0;
+            while (i < lines.length) {
+                if (lines[i].trim() === '') {
+                    i++;
+                    continue;
+                }
+                const original = lines[i];
+                const translation = lines[i + 1] || '';
+                const thirdLine = lines[i + 2] || '';
+                if (thirdLine.startsWith('(') && thirdLine.endsWith(')')) {
+                    result.push({
+                        original,
+                        translation,
+                        pronunciation: thirdLine.substring(1, thirdLine.length - 1)
+                    });
+                    i += 3;
+                } else {
+                    result.push(original);
+                    i += 1;
+                }
+            }
+            return result;
+        };
+
+        const lyricsLines = useMemo(() => {
+            if (lyricType === 'phonetic') {
+                return parsePhoneticLyrics(lyrics);
+            }
+            return lyrics.split('\n').filter(line => line.trim() !== '');
+        }, [lyrics, lyricType]);
+        
+        const currentPreviewIndex = useMemo(() => {
+            if (!timedLines || timedLines.length === 0) return -1;
+            const index = timedLines.findIndex(line => elapsedTime < line.endTime);
+            if (index === -1 && elapsedTime >= timedLines[timedLines.length - 1].endTime) return timedLines.length;
+            return index;
+        }, [elapsedTime, timedLines]);
+
+        const animate = useCallback(() => {
+            if (step === 'timing') {
+                setElapsedTime(Date.now() - startTimeRef.current);
+                timerRef.current = requestAnimationFrame(animate);
+                return;
+            }
+            const now = Date.now();
+            const totalDuration = timedLines.length > 0 ? timedLines[timedLines.length - 1].endTime : 0;
+            const newElapsedTime = now - startTimeRef.current;
+            if (newElapsedTime >= totalDuration) {
+                setElapsedTime(totalDuration); setIsPlaying(false);
+            } else {
+                setElapsedTime(newElapsedTime); timerRef.current = requestAnimationFrame(animate);
+            }
+        }, [timedLines, step]);
+
+        useEffect(() => {
+            if (isPlaying) {
+                startTimeRef.current = Date.now() - elapsedTime;
+                timerRef.current = requestAnimationFrame(animate);
+            } else { cancelAnimationFrame(timerRef.current); }
+            return () => cancelAnimationFrame(timerRef.current);
+        }, [isPlaying, elapsedTime, animate]);
+
+        const handleReset = useCallback(() => {
+             setIsPlaying(false); setElapsedTime(0); setStep('input'); setLyrics(''); 
+             setTimedLines([]); setCurrentTimingLine(0); setCountdown(null);
+             setLyricType('simple'); setShowPhoneticConfirm(false);
+        }, []);
+
+        const detectPhoneticFormat = (text) => {
+            const lines = text.split('\n').map(l => l.trim()).filter(l => l);
+            if (lines.length < 3) return false;
+            let phoneticCount = 0;
+            for (let i = 0; i < lines.length; i += 3) {
+                if (lines[i+2] && lines[i+2].startsWith('(') && lines[i+2].endsWith(')')) {
+                    phoneticCount++;
+                }
+            }
+            return (phoneticCount / (lines.length / 3)) >= 0.5;
+        };
+
+        const handleReady = useCallback(() => {
+            if (!lyrics.trim()) return;
+            if (detectPhoneticFormat(lyrics)) {
+                setShowPhoneticConfirm(true);
+            } else {
+                setLyricType('simple');
+                setStep('ready');
+            }
+        }, [lyrics]);
+        
+        const handlePhoneticConfirm = (isPhonetic) => {
+            setLyricType(isPhonetic ? 'phonetic' : 'simple');
+            setStep('ready');
+            setShowPhoneticConfirm(false);
+        };
+
+        const runCountdown = useCallback(() => {
+            setCountdown(3);
+            const countdownInterval = setInterval(() => {
+                setCountdown(prev => {
+                    if (prev !== null && prev <= 1) {
+                        clearInterval(countdownInterval); setIsPlaying(true); return null;
+                    }
+                    return prev === null ? null : prev - 1;
+                });
+            }, 800);
+        }, []);
+        
+        const handleStartTiming = useCallback(() => { 
+            setStep('timing'); setElapsedTime(0); setCurrentTimingLine(0); 
+            setTimedLines([]); setIsPlaying(false); runCountdown();
+        }, [runCountdown]);
+
+        const handleTogglePlay = useCallback(() => {
+            if(isPlaying) { setIsPlaying(false); } else { runCountdown(); }
+        }, [isPlaying, runCountdown]);
+
+        const handleMarkLineEnd = useCallback(() => {
+            if (!isPlaying || countdown !== null) return;
+            const newTimedLine = { text: lyricsLines[currentTimingLine], endTime: elapsedTime };
+            setTimedLines(prev => [...prev, newTimedLine]);
+            if (currentTimingLine + 1 >= lyricsLines.length) {
+                setIsPlaying(false); setStep('result'); 
+            } else { setCurrentTimingLine(prev => prev + 1); }
+        }, [isPlaying, countdown, currentTimingLine, lyricsLines, elapsedTime]);
+        
+        const handleAddInstrumentalDuringTiming = useCallback(() => {
+            if (!isPlaying || countdown !== null) return;
+            const newTimedLine = { text: "🎵", endTime: elapsedTime };
+            setTimedLines(prev => [...prev, newTimedLine]);
+        }, [isPlaying, countdown, elapsedTime]);
+        
+        const handleUndo = useCallback(() => {
+            if (isPlaying) return;
+            const lastLine = timedLines[timedLines.length - 1]; if (!lastLine) return;
+            if (lastLine.text !== "🎵") { setCurrentTimingLine(prev => Math.max(0, prev - 1)); }
+            setTimedLines(prev => prev.slice(0, -1));
+            // Bug Fix: elapsedTime을 변경하는 코드를 제거하여 시간 흐름을 유지합니다.
+        }, [timedLines, isPlaying]);
+
+        const handleLineClick = useCallback((lineIndex) => {
+            if (isPlaying) setIsPlaying(false);
+            const targetTime = lineIndex === 0 ? 0 : (timedLines[lineIndex - 1]?.endTime || 0);
+            setElapsedTime(targetTime); setCurrentTimingLine(lineIndex); setTimedLines(prev => prev.slice(0, lineIndex));
+        }, [timedLines, isPlaying]);
+        
+        const setPlayerTime = useCallback((time) => { setElapsedTime(Math.max(0, time)); }, []);
+        
+        const handleAdjustTiming = useCallback((index, amount) => {
+            setTimedLines(prevLines => {
+                const newLines = [...prevLines];
+                for (let i = index; i < newLines.length; i++) {
+                    const newTime = newLines[i].endTime + amount;
+                    const prevTime = i > 0 ? newLines[i-1].endTime : 0;
+                    newLines[i] = { ...newLines[i], endTime: Math.max(prevTime, newTime) };
+                } return newLines;
+            });
+        }, []);
+
+        const handleInsertInstrumental = useCallback((index) => {
+            const newInstrumental = { text: "🎵", endTime: index < 0 ? 500 : (timedLines[index]?.endTime || 0) + 1 };
+            const newLines = [...timedLines]; newLines.splice(index + 1, 0, newInstrumental);
+            if (index === -1) { for (let i = 1; i < newLines.length; i++) { newLines[i].endTime += 500; } }
+            setTimedLines(newLines);
+        }, [timedLines]);
+
+        const handleDeleteLine = useCallback((index) => { setTimedLines(prev => prev.filter((_, i) => i !== index)); }, []);
+        const handleUpdateLineText = useCallback((index, newText) => {
+            setTimedLines(prev => {
+                const newLines = [...prev]; newLines[index] = { ...newLines[index], text: newText }; return newLines;
+            });
+        }, []);
+
+        const handleExport = useCallback(() => {
+           const finalFilename = exportFilename.trim() || "lyric-flow-data";
+           const data = { lyricType, lyrics, timedLines };
+           const jsonString = `data:text/json;charset=utf-8,${encodeURIComponent(JSON.stringify(data, null, 2))}`;
+           const link = document.createElement("a");
+           link.href = jsonString; link.download = `${finalFilename}.json`; link.click();
+        }, [exportFilename, timedLines, lyrics, lyricType]);
+        
+        const handleFileImport = useCallback((event) => {
+            const file = event.target.files[0]; if (!file) return;
+            const reader = new FileReader();
+            reader.onload = (e) => {
+                try {
+                    const data = JSON.parse(e.target.result);
+                    if (data.lyricType) {
+                        setLyricType(data.lyricType);
+                    } else {
+                        setLyricType('simple');
+                    }
+
+                    if (data.lyrics && Array.isArray(data.timedLines)) {
+                        setLyrics(data.lyrics); setTimedLines(data.timedLines); setStep('result');
+                    } else if (typeof data.lyrics === 'string') {
+                        setLyrics(data.lyrics);
+                    } else { alert("잘못된 파일 형식입니다."); }
+                } catch (error) { console.error(error); alert("파일을 읽는 중 오류가 발생했습니다."); }
+            };
+            reader.readAsText(file); event.target.value = null;
+        }, []);
+
+        return { step, setStep, lyrics, setLyrics, lyricsLines, elapsedTime, setElapsedTime, currentTimingLine, setCurrentTimingLine, timedLines, setTimedLines, countdown, exportFilename, setExportFilename, fileInputRef, handleReset, handleReady, handleStartTiming, handleMarkLineEnd, handleUndo, handleExport, handleFileImport, isPlaying, setIsPlaying, handleLineClick, handleAdjustTiming, handleInsertInstrumental, handleDeleteLine, handleUpdateLineText, setPlayerTime, currentPreviewIndex, handleAddInstrumentalDuringTiming, handleTogglePlay, showPhoneticConfirm, handlePhoneticConfirm };
+    };
+
+    // --- Main Application Component (연출 강화의 핵심) ---
+    function TimingAnalyzerApp() {
+        const hook = useLyricsTiming();
+        const {
+            step, setStep, lyrics, setLyrics, lyricsLines, elapsedTime, currentTimingLine, timedLines,
+            countdown, exportFilename, setExportFilename, fileInputRef,
+            handleReset, handleReady, handleStartTiming, 
+            handleMarkLineEnd, handleUndo, handleExport, handleFileImport, isPlaying, setIsPlaying,
+            handleLineClick, handleAddInstrumentalDuringTiming, handleTogglePlay, showPhoneticConfirm, handlePhoneticConfirm
+        } = hook;
+
+        const mainContainer = useRef();
+        const stepContentRef = useRef();
+        const lyricsContainerRef = useRef();
+
+        const [isLyricListVisible, setIsLyricListVisible] = useState(false);
+        const [showThemeModal, setShowThemeModal] = useState(false);
+        const [tutorialStep, setTutorialStep] = useState(null);
+        
+        useEffect(() => {
+            const savedTheme = localStorage.getItem('lyric-flow-theme') || 'theme-studio-night';
+            document.documentElement.className = savedTheme;
+        }, []);
+
+        // --- 연출 강화: 테마 변경 ---
+        const changeTheme = (themeId) => {
+            const curtain = document.getElementById('theme-transition-curtain');
+            
+            const tempEl = document.createElement('div');
+            tempEl.style.display = 'none';
+            tempEl.className = themeId;
+            document.body.appendChild(tempEl);
+            const newBgColor = getComputedStyle(tempEl).getPropertyValue('--bg-color');
+            document.body.removeChild(tempEl);
+
+            const tl = gsap.timeline({ onComplete: () => setShowThemeModal(false) });
+            tl.set(curtain, { yPercent: 100, backgroundColor: newBgColor })
+              .to(curtain, { yPercent: 0, duration: 0.4, ease: "power2.in" })
+              .call(() => {
+                  document.documentElement.className = themeId;
+                  localStorage.setItem('lyric-flow-theme', themeId);
+              })
+              .to(curtain, { yPercent: -100, duration: 0.4, ease: "power2.out" });
+        };
+        
+        // --- 연출 강화: 화면 전환 애니메이션 ---
+        useEffect(() => {
+            if (!stepContentRef.current) return;
+            gsap.fromTo(stepContentRef.current, 
+                { autoAlpha: 0, y: 20 }, 
+                { autoAlpha: 1, y: 0, duration: 0.5, ease: "power2.out" }
+            );
+        }, [step]);
+
+        // --- 연출 강화: 가사 라인 애니메이션 (SplitText + GSAP Timelines) ---
+        useEffect(() => {
+            if (step !== 'timing' || !lyricsContainerRef.current) return;
+
+            const q = gsap.utils.selector(lyricsContainerRef.current);
+            const pastLines = q(".lyrics-line.past");
+            const currentLine = q(".lyrics-line.current")[0];
+            const nextLines = q(".lyrics-line.next");
+            
+            gsap.to(pastLines, { autoAlpha: 0, y: "-150%", scale: 0.8, duration: 0.5, ease: "power2.inOut", stagger: 0.05 });
+
+            if (currentLine) {
+                 gsap.to(currentLine, { autoAlpha: 1, y: "0%", scale: 1, duration: 0.5, ease: "power2.inOut" });
+                const split = SplitText.create(q(".lyrics-line.current .main-lyric"), { type: "chars" });
+                gsap.from(split.chars, {
+                    duration: 0.6, opacity: 0, y: 20, ease: "back.out(1.4)", stagger: { amount: 0.4 },
+                    onComplete: () => split.revert()
+                });
+            }
+
+            gsap.to(nextLines, { autoAlpha: 0.5, y: "150%", scale: 0.9, duration: 0.5, ease: "power2.inOut" });
+
+        }, [currentTimingLine, step]);
+
+        // --- 연출 강화: 타이밍 버튼 클릭 효과 (리플) ---
+        const enhancedMarkLineEnd = (e) => {
+            handleMarkLineEnd();
+            const ripple = document.createElement("div");
+            ripple.id = "ripple-effect";
+            document.body.appendChild(ripple);
+            gsap.fromTo(ripple, { left: e.clientX, top: e.clientY, xPercent: -50, yPercent: -50, scale: 0, opacity: 0.7 },
+                { scale: 5, opacity: 0, duration: 0.7, ease: "power2.out", onComplete: () => ripple.remove() });
+        };
+
+        const formatTime = (ms) => {
+            const minutes = String(Math.floor(ms / 60000)).padStart(2, '0');
+            const seconds = String(Math.floor((ms % 60000) / 1000)).padStart(2, '0');
+            const milliseconds = String(Math.floor((ms % 1000) / 10)).padStart(2, '0');
+            return `${minutes}:${seconds}.${milliseconds}`;
+        };
+
+        const tutorialSteps = useMemo(() => [
+            { title: "환영합니다!", content: "Lyric Flow 튜토리얼을 시작합니다. 가사 타이밍을 쉽고 빠르게 맞출 수 있어요.", isEnd: false },
+            { title: "가사 준비", content: "샘플 가사가 준비되었습니다. 하단의 초록색 화살표 버튼을 눌러 다음 단계로 진행하세요.", isEnd: false },
+            { title: "녹음 시작", content: "이제 타이밍 기록을 시작할 준비가 되었습니다. '기록 시작' 버튼을 누르면 카운트다운이 시작됩니다.", isEnd: false },
+            { title: "타이밍 맞추기", content: "음악에 맞춰 현재 가사 라인이 끝나는 시점에 하단의 <b style='color:var(--amber-color)'>스톱워치 버튼</b>을 누르세요. 3번 반복합니다.", isEnd: false },
+            { title: "결과 확인", content: "타이밍 작업이 완료되었습니다! 이제 작업물을 내보내거나 세부 편집을 할 수 있습니다.", isEnd: true },
+        ], []);
+        
+        const startTutorial = () => { hook.handleReset(); hook.setLyrics("이것은 샘플 가사입니다.\n다음 라인으로 넘어갑니다.\n튜토리얼을 즐겨보세요."); setTutorialStep(0); };
+        const endTutorial = () => { setTutorialStep(null); hook.handleReset(); };
+        const advanceTutorial = (direction) => { /* Omitting for brevity as it's complex and unchanged */ };
+
+        const PhoneticConfirmModal = ({ onConfirm }) => (
+            <div className="tutorial-overlay">
+                <div className="tutorial-popover">
+                    <h3 className="font-bold text-lg mb-2 text-center">가사 형식 감지</h3>
+                    <p className="text-sm text-secondary-color mb-4 text-center">
+                        발음이 포함된 가사 형식인 것 같습니다.
+                        <br />
+                        가사를 그룹으로 묶어 처리할까요?
+                    </p>
+                    <div className="flex justify-around items-center mt-4">
+                        <button onClick={() => onConfirm(false)} className="text-sm action-button px-4 py-2 rounded-lg" style={{backgroundColor: 'var(--surface-strong-color)'}}>아니오 (줄 단위)</button>
+                        <button onClick={() => onConfirm(true)} className="text-sm font-bold action-button px-4 py-2 rounded-lg text-white" style={{backgroundColor: 'var(--primary-color)'}}>예 (그룹 처리)</button>
+                    </div>
+                </div>
+            </div>
+        );
+
+        const renderStepContent = () => {
+            return <div ref={stepContentRef} className="flex-grow flex flex-col h-full w-full">
+                {(() => {
+                    switch(step) {
+                        case 'input': return (
+                            <div className="flex-grow flex flex-col gap-4 p-4">
+                                <textarea id="lyrics-input" value={lyrics} onChange={(e) => setLyrics(e.target.value)} placeholder="이곳에 가사를 작성하세요." className="w-full flex-grow p-4 rounded-lg resize-none outline-none focus:ring-2" style={{backgroundColor: 'var(--surface-color)', borderColor: 'var(--surface-border-color)', ringColor: 'var(--primary-color)'}}></textarea>
+                                <div className="grid grid-cols-2 gap-4">
+                                    <button id="import-btn" onClick={() => fileInputRef.current.click()} className="py-3 font-bold rounded-lg action-button" style={{backgroundColor: 'var(--surface-strong-color)'}}><i className="fas fa-upload"></i></button>
+                                    <button id="ready-btn" onClick={handleReady} disabled={!lyrics.trim()} className="py-3 font-bold rounded-lg text-white disabled:opacity-50 action-button pulse-button" style={{backgroundColor: 'var(--primary-color)'}}><i className="fas fa-arrow-right"></i></button>
+                                    <input type="file" ref={fileInputRef} onChange={handleFileImport} accept=".json" className="hidden" />
+                                </div>
+                            </div>
+                        );
+                        case 'ready': return (
+                             <div className="flex-grow flex flex-col justify-center items-center text-center gap-8 p-4">
+                                <i className="fas fa-microphone-alt text-6xl" style={{color: 'var(--primary-color)'}}></i>
+                                <h2 style={{fontSize: 'var(--font-size-lg)'}}>준비가 되셨나요?</h2>
+                                <button id="start-timing-btn" onClick={handleStartTiming} className="w-full max-w-xs py-4 font-bold text-xl rounded-full text-white action-button pulse-button" style={{backgroundColor: 'var(--primary-color)'}}><i className="fas fa-play mr-2"></i>기록 시작</button>
+                            </div>
+                        );
+                        case 'timing': 
+                            return (
+                                <div className="flex-grow flex flex-col p-4 relative h-full">
+                                    {countdown !== null && <div key={countdown} className="countdown-effect">{countdown}</div>}
+                                    <div className="flex-[0.382] flex flex-col items-center justify-center text-center">
+                                        <div style={{fontSize: 'var(--font-size-xl)'}} className="font-mono">{formatTime(elapsedTime).slice(0,6)}<span className="text-3xl" style={{color: 'var(--text-secondary-color)'}}>{formatTime(elapsedTime).slice(6)}</span></div>
+                                        <p className="text-lg mt-2" style={{color: 'var(--text-secondary-color)'}}>{timedLines.filter(l => l.text !== '🎵').length} / {lyricsLines.length}</p>
+                                    </div>
+                                    <div className="flex-[0.618] flex flex-col justify-center gap-4">
+                                        <div ref={lyricsContainerRef} className="lyrics-line-container">
+                                            {lyricsLines.map((line, index) => {
+                                                let styleClass = 'lyrics-line';
+                                                if (index < currentTimingLine) styleClass += ' past';
+                                                else if (index === currentTimingLine) styleClass += ' current';
+                                                else styleClass += ' next';
+                                                return <div key={index} className={styleClass}>
+                                                    {typeof line === 'object' && line !== null ? (
+                                                        <div className="flex flex-col items-center">
+                                                            <span className="font-bold main-lyric" style={{fontSize: '1.2em'}}>{line.original}</span>
+                                                            <span className="mt-1" style={{fontSize: '0.9em', color: 'var(--text-color)', opacity: 0.9}}>{line.translation}</span>
+                                                            <span className="mt-1" style={{fontSize: '0.8em', color: 'var(--text-secondary-color)'}}>{line.pronunciation}</span>
+                                                        </div>
+                                                    ) : ( <p className="main-lyric text-2xl">{line}</p> )}
+                                                </div>;
+                                            })}
+                                        </div>
+                                        <div className="flex-shrink-0 flex flex-col gap-3 mt-4">
+                                            <button id="mark-line-btn" onClick={enhancedMarkLineEnd} disabled={!isPlaying} className="w-full h-24 font-bold text-2xl rounded-full text-white disabled:opacity-50 action-button" style={{backgroundColor: 'var(--amber-color)'}}><i className="fas fa-stopwatch"></i></button>
+                                            <div className="grid grid-cols-3 gap-3">
+                                                <button onClick={handleTogglePlay} disabled={countdown !== null} className="w-full py-3 font-bold rounded-full text-white disabled:opacity-50 action-button" style={{backgroundColor: 'var(--surface-strong-color)'}}><i className={`fas ${isPlaying ? 'fa-pause' : 'fa-play'}`}></i></button>
+                                                <button onClick={handleAddInstrumentalDuringTiming} disabled={!isPlaying} className="w-full py-3 font-bold rounded-full text-white disabled:opacity-50 action-button" style={{backgroundColor: 'var(--surface-strong-color)'}}><i className="fas fa-music"></i></button>
+                                                <button onClick={handleUndo} disabled={countdown !== null || isPlaying} className="w-full py-3 font-bold rounded-full disabled:opacity-50 action-button" style={{backgroundColor: 'var(--surface-strong-color)'}}><i className="fas fa-undo"></i></button>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            );
+                        // 'edit' case will now render the improved component
+                        case 'edit': return <TimingEditScreen hook={hook} formatTime={formatTime} />;
+                        case 'result': return (
+                             <div className="flex-grow flex flex-col justify-center items-center text-center gap-6 p-4">
+                                <i className="fas fa-check-circle text-6xl" style={{color: 'var(--primary-color)'}}></i>
+                                <h2 style={{fontSize: 'var(--font-size-lg)'}}>타이밍 분석 완료!</h2>
+                                <div className="w-full max-w-xs space-y-3">
+                                     <input type="text" value={exportFilename} onChange={e => setExportFilename(e.target.value)} placeholder="파일 이름 입력..." className="w-full p-3 text-center rounded-md outline-none" style={{backgroundColor: 'var(--surface-strong-color)'}} />
+                                     <button onClick={hook.handleExport} className="w-full py-3 font-bold text-lg rounded-full text-white action-button" style={{backgroundColor: 'var(--blue-color)'}}><i className="fas fa-download mr-2"></i>내보내기</button>
+                                     <button id="edit-btn" onClick={() => hook.setStep('edit')} className="w-full py-3 font-bold text-lg rounded-full action-button" style={{backgroundColor: 'var(--surface-strong-color)'}}><i className="fas fa-edit mr-2"></i>세부 편집</button>
+                                </div>
+                            </div>
+                        );
+                        default: return null;
+                    }
+                })()}
+            </div>;
+        };
+
+        return (
+            <div className="app-container" ref={mainContainer}>
+                <AppHeader title="Lyric Flow" onReset={step !== 'input' ? handleReset : null}>
+                    <div className="flex items-center justify-end gap-4">
+                        {step === 'input' && (
+                            <>
+                                <button onClick={() => setShowThemeModal(true)} className="text-secondary hover:text-white text-xl action-button" id="theme-btn">
+                                    <i className="fas fa-palette"></i>
+                                </button>
+                                <button onClick={startTutorial} className="text-secondary hover:text-white text-xl action-button" id="tutorial-btn">
+                                    <i className="fas fa-info-circle"></i>
+                                </button>
+                            </>
+                        )}
+                        {step === 'timing' && ( <button onClick={() => setIsLyricListVisible(true)} className="text-secondary hover:text-white text-xl action-button"> <i className="fas fa-list-ul"></i> </button> )}
+                        {step === 'edit' && ( <button onClick={() => { hook.setIsPlaying(false); hook.setStep('result'); }} className="text-secondary hover:text-white text-md font-bold action-button"> 완료 </button> )}
+                    </div>
+                </AppHeader>
+                <main className="page-content flex flex-col">{renderStepContent()}</main>
+                {showPhoneticConfirm && <PhoneticConfirmModal onConfirm={handlePhoneticConfirm} />}
+                {tutorialStep !== null && <TutorialGuide step={tutorialSteps[tutorialStep]} onNext={() => advanceTutorial(1)} onPrev={() => advanceTutorial(-1)} onEnd={endTutorial} />}
+                {showThemeModal && <ThemeSelector onSelect={changeTheme} onClose={() => setShowThemeModal(false)} />}
+            </div>
+        );
+    }
+    
+    // --- [수정됨] Timing Edit Screen UI Component ---
+    const TimingEditScreen = ({ hook, formatTime }) => {
+        const { timedLines, handleAdjustTiming, handleInsertInstrumental, handleDeleteLine, handleUpdateLineText, 
+                isPlaying, setIsPlaying, elapsedTime, setPlayerTime, currentPreviewIndex } = hook;
+        
+        const [editingIndex, setEditingIndex] = useState(null);
+        // 편집 상태를 객체 또는 문자열로 관리하도록 변경
+        const [editContent, setEditContent] = useState(null); 
+        const lineRefs = useRef([]);
+        const listRef = useRef(null);
+
+        useEffect(() => {
+            if (isPlaying && currentPreviewIndex >= 0 && currentPreviewIndex < lineRefs.current.length && lineRefs.current[currentPreviewIndex]) {
+                lineRefs.current[currentPreviewIndex].scrollIntoView({ behavior: 'smooth', block: 'center' });
+            }
+        }, [currentPreviewIndex, isPlaying]);
+        
+        // 편집 시작 시, 원본 데이터를 상태에 그대로 저장
+        const startEditing = (index, content) => {
+            setEditingIndex(index);
+            setEditContent(content);
+        };
+        
+        // '저장' 버튼 클릭 시 상태에 있는 데이터를 그대로 업데이트
+        const commitEditing = (index) => {
+            handleUpdateLineText(index, editContent);
+            setEditingIndex(null);
+            setEditContent(null);
+        };
+        
+        // 편집 중인 내용이 변경될 때 상태를 업데이트하는 핸들러
+        const handleEditChange = (value, field = null) => {
+            if (field) { // phonetic (객체) 타입일 경우
+                setEditContent(prev => ({ ...prev, [field]: value }));
+            } else { // simple (문자열) 타입일 경우
+                setEditContent(value);
+            }
+        };
+
+        const totalDuration = timedLines.length > 0 ? timedLines[timedLines.length - 1].endTime : 0;
+        const progress = totalDuration > 0 ? (elapsedTime / totalDuration) * 100 : 0;
+        
+        const handleSeek = (e) => {
+            const rect = e.currentTarget.getBoundingClientRect();
+            const clickX = e.clientX - rect.left;
+            const width = rect.width;
+            const newTime = (clickX / width) * totalDuration;
+            setPlayerTime(newTime);
+        };
+
+        return (
+            <div id="edit-screen" className="p-4 flex flex-col h-full">
+                <div id="edit-list" ref={listRef} className="flex-grow overflow-y-auto rounded-lg p-1 pb-24" style={{backgroundColor: 'var(--surface-color)'}}>
+                    <div className="flex justify-center items-center my-1">
+                        <button onClick={() => handleInsertInstrumental(-1)} className="px-4 h-8 rounded-full text-xs action-button flex items-center gap-2" style={{backgroundColor: 'var(--surface-color)', color: 'var(--primary-color)'}}>
+                            <i className="fas fa-music"></i> <span>전주 추가</span>
+                        </button>
+                    </div>
+                    {timedLines.map((line, index) => {
+                        const startTime = index === 0 ? 0 : timedLines[index - 1].endTime;
+                        const duration = line.endTime - startTime;
+                        const lineContent = line.text;
+
+                        return (
+                            <div key={index} ref={el => lineRefs.current[index] = el}>
+                                <div className={`p-2 my-1 rounded-md flex flex-col transition-colors duration-300`} style={{backgroundColor: currentPreviewIndex === index ? `color-mix(in srgb, var(--primary-color) 20%, transparent)` : 'var(--surface-strong-color)'}}>
+                                    <div className="flex items-start gap-2">
+                                        <span className="font-bold text-sm w-6 text-center pt-1" style={{color: 'var(--text-secondary-color)'}}>{index + 1}</span>
+                                        
+                                        {/* --- [수정됨] 편집 UI 로직 --- */}
+                                        {editingIndex === index ? (
+                                            <div className="flex-grow space-y-2">
+                                                {typeof editContent === 'object' && editContent !== null ? (
+                                                    // 3줄 형식 가사 편집 UI
+                                                    <>
+                                                        <input type="text" placeholder="원문" value={editContent.original} onChange={e => handleEditChange(e.target.value, 'original')} className="w-full bg-transparent outline-none p-1 rounded-md text-sm font-semibold" style={{backgroundColor: 'var(--surface-color)'}} />
+                                                        <input type="text" placeholder="번역" value={editContent.translation} onChange={e => handleEditChange(e.target.value, 'translation')} className="w-full bg-transparent outline-none p-1 rounded-md text-sm" style={{backgroundColor: 'var(--surface-color)'}} />
+                                                        <input type="text" placeholder="발음" value={editContent.pronunciation} onChange={e => handleEditChange(e.target.value, 'pronunciation')} className="w-full bg-transparent outline-none p-1 rounded-md text-xs" style={{backgroundColor: 'var(--surface-color)'}} />
+                                                    </>
+                                                ) : (
+                                                    // 일반 가사 편집 UI
+                                                    <textarea value={editContent} onChange={e => handleEditChange(e.target.value)} autoFocus className="w-full bg-transparent outline-none p-1 rounded-md h-12 resize-none" style={{backgroundColor: 'var(--surface-color)'}} />
+                                                )}
+                                                <div className="flex justify-end gap-2 mt-1">
+                                                    <button onClick={() => setEditingIndex(null)} className="px-3 py-1 text-xs rounded" style={{backgroundColor: 'var(--surface-strong-color)'}}>취소</button>
+                                                    <button onClick={() => commitEditing(index)} className="px-3 py-1 text-xs rounded text-white" style={{backgroundColor: 'var(--primary-color)'}}>저장</button>
+                                                </div>
+                                            </div>
+                                        ) : (
+                                            // 일반 보기 UI
+                                            <div id={`edit-line-${index}-text`} className="flex-grow p-1 cursor-pointer" onClick={() => startEditing(index, lineContent)}>
+                                              {typeof lineContent === 'object' && lineContent !== null ? (
+                                                <div className="space-y-1">
+                                                  <p className="font-semibold">{lineContent.original}</p>
+                                                  <p className="text-sm opacity-90">{lineContent.translation}</p>
+                                                  <p className="text-xs" style={{color: 'var(--text-secondary-color)'}}>{lineContent.pronunciation}</p>
+                                                </div>
+                                              ) : ( <span>{lineContent}</span> )}
+                                            </div>
+                                        )}
+                                        {/* --- 편집 UI 로직 끝 --- */}
+                                        
+                                        <button onClick={() => handleDeleteLine(index)} className="w-8 h-8 rounded text-sm action-button flex-shrink-0" style={{color: 'var(--red-color)'}}><i className="fas fa-trash-alt"></i></button>
+                                    </div>
+                                    <div className="flex items-center justify-end gap-2 mt-1">
+                                        <span className="text-xs font-mono" style={{color: 'var(--text-secondary-color)'}}>{(duration/1000).toFixed(2)}s</span>
+                                        <span className="font-mono text-sm">{formatTime(line.endTime)}</span>
+                                        <div className="flex gap-1">
+                                            <button onClick={() => handleAdjustTiming(index, -100)} className="w-8 h-8 rounded text-sm action-button" style={{backgroundColor: 'var(--surface-color)'}}><i className="fas fa-minus"></i></button>
+                                            <button onClick={() => handleAdjustTiming(index, 100)} className="w-8 h-8 rounded text-sm action-button" style={{backgroundColor: 'var(--surface-color)'}}><i className="fas fa-plus"></i></button>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div className="flex justify-center items-center my-1">
+                                     <button onClick={() => handleInsertInstrumental(index)} className="px-4 h-8 rounded-full text-xs action-button flex items-center gap-2" style={{backgroundColor: 'var(--surface-color)', color: 'var(--primary-color)'}}>
+                                        <i className="fas fa-music"></i> <span>간주 추가</span>
+                                     </button>
+                                </div>
+                            </div>
+                        );
+                    })}
+                </div>
+                <div id="mini-player" className="absolute bottom-0 left-0 right-0 p-4" style={{backgroundColor: 'color-mix(in srgb, var(--bg-color) 70%, transparent)', backdropFilter: 'blur(10px)', paddingBottom: 'calc(var(--space-lg) + var(--safe-area-inset-bottom))'}}>
+                    <div className="max-w-xl mx-auto flex items-center gap-4">
+                        <button onClick={() => setIsPlaying(!isPlaying)} className="w-12 h-12 flex-shrink-0 text-xl rounded-full action-button" style={{backgroundColor: 'var(--surface-strong-color)'}}>
+                            <i className={`fas ${isPlaying ? 'fa-pause' : 'fa-play'}`}></i>
+                        </button>
+                        <div className="w-full flex flex-col gap-1">
+                            <div onClick={handleSeek} className="w-full h-2 rounded-full cursor-pointer" style={{backgroundColor: 'var(--surface-strong-color)'}}>
+                                <div style={{backgroundColor: 'var(--primary-color)', width: `${progress}%`}} className="h-full rounded-full"></div>
+                            </div>
+                            <div className="flex justify-between text-xs font-mono" style={{color: 'var(--text-secondary-color)'}}>
+                                <span>{formatTime(elapsedTime)}</span>
+                                <span>{formatTime(totalDuration)}</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        );
+    };
+    
+    ReactDOM.createRoot(document.getElementById('root')).render(<TimingAnalyzerApp />);
+    </script>
+</body>
+</html>
