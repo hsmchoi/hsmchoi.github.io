@@ -42,10 +42,25 @@
             border: 3px solid #4A5568;
             transition: transform 0.3s ease, box-shadow 0.3s ease;
             cursor: pointer;
+            position: relative;
+            overflow: hidden;
         }
         .post-card:hover {
             transform: translateY(-10px) rotate(1deg);
             box-shadow: 0 12px 35px rgba(0,0,0,0.12);
+        }
+        .new-badge {
+            position: absolute;
+            top: -10px;
+            right: -10px;
+            background-color: #EF4444;
+            color: white;
+            padding: 8px 16px;
+            font-size: 1rem;
+            font-weight: 700;
+            border-radius: 1.5rem;
+            transform: rotate(15deg);
+            box-shadow: 0 4px 10px rgba(0,0,0,0.2);
         }
         .modal-overlay {
             position: fixed;
@@ -105,7 +120,17 @@
         <div class="w-full max-w-5xl mx-auto">
             <h2 class="text-4xl md:text-5xl font-title text-center mb-12">최근 이야기</h2>
             <div id="post-grid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-                <!-- 계시글 추가 -->
+                
+                <div class="post-card app-card"
+                     data-title="Day 1: 인터랙티브 운동 로거"
+                     data-date="2025년 9월 14일" 
+                     data-content="<p>하루의 운동 계획을 보고, 각 항목을 클릭하여 실시간으로 기록하는 앱입니다. 아래 버튼으로 실행할 수 있습니다.</p>"
+                     data-app-url="./001/">
+                    <h3 class="text-2xl font-bold font-title">Day 1: 인터랙티브 운동 로거</h3>
+                    <p class="text-gray-500 mt-2">2025년 9월 14일</p>
+                    <p class="mt-4">하루의 운동 계획을 실시간으로 기록하는 앱</p>
+                </div>
+                
                 <div class="post-card" 
                      data-title="안녕하세요" 
                      data-date="2025년 6월 20일" 
@@ -114,28 +139,6 @@
                     <p class="text-gray-500 mt-2">2025년 6월 20일</p>
                     <p class="mt-4">드디어 만들었어@</p>
                 </div>
-
-                <div class="post-card app-card"
-                     data-title="Day 1: 인터랙티브 운동 로거"
-                     data-date="2025년 9월 14일"
-                     data-content="<p>하루의 운동 계획을 보고, 각 항목을 클릭하여 실시간으로 기록하는 앱입니다. 아래 버튼으로 실행할 수 있습니다.</p>"
-                     data-app-url="./001/">
-                    <h3 class="text-2xl font-bold font-title">Day 1: 인터랙티브 운동 로거</h3>
-                    <p class="text-gray-500 mt-2">2025년 9월 14일</p>
-                    <p class="mt-4">하루의 운동 계획을 실시간으로 기록하는 앱</p>
-                </div>
-                <div class="post-card app-card"
-                    data-title="Day 2: Lyric Flow"
-                    data-date="2025년 9월 15일"
-                    data-content="노래 가사를 입력하고, 타이밍에 맞게 클릭으로 기록하면,노래방처럼 가사를 볼수 있는 앱입니다. 
-                    목적은 허밍을 통한 노래 연습입니다. "
-                    data-app-url="./002/">
-                    <h3 class="text-2xl font-bold font-title">Day 2: Lyric Flow</h3>
-                    <p class="text-gray-500 mt-2">2025년 9월 15일</p>
-                    <p class="mt-4">노래 가사를 입력하고, 타이밍에 맞게 클릭으로 기록하면,노래방처럼 가사를 볼수 있는 앱입니다. 
-                    목적은 허밍을 통한 노래 연습입니다.</p>
-                </div>
-                <!-- 계시글 추가 -->
 
             </div>
         </div>
@@ -168,7 +171,6 @@
             <h2 id="modal-title" class="text-4xl font-bold font-title mb-2"></h2>
             <p id="modal-date" class="text-gray-500 mb-6"></p>
             <div id="modal-body" class="text-xl leading-relaxed"></div>
-
             <div class="mt-8 text-center">
                 <a id="modal-launch-app-btn" href="#" target="_blank" class="hidden inline-block bg-amber-400 text-gray-800 font-bold py-3 px-8 rounded-full text-xl hover:bg-amber-500 transition transform hover:scale-105">
                     🚀 앱 실행하기
@@ -201,15 +203,12 @@
         postGrid.addEventListener('click', (e) => {
             const card = e.target.closest('.post-card');
             if (!card) return;
-
             const title = card.dataset.title;
             const date = card.dataset.date;
             const content = card.dataset.content;
-
             modalTitle.textContent = title;
             modalDate.textContent = date;
             modalBody.innerHTML = content;
-            
             if (card.classList.contains('app-card')) {
                 const appUrl = card.dataset.appUrl;
                 modalLaunchBtn.href = appUrl;
@@ -217,7 +216,6 @@
             } else {
                 modalLaunchBtn.classList.add('hidden');
             }
-            
             modal.classList.add('is-open');
         });
 
@@ -236,6 +234,21 @@
             if (e.key === 'Escape' && modal.classList.contains('is-open')) {
                 closeModal();
             }
+        });
+
+        document.addEventListener('DOMContentLoaded', () => {
+            const today = new Date();
+            const todayString = `${today.getFullYear()}년 ${today.getMonth() + 1}월 ${today.getDate()}일`;
+            const allCards = document.querySelectorAll('.post-card');
+            allCards.forEach(card => {
+                const cardDate = card.dataset.date.trim();
+                if (cardDate === todayString) {
+                    const newBadge = document.createElement('span');
+                    newBadge.className = 'new-badge';
+                    newBadge.textContent = 'NEW';
+                    card.appendChild(newBadge);
+                }
+            });
         });
     </script>
 </body>
