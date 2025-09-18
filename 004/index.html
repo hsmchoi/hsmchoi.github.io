@@ -86,9 +86,11 @@
         let appState = {};
         let currentView = 'table';
         let itemIdToDelete = null;
+        let editingItemId = null;
         let reportTitleInput, viewSwitchBtn, jsonUploadInput, jsonDownloadBtn, svgExportBtn, mainContent, addItemBtn, svgModal, svgContainer, downloadSvgBtn, mobileInputModal, mobileInputTitle, mobileInputStock, mobileInputField, mobileInputConfirm, confirmModal, confirmCancelBtn, confirmDeleteBtn;
 
         function formatCurrency(number) { return new Intl.NumberFormat('ko-KR').format(number || 0); }
+        
         function render() {
             reportTitleInput.value = appState.meta.title;
             if (currentView === 'table') {
@@ -98,6 +100,7 @@
             }
             attachEventListeners();
         }
+
         function renderTable() {
             let totalInValue = 0, totalOutValue = 0, totalStockValue = 0;
             const tableHTML = `
@@ -142,15 +145,20 @@
                 </div>`;
             mainContent.innerHTML = tableHTML;
         }
+
         function renderMobileView() {
             const mobileHTML = `
                 <div class="mobile-view">
                     ${appState.inventory.map((item, index) => {
                         const stockCurrent = (item.stockPrev || 0) + (item.stockIn || 0) - (item.stockOut || 0);
+                        const nameElement = item.id === editingItemId 
+                            ? `<input type="text" class="mobile-name-input w-full font-bold p-1 border border-blue-500 rounded" value="${item.name}" data-id="${item.id}" autofocus>`
+                            : `<span class="mobile-item-name cursor-pointer">${index + 1}. ${item.name}</span>`;
+
                         return `
-                        <div class="mobile-card">
+                        <div class="mobile-card" data-id="${item.id}">
                             <div class="mobile-card-header">
-                                <span>${index + 1}. ${item.name}</span>
+                                ${nameElement}
                                 <span class="text-lg">재고: ${stockCurrent}</span>
                             </div>
                             <div class="mobile-card-body">
@@ -169,23 +177,54 @@
                 </div>`;
             mainContent.innerHTML = mobileHTML;
         }
-        function updateStateFromUI() {
+
+        function updateStateFromUI(targetInput) {
             appState.meta.title = reportTitleInput.value.trim() || '제목 없음';
-            if (currentView !== 'table') return;
-            const newInventory = [];
-            const rows = mainContent.querySelectorAll('tbody tr');
-            rows.forEach(row => {
-                const id = row.dataset.id;
-                const item = { id };
-                row.querySelectorAll('.table-input').forEach(input => {
-                    const field = input.dataset.field;
-                    const value = input.type === 'number' ? (parseInt(input.value, 10) || 0) : input.value;
-                    item[field] = value;
-                });
-                newInventory.push(item);
-            });
-            appState.inventory = newInventory;
+            if (currentView !== 'table' || !targetInput) return null;
+
+            const row = targetInput.closest('tr');
+            if (!row) return null;
+            
+            const id = row.dataset.id;
+            const item = appState.inventory.find(i => i.id === id);
+
+            if (item) {
+                const field = targetInput.dataset.field;
+                const value = targetInput.type === 'number' ? (parseInt(targetInput.value, 10) || 0) : targetInput.value;
+                item[field] = value;
+            }
+            return id;
         }
+
+        function updateCalculatedFields(itemId) {
+            if (currentView !== 'table') return;
+
+            let totalInValue = 0, totalOutValue = 0, totalStockValue = 0;
+            
+            appState.inventory.forEach(item => {
+                const stockCurrent = (item.stockPrev || 0) + (item.stockIn || 0) - (item.stockOut || 0);
+                const stockValue = stockCurrent * (item.price || 0);
+                totalInValue += (item.stockIn || 0) * (item.price || 0);
+                totalOutValue += (item.stockOut || 0) * (item.price || 0);
+                totalStockValue += stockValue;
+
+                if (item.id === itemId) {
+                    const row = mainContent.querySelector(`tr[data-id="${itemId}"]`);
+                    if (row) {
+                        row.cells[6].textContent = stockCurrent;
+                        row.cells[7].textContent = formatCurrency(stockValue);
+                    }
+                }
+            });
+
+            const footer = mainContent.querySelector('tfoot tr');
+            if (footer) {
+                footer.cells[1].textContent = formatCurrency(totalInValue);
+                footer.cells[2].textContent = formatCurrency(totalOutValue * -1);
+                footer.cells[3].textContent = formatCurrency(totalStockValue);
+            }
+        }
+
         function handleAddItem() {
             const newItem = {
                 id: `item-${Date.now()}-${Math.random()}`,
@@ -194,10 +233,12 @@
             appState.inventory.push(newItem);
             render();
         }
+
         function handleDeleteItem(id) {
             itemIdToDelete = id;
             confirmModal.classList.remove('hidden');
         }
+
         function executeDelete() {
             if (itemIdToDelete) {
                 appState.inventory = appState.inventory.filter(item => item.id !== itemIdToDelete);
@@ -206,6 +247,7 @@
                 render();
             }
         }
+
         function handleJsonUpload(event) {
             const file = event.target.files[0];
             if (!file) return;
@@ -227,8 +269,12 @@
             reader.readAsText(file);
             event.target.value = null;
         }
+
         function handleJsonDownload() {
-            updateStateFromUI();
+            if (currentView === 'table') {
+                const firstInput = mainContent.querySelector('.table-input');
+                if(firstInput) updateStateFromUI(firstInput);
+            }
             appState.meta.lastModified = new Date().toISOString();
             const dataStr = JSON.stringify(appState, null, 2);
             const dataBlob = new Blob([dataStr], { type: 'application/json' });
@@ -242,6 +288,7 @@
             document.body.removeChild(link);
             URL.revokeObjectURL(url);
         }
+
         function generateSVG() {
             const ROW_HEIGHT = 30, PADDING = 10, FONT_SIZE = 12, FONT_FAMILY = "'Noto Sans KR', sans-serif";
             const COL_WIDTHS = [40, 150, 80, 80, 80, 80, 80, 100];
@@ -294,12 +341,17 @@
             currentY += ROW_HEIGHT;
             return `<svg width="${TABLE_WIDTH}" height="${currentY}" xmlns="http://www.w3.org/2000/svg" font-family="${FONT_FAMILY}"><style>text { font-family: 'Noto Sans KR', sans-serif; }</style>${svgContent}</svg>`;
         }
+
         function handleSvgExport() {
-            updateStateFromUI();
+            if (currentView === 'table') {
+                const firstInput = mainContent.querySelector('.table-input');
+                if(firstInput) updateStateFromUI(firstInput);
+            }
             const svgString = generateSVG();
             svgContainer.innerHTML = svgString;
             svgModal.classList.remove('hidden');
         }
+
         function handleDownloadSVG() {
             const svgData = svgContainer.innerHTML;
             const svgBlob = new Blob([svgData], { type: "image/svg+xml;charset=utf-8" });
@@ -313,6 +365,7 @@
             document.body.removeChild(downloadLink);
             URL.revokeObjectURL(svgUrl);
         }
+
         function openMobileInputModal(itemId, type) {
             const item = appState.inventory.find(i => i.id === itemId);
             if (!item) return;
@@ -324,6 +377,7 @@
             mobileInputModal.classList.remove('hidden');
             mobileInputField.focus();
         }
+
         function handleMobileUpdate(itemId, type) {
             const qty = parseInt(mobileInputField.value, 10);
             if (isNaN(qty) || qty <= 0) {
@@ -345,25 +399,63 @@
             mobileInputModal.classList.add('hidden');
             render();
         }
+
         const mainContentListener = (event) => {
             const target = event.target;
+
             if (target.classList.contains('delete-item-btn')) { 
                 handleDeleteItem(target.dataset.id); 
             }
-            if (currentView === 'table' && target.classList.contains('table-input')) {
-                 updateStateFromUI(); 
-                 render(); 
+
+            if (currentView === 'table' && event.type === 'input' && target.classList.contains('table-input')) {
+                 const updatedItemId = updateStateFromUI(target);
+                 if (updatedItemId) {
+                    updateCalculatedFields(updatedItemId);
+                 }
             }
+            
             if (currentView === 'mobile' && target.classList.contains('mobile-update-btn')) {
                  openMobileInputModal(target.dataset.id, target.dataset.type); 
             }
+
+            if (currentView === 'mobile' && target.classList.contains('mobile-item-name')) {
+                const itemId = target.closest('.mobile-card').dataset.id;
+                editingItemId = itemId;
+                render();
+            }
+            
+            if (event.type === 'focusout' && target.classList.contains('mobile-name-input')) {
+                const itemId = target.dataset.id;
+                const item = appState.inventory.find(i => i.id === itemId);
+                if (item) {
+                    item.name = target.value.trim() || "이름 없음";
+                }
+                editingItemId = null;
+                render();
+            }
+
+            if (event.type === 'keydown' && target.classList.contains('mobile-name-input')) {
+                if (event.key === 'Enter') {
+                    target.blur();
+                } else if (event.key === 'Escape') {
+                    editingItemId = null;
+                    render();
+                }
+            }
         };
+
         function attachEventListeners() {
             mainContent.removeEventListener('click', mainContentListener);
             mainContent.removeEventListener('input', mainContentListener);
+            mainContent.removeEventListener('focusout', mainContentListener);
+            mainContent.removeEventListener('keydown', mainContentListener);
+
             mainContent.addEventListener('click', mainContentListener);
             mainContent.addEventListener('input', mainContentListener);
+            mainContent.addEventListener('focusout', mainContentListener);
+            mainContent.addEventListener('keydown', mainContentListener);
         }
+
         function init() {
             reportTitleInput = document.getElementById('report-title');
             viewSwitchBtn = document.getElementById('view-switch-btn');
@@ -388,19 +480,25 @@
                 meta: { title: "월별 재고 관리", lastModified: new Date().toISOString() },
                 inventory: []
             };
+
             render();
+
             addItemBtn.addEventListener('click', handleAddItem);
             jsonUploadInput.addEventListener('change', handleJsonUpload);
             jsonDownloadBtn.addEventListener('click', handleJsonDownload);
             svgExportBtn.addEventListener('click', handleSvgExport);
+            
             viewSwitchBtn.addEventListener('click', () => {
+                editingItemId = null;
                 currentView = currentView === 'table' ? 'mobile' : 'table';
                 viewSwitchBtn.textContent = currentView === 'table' ? '모바일 뷰' : '테이블 뷰';
                 render();
             });
+
             document.querySelectorAll('.modal-close-btn').forEach(btn => {
                 btn.addEventListener('click', () => btn.closest('.modal-overlay').classList.add('hidden'));
             });
+
             downloadSvgBtn.addEventListener('click', handleDownloadSVG);
             reportTitleInput.addEventListener('change', () => { appState.meta.title = reportTitleInput.value.trim(); });
             confirmDeleteBtn.addEventListener('click', executeDelete);
@@ -413,5 +511,3 @@
     </script>
 </body>
 </html>
-
-
