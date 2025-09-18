@@ -31,6 +31,8 @@
         .mobile-card-actions { display: flex; gap: 0.5rem; margin-top: 0.5rem; }
         .mobile-card-actions button { flex-grow: 1; }
         #mobile-input-modal .modal-content { max-width: 300px; }
+        
+        /* Tutorial Styles */
         #tutorial-highlight { position: fixed; border-radius: 0.375rem; box-shadow: 0 0 0 9999px rgba(0, 0, 0, 0.6); z-index: 9998; transition: all 0.3s ease-in-out; }
         #tutorial-tooltip { position: fixed; background-color: white; padding: 1rem; border-radius: 0.5rem; z-index: 9999; width: 300px; box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1); transition: all 0.3s ease-in-out; }
         #tutorial-tooltip h3 { font-size: 1.125rem; font-weight: bold; margin-bottom: 0.5rem; }
@@ -60,6 +62,7 @@
         </div>
     </div>
 
+    <!-- Modals -->
     <div id="svg-modal" class="modal-overlay hidden">
         <div class="modal-content">
             <h2 class="text-lg sm:text-xl font-bold mb-4">이미지/데이터 미리보기</h2>
@@ -95,6 +98,7 @@
         </div>
     </div>
 
+    <!-- Tutorial UI -->
     <div id="tutorial-highlight" class="hidden"></div>
     <div id="tutorial-tooltip" class="hidden">
         <h3 id="tutorial-title" class="text-gray-800"></h3>
@@ -115,9 +119,11 @@
         let itemIdToDelete = null;
         let editingItemId = null;
         let reportTitleInput, viewSwitchBtn, jsonUploadInput, jsonDownloadBtn, svgExportBtn, mainContent, addItemBtn, svgModal, svgContainer, downloadSvgBtn, downloadPngBtn, copyExcelDataBtn, printPdfBtn, mobileInputModal, mobileInputTitle, mobileInputStock, mobileInputField, mobileInputConfirm, confirmModal, confirmCancelBtn, confirmDeleteBtn, nextMonthBtn, clearStockInBtn, clearStockOutBtn;
+        
         let startTutorialBtn, tutorialHighlight, tutorialTooltip, tutorialTitle, tutorialContent, tutorialStepCounter, tutorialPrevBtn, tutorialNextBtn, tutorialEndBtn;
         let tutorialActive = false;
         let currentTutorialStep = 0;
+
         const tutorialSteps = [
             { element: '#add-item-btn', title: '1. 품목 추가', content: '이 버튼을 눌러 재고를 관리할 새로운 품목을 표에 추가할 수 있습니다.', position: 'top', action: () => { if (appState.inventory.length === 0) handleAddItem(); } },
             { element: '.inventory-table tbody tr:first-child .table-input[data-field="name"]', title: '2. 정보 입력', content: '추가된 품목의 이름, 단가, 재고 등을 표에서 직접 수정할 수 있습니다. 모든 변경사항은 자동으로 계산에 반영됩니다.', position: 'bottom' },
@@ -126,7 +132,9 @@
             { element: '#svg-export-btn', title: '5. 보고서 출력', content: '현재 재고 현황을 인쇄하거나 이미지, 데이터 등 다양한 형식으로 내보낼 수 있습니다.', position: 'bottom' },
             { element: '#start-tutorial-btn', title: '6. 튜토리얼 종료', content: '이제 모든 준비가 끝났습니다! 이 버튼을 다시 눌러 언제든지 튜토리얼을 다시 시작할 수 있습니다. 마음껏 사용해보세요!', position: 'bottom' }
         ];
+
         function formatCurrency(number) { return new Intl.NumberFormat('ko-KR').format(number || 0); }
+        
         function render() {
             reportTitleInput.value = appState.meta.title;
             if (currentView === 'table') {
@@ -136,6 +144,7 @@
             }
             attachEventListeners();
         }
+
         function renderTable() {
             let totalInValue = 0, totalOutValue = 0, totalStockValue = 0;
             const tableHTML = `
@@ -180,6 +189,7 @@
                 </div>`;
             mainContent.innerHTML = tableHTML;
         }
+
         function renderMobileView() {
              const mobileHTML = `
                 <div class="mobile-view">
@@ -188,6 +198,7 @@
                         const nameElement = item.id === editingItemId 
                             ? `<input type="text" class="mobile-name-input w-full font-bold p-1 border border-blue-500 rounded" value="${item.name}" data-id="${item.id}" autofocus>`
                             : `<span class="mobile-item-name cursor-pointer">${index + 1}. ${item.name}</span>`;
+
                         return `
                         <div class="mobile-card" data-id="${item.id}">
                             <div class="mobile-card-header">
@@ -210,6 +221,7 @@
                 </div>`;
             mainContent.innerHTML = mobileHTML;
         }
+
         function updateStateFromUI(targetInput) {
             appState.meta.title = reportTitleInput.value.trim() || '제목 없음';
             if (currentView !== 'table' || !targetInput) return null;
@@ -224,6 +236,7 @@
             }
             return id;
         }
+
         function updateCalculatedFields(itemId) {
             if (currentView !== 'table') return;
             let totalInValue = 0, totalOutValue = 0, totalStockValue = 0;
@@ -248,6 +261,7 @@
                 footer.cells[3].textContent = formatCurrency(totalStockValue);
             }
         }
+
         function handleAddItem() { const newItem = { id: `item-${Date.now()}-${Math.random()}`, name: "새 품목", price: 0, stockPrev: 0, stockIn: 0, stockOut: 0 }; appState.inventory.push(newItem); render(); }
         function handleDeleteItem(id) { itemIdToDelete = id; confirmModal.classList.remove('hidden'); }
         function executeDelete() { if (itemIdToDelete) { appState.inventory = appState.inventory.filter(item => item.id !== itemIdToDelete); itemIdToDelete = null; confirmModal.classList.add('hidden'); render(); } }
@@ -257,6 +271,7 @@
         function handleSvgExport() { if (currentView === 'table') { const firstInput = mainContent.querySelector('.table-input'); if(firstInput) updateStateFromUI(firstInput); } const svgString = generateSVG(); svgContainer.innerHTML = svgString; svgModal.classList.remove('hidden'); }
         function handleDownloadSVG() { const svgData = svgContainer.innerHTML; const svgBlob = new Blob([svgData], { type: "image/svg+xml;charset=utf-8" }); const svgUrl = URL.createObjectURL(svgBlob); const downloadLink = document.createElement("a"); downloadLink.href = svgUrl; const safeTitle = appState.meta.title.replace(/[^a-z0-9]/gi, '_').toLowerCase(); downloadLink.download = `${safeTitle || 'inventory'}.svg`; document.body.appendChild(downloadLink); downloadLink.click(); document.body.removeChild(downloadLink); URL.revokeObjectURL(svgUrl); }
         function handleDownloadPNG() { const svgData = svgContainer.innerHTML; const canvas = document.createElement('canvas'); const ctx = canvas.getContext('2d'); const img = new Image(); const svgBlob = new Blob([svgData], { type: 'image/svg+xml;charset=utf-8' }); const url = URL.createObjectURL(svgBlob); img.onload = function() { canvas.width = img.width; canvas.height = img.height; ctx.drawImage(img, 0, 0); URL.revokeObjectURL(url); const pngUrl = canvas.toDataURL('image/png'); const downloadLink = document.createElement("a"); downloadLink.href = pngUrl; const safeTitle = appState.meta.title.replace(/[^a-z0-9]/gi, '_').toLowerCase(); downloadLink.download = `${safeTitle || 'inventory'}.png`; document.body.appendChild(downloadLink); downloadLink.click(); document.body.removeChild(downloadLink); }; img.src = url; }
+        
         function handleExportForExcel() {
             const headers = ['번호', '품목', '단가', '이전 재고', '입고', '출고', '현재 재고', '재고 금액'];
             let tsvContent = headers.join('\t') + '\n';
@@ -279,6 +294,7 @@
                 alert('클립보드 복사에 실패했습니다.');
             });
         }
+
         function handlePrint() {
             const title = appState.meta.title || '재고 관리';
             let totalInValue = 0, totalOutValue = 0, totalStockValue = 0;
@@ -352,6 +368,7 @@
             printFrame.contentWindow.print();
             document.body.removeChild(printFrame);
         }
+
         function openMobileInputModal(itemId, type) { const item = appState.inventory.find(i => i.id === itemId); if (!item) return; const stockCurrent = (item.stockPrev || 0) + (item.stockIn || 0) - (item.stockOut || 0); mobileInputTitle.textContent = `${item.name} - ${type === 'in' ? '입고' : '출고'} 수량`; mobileInputStock.textContent = `현재 재고: ${stockCurrent}`; mobileInputField.value = ''; mobileInputConfirm.onclick = () => handleMobileUpdate(itemId, type); mobileInputModal.classList.remove('hidden'); mobileInputField.focus(); }
         function handleMobileUpdate(itemId, type) { const qty = parseInt(mobileInputField.value, 10); if (isNaN(qty) || qty <= 0) { mobileInputModal.classList.add('hidden'); return; } const item = appState.inventory.find(i => i.id === itemId); if (!item) return; if (type === 'in') { item.stockIn = (item.stockIn || 0) + qty; } else if (type === 'out') { const stockCurrent = (item.stockPrev || 0) + (item.stockIn || 0) - (item.stockOut || 0); if (qty > stockCurrent) { alert(`재고가 부족합니다. (현재 재고: ${stockCurrent})`); return; } item.stockOut = (item.stockOut || 0) + qty; } mobileInputModal.classList.add('hidden'); render(); }
         function handleNextMonth() { appState.inventory.forEach(item => { const currentStock = (item.stockPrev || 0) + (item.stockIn || 0) - (item.stockOut || 0); item.stockPrev = currentStock; item.stockIn = 0; item.stockOut = 0; }); render(); }
@@ -363,6 +380,7 @@
         function endTutorial() { tutorialActive = false; tutorialHighlight.classList.add('hidden'); tutorialTooltip.classList.add('hidden'); window.removeEventListener('resize', updateTutorialPosition); }
         function showStep(index) { if (index < 0 || index >= tutorialSteps.length) { endTutorial(); return; } const step = tutorialSteps[index]; const targetElement = document.querySelector(step.element); if (!targetElement) { console.warn(`Tutorial element not found: ${step.element}`); currentTutorialStep++; showStep(currentTutorialStep); return; } const rect = targetElement.getBoundingClientRect(); tutorialHighlight.style.left = `${rect.left - 4}px`; tutorialHighlight.style.top = `${rect.top - 4}px`; tutorialHighlight.style.width = `${rect.width + 8}px`; tutorialHighlight.style.height = `${rect.height + 8}px`; const tooltipRect = tutorialTooltip.getBoundingClientRect(); if (step.position === 'bottom') { tutorialTooltip.style.top = `${rect.bottom + 10}px`; tutorialTooltip.style.left = `${rect.left + rect.width / 2 - tooltipRect.width / 2}px`; } else if (step.position === 'top') { tutorialTooltip.style.top = `${rect.top - tooltipRect.height - 10}px`; tutorialTooltip.style.left = `${rect.left + rect.width / 2 - tooltipRect.width / 2}px`; } const tooltipLeft = parseFloat(tutorialTooltip.style.left); if(tooltipLeft < 10) tutorialTooltip.style.left = '10px'; if(tooltipLeft + tooltipRect.width > window.innerWidth - 10) tutorialTooltip.style.left = `${window.innerWidth - tooltipRect.width - 10}px`; tutorialTitle.textContent = step.title; tutorialContent.textContent = step.content; tutorialStepCounter.textContent = `(${index + 1}/${tutorialSteps.length})`; tutorialPrevBtn.disabled = index === 0; tutorialNextBtn.textContent = index === tutorialSteps.length - 1 ? '완료' : '다음'; tutorialHighlight.classList.remove('hidden'); tutorialTooltip.classList.remove('hidden'); }
         function updateTutorialPosition() { if (tutorialActive) { showStep(currentTutorialStep); } }
+
         function init() {
             reportTitleInput = document.getElementById('report-title');
             viewSwitchBtn = document.getElementById('view-switch-btn');
@@ -388,6 +406,7 @@
             nextMonthBtn = document.getElementById('next-month-btn');
             clearStockInBtn = document.getElementById('clear-stock-in-btn');
             clearStockOutBtn = document.getElementById('clear-stock-out-btn');
+            
             startTutorialBtn = document.getElementById('start-tutorial-btn');
             tutorialHighlight = document.getElementById('tutorial-highlight');
             tutorialTooltip = document.getElementById('tutorial-tooltip');
@@ -397,8 +416,10 @@
             tutorialPrevBtn = document.getElementById('tutorial-prev-btn');
             tutorialNextBtn = document.getElementById('tutorial-next-btn');
             tutorialEndBtn = document.getElementById('tutorial-end-btn');
+
             appState = { meta: { title: "월별 재고 관리", lastModified: new Date().toISOString() }, inventory: [] };
             render();
+
             addItemBtn.addEventListener('click', handleAddItem);
             jsonUploadInput.addEventListener('change', handleJsonUpload);
             jsonDownloadBtn.addEventListener('click', handleJsonDownload);
@@ -415,6 +436,7 @@
             reportTitleInput.addEventListener('change', () => { appState.meta.title = reportTitleInput.value.trim(); });
             confirmDeleteBtn.addEventListener('click', executeDelete);
             confirmCancelBtn.addEventListener('click', () => { itemIdToDelete = null; confirmModal.classList.add('hidden'); });
+
             startTutorialBtn.addEventListener('click', startTutorial);
             tutorialEndBtn.addEventListener('click', endTutorial);
             tutorialNextBtn.addEventListener('click', () => { currentTutorialStep++; showStep(currentTutorialStep); });
