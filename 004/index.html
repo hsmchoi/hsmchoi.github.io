@@ -6,17 +6,23 @@
     <title>재고 관리 도구</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;700&display=swap" rel="stylesheet">
-    <!-- Google Material Symbols for Icons -->
-    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200" />
     <style>
         body { font-family: 'Noto Sans KR', sans-serif; background-color: #f9fafb; }
-        .control-button { padding: 0.5rem; border: 1px solid #4b5563; border-radius: 0.375rem; font-weight: 500; background-color: #fff; cursor: pointer; transition: all 0.2s; box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.05); display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 0.25rem; height: 100%; min-width: 60px; }
-        .control-button .material-symbols-outlined { font-size: 24px; }
-        .control-button span.label { font-size: 11px; font-weight: 500; white-space: nowrap; }
-        @media (min-width: 640px) {
-            .control-button { padding: 0.5rem 1rem; flex-direction: row; }
-            .control-button .material-symbols-outlined { font-size: 20px; }
-            .control-button span.label { font-size: 14px; }
+        .control-button { 
+            padding: 0.75rem 1rem; 
+            border: 1px solid #4b5563; 
+            border-radius: 0.375rem; 
+            font-weight: 700; /* Bolder font */
+            font-size: 1rem; /* Larger font size */
+            background-color: #fff; 
+            cursor: pointer; 
+            transition: all 0.2s; 
+            box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.05); 
+            display: flex; 
+            align-items: center; 
+            justify-content: center;
+            text-align: center;
+            min-width: 120px;
         }
         .control-button:hover:not(:disabled) { background-color: #f3f4f6; border-color: #1f2937; }
         .control-button:disabled { cursor: not-allowed; opacity: 0.5; }
@@ -40,19 +46,19 @@
             <input type="text" id="report-title" class="text-xl sm:text-2xl md:text-3xl font-bold text-gray-800 text-center w-full border-b-2 border-transparent focus:border-blue-500 outline-none p-2" value="월별 재고 관리">
         </header>
         <div class="flex flex-wrap justify-center items-center mb-6 gap-2 md:gap-4">
-            <button id="start-tutorial-btn" class="control-button primary-button"><span class="material-symbols-outlined">school</span><span class="label">튜토리얼</span></button>
-            <button id="view-switch-btn" class="control-button"><span class="material-symbols-outlined">grid_view</span><span class="label">뷰 전환</span></button>
-            <button id="next-month-btn" class="control-button"><span class="material-symbols-outlined">arrow_forward</span><span class="label">다음달</span></button>
-            <button id="clear-stock-in-btn" class="control-button danger-button"><span class="material-symbols-outlined">inventory</span><span class="label">입고 초기화</span></button>
-            <button id="clear-stock-out-btn" class="control-button danger-button"><span class="material-symbols-outlined">local_shipping</span><span class="label">출고 초기화</span></button>
-            <label for="json-upload-input" class="control-button"><span class="material-symbols-outlined">upload_file</span><span class="label">불러오기</span></label>
+            <button id="start-tutorial-btn" class="control-button primary-button">튜토리얼</button>
+            <button id="view-switch-btn" class="control-button">뷰 전환</button>
+            <button id="next-month-btn" class="control-button">다음달</button>
+            <button id="clear-stock-in-btn" class="control-button danger-button">입고 초기화</button>
+            <button id="clear-stock-out-btn" class="control-button danger-button">출고 초기화</button>
+            <label for="json-upload-input" class="control-button">불러오기</label>
             <input type="file" id="json-upload-input" class="hidden" accept=".json">
-            <button id="json-download-btn" class="control-button"><span class="material-symbols-outlined">save</span><span class="label">저장하기</span></button>
-            <button id="svg-export-btn" class="control-button"><span class="material-symbols-outlined">ios_share</span><span class="label">내보내기</span></button>
+            <button id="json-download-btn" class="control-button">저장하기</button>
+            <button id="svg-export-btn" class="control-button">내보내기</button>
         </div>
         <main id="main-content"></main>
         <div class="mt-6 flex justify-center">
-            <button id="add-item-btn" class="control-button"><span class="material-symbols-outlined">add</span><span class="label">품목 추가</span></button>
+            <button id="add-item-btn" class="control-button">품목 추가</button>
         </div>
     </div>
 
@@ -61,11 +67,11 @@
             <h2 class="text-lg sm:text-xl font-bold mb-4">내보내기</h2>
             <div id="svg-container" class="border border-gray-300 mb-4 bg-gray-100 p-1 sm:p-4 overflow-auto"></div>
             <div class="grid grid-cols-2 sm:grid-cols-5 gap-2 text-center">
-                <button class="control-button modal-close-btn col-span-2 sm:col-span-1"><span class="material-symbols-outlined">close</span><span class="label">닫기</span></button>
-                <button id="download-pdf-btn" class="control-button primary-button"><span class="material-symbols-outlined">picture_as_pdf</span><span class="label">PDF</span></button>
-                <button id="download-png-btn" class="control-button"><span class="material-symbols-outlined">image</span><span class="label">PNG</span></button>
-                <button id="download-svg-btn" class="control-button"><span class="material-symbols-outlined">code</span><span class="label">SVG</span></button>
-                <button id="copy-excel-data-btn" class="control-button"><span class="material-symbols-outlined">table_view</span><span class="label">Excel</span></button>
+                <button class="control-button modal-close-btn col-span-2 sm:col-span-1">닫기</button>
+                <button id="download-pdf-btn" class="control-button primary-button">인쇄(PDF)</button>
+                <button id="download-png-btn" class="control-button">사진(PNG)</button>
+                <button id="download-svg-btn" class="control-button">SVG</button>
+                <button id="copy-excel-data-btn" class="control-button">Excel</button>
             </div>
         </div>
     </div>
@@ -161,7 +167,7 @@
                                         <td><input type="number" class="table-input text-right" data-field="stockOut" value="${item.stockOut || ''}" placeholder="0"></td>
                                         <td class="font-bold text-right">${stockCurrent}</td>
                                         <td class="text-right">${formatCurrency(stockValue)}</td>
-                                        <td><button class="control-button danger-button delete-item-btn" data-id="${item.id}"><span class="material-symbols-outlined !text-base">delete</span></button></td>
+                                        <td><button class="control-button danger-button delete-item-btn" data-id="${item.id}">삭제</button></td>
                                     </tr>`;
                             }).join('')}
                         </tbody>
