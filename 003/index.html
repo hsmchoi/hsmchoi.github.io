@@ -8,22 +8,23 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Gaegu:wght@400;700&display=swap" rel="stylesheet">
     <style>
-        /* --- 기본 스타일 --- */
         :root {
             --bg-color: #F8F5EF;
             --primary-color: #A3B899;
             --secondary-color: #D3C4B3;
             --text-color: #5D5551;
             --water-color: #A7C7E7;
-            --pot-color: #C19A6B;
+            --danger-color: #E57373;
+            --info-color: #64B5F6;
+            --card-bg-color: #FFFFFF;
+            --star-selected-color: #FFD700;
         }
-
         * {
             box-sizing: border-box;
             margin: 0;
             padding: 0;
+            -webkit-tap-highlight-color: transparent;
         }
-
         body {
             font-family: 'Gaegu', cursive;
             background-color: var(--bg-color);
@@ -33,684 +34,408 @@
             align-items: center;
             padding: 20px;
             min-height: 100vh;
-            -webkit-tap-highlight-color: transparent; /* 모바일 터치 하이라이트 제거 */
         }
-
-        /* --- 헤더 --- */
-        header {
-            text-align: center;
-            margin-bottom: 30px;
-        }
-
-        h1 {
-            font-size: 2.5rem;
-            font-weight: 700;
-        }
-
-        header p {
-            font-size: 1.2rem;
-            margin-top: 5px;
-        }
-
-        /* --- 메인 컨텐츠 영역 --- */
-        main {
-            width: 100%;
-            max-width: 1000px;
-        }
-
-        .section-title {
-            font-size: 1.5rem;
-            border-bottom: 2px solid var(--secondary-color);
-            padding-bottom: 5px;
-            margin-bottom: 20px;
-        }
-        
-        /* --- 숲 영역 (성장 완료) --- */
-        #forest-container {
-            display: flex;
-            flex-wrap: wrap;
-            align-items: flex-end;
-            justify-content: center;
-            padding: 20px 10px;
-            min-height: 200px;
-            background-color: #FFFFFF;
-            border-radius: 20px;
-            box-shadow: 0 4px 10px rgba(0,0,0,0.05);
-            margin-bottom: 30px;
-        }
-
-        .tree {
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            margin: 0 10px;
-            text-align: center;
-            animation: grow-in 0.5s ease-out;
-        }
-
-        .tree-name {
-            font-size: 1rem;
-            margin-top: 5px;
-            background-color: var(--bg-color);
-            padding: 2px 8px;
-            border-radius: 10px;
-        }
-        
-        /* --- 화분 영역 (성장 중) --- */
-        #pots-container {
-            display: grid;
-            grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
-            gap: 20px;
-            padding: 10px;
-        }
-
-        .pot {
-            background-color: #FFFFFF;
-            border-radius: 20px;
-            padding: 15px;
-            box-shadow: 0 4px 10px rgba(0,0,0,0.05);
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            text-align: center;
-            transition: transform 0.2s ease-in-out;
-        }
-
-        .pot-name {
-            font-size: 1.2rem;
-            font-weight: 700;
-            margin-bottom: 10px;
-            word-break: break-all;
-        }
-
-        .plant-visual {
-            width: 100%;
-            height: 100px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            margin-bottom: 15px;
-        }
-        
-        /* --- 물주기 버튼 --- */
-        .water-btn {
-            font-family: 'Gaegu', cursive;
-            font-size: 1.1rem;
-            padding: 8px 16px;
-            border: none;
-            background-color: var(--water-color);
-            color: white;
-            border-radius: 15px;
-            cursor: pointer;
-            transition: background-color 0.2s, transform 0.1s;
-        }
-
-        .water-btn:hover {
-            background-color: #8ab0d6;
-        }
-
-        .water-btn:active {
-            transform: scale(0.95);
-        }
-
-        .water-btn[disabled] {
-            background-color: var(--secondary-color);
-            cursor: not-allowed;
-        }
-        
-        /* --- 씨앗 심기 버튼 (고정) --- */
-        #add-seed-btn {
-            position: fixed;
-            bottom: 30px;
-            right: 30px;
-            width: 60px;
-            height: 60px;
-            background-color: var(--primary-color);
-            color: white;
-            border: none;
-            border-radius: 50%;
-            font-size: 2.5rem;
-            line-height: 60px;
-            text-align: center;
-            box-shadow: 0 4px 12px rgba(0,0,0,0.15);
-            cursor: pointer;
-            transition: transform 0.2s, background-color 0.2s;
-        }
-
-        #add-seed-btn:hover {
-            transform: scale(1.1);
-            background-color: #8fa884;
-        }
-
-        #add-seed-btn:active {
-            transform: scale(1.0);
-        }
-
-        /* --- 모달 창 --- */
-        #modal-backdrop {
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background-color: rgba(0,0,0,0.4);
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            z-index: 100;
-            opacity: 0;
-            pointer-events: none;
-            transition: opacity 0.3s ease;
-        }
-
-        #modal-backdrop.visible {
-            opacity: 1;
-            pointer-events: auto;
-        }
-        
-        #modal-content {
-            background-color: white;
-            padding: 30px;
-            border-radius: 20px;
-            width: 90%;
-            max-width: 400px;
-            text-align: center;
-            transform: scale(0.9);
-            transition: transform 0.3s ease;
-        }
-
-        #modal-backdrop.visible #modal-content {
-            transform: scale(1);
-        }
-
-        #modal-content h2 {
-            margin-bottom: 20px;
-        }
-
-        #seed-name-input {
-            font-family: 'Gaegu', cursive;
-            width: 100%;
-            padding: 10px;
-            font-size: 1.2rem;
-            border: 2px solid var(--secondary-color);
-            border-radius: 10px;
-            margin-bottom: 20px;
-        }
-
-        #modal-buttons button {
-            font-family: 'Gaegu', cursive;
-            font-size: 1.1rem;
-            padding: 10px 20px;
-            border: none;
-            border-radius: 15px;
-            cursor: pointer;
-            margin: 0 5px;
-        }
-
-        #confirm-add-seed {
-            background-color: var(--primary-color);
-            color: white;
-        }
-
-        #cancel-add-seed {
-            background-color: #eee;
-        }
-
-        /* --- 애니메이션 --- */
-        @keyframes grow-in {
-            from {
-                opacity: 0;
-                transform: scale(0.5);
-            }
-            to {
-                opacity: 1;
-                transform: scale(1);
-            }
-        }
-        
-        /* --- 안내 메시지 --- */
-        .empty-message {
-            width: 100%;
-            text-align: center;
-            padding: 40px 20px;
-            font-size: 1.2rem;
-        }
-
-        /* --- 튜토리얼 --- */
-        #tutorial-backdrop {
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background-color: rgba(0,0,0,0.6);
-            z-index: 101;
-            display: none; /* 초기에는 숨김 */
-            justify-content: center;
-            align-items: center;
-            opacity: 0;
-            transition: opacity 0.3s ease;
-        }
-
-        #tutorial-backdrop.visible {
-            display: flex;
-            opacity: 1;
-        }
-
-        .tutorial-highlight {
-            position: relative !important;
-            z-index: 102 !important;
-            border-radius: 10px;
-            box-shadow: 0 0 0 9999px rgba(0, 0, 0, 0.6);
-            transition: box-shadow 0.3s ease-in-out;
-        }
-
-        #tutorial-box {
-            position: absolute;
-            background-color: white;
-            padding: 20px;
-            border-radius: 15px;
-            width: 90%;
-            max-width: 350px;
-            box-shadow: 0 5px 15px rgba(0,0,0,0.2);
-            z-index: 103;
-            transition: top 0.4s ease, left 0.4s ease; /* transform 애니메이션 제거 */
-        }
-
-        #tutorial-text {
-            font-size: 1.2rem;
-            line-height: 1.6;
-            margin-bottom: 20px;
-        }
-
-        #tutorial-buttons {
-            display: flex;
-            justify-content: flex-end;
-        }
-
-        #tutorial-buttons button {
-            font-family: 'Gaegu', cursive;
-            font-size: 1rem;
-            padding: 8px 16px;
-            border: none;
-            border-radius: 10px;
-            cursor: pointer;
-            margin-left: 10px;
-        }
-
-        #next-tutorial-btn {
-            background-color: var(--primary-color);
-            color: white;
-        }
-
-        #skip-tutorial-btn {
-            background-color: #eee;
+        header { text-align: center; margin-bottom: 30px; }
+        h1 { font-size: 2.5rem; font-weight: 700; }
+        header p { font-size: 1.2rem; margin-top: 5px; }
+        main { width: 100%; max-width: 1000px; display: flex; flex-direction: column; gap: 30px; }
+        .section-title { font-size: 1.5rem; border-bottom: 2px solid var(--secondary-color); padding-bottom: 5px; margin-bottom: 20px; }
+        .section-description { font-size: 1.1rem; margin-bottom: 20px; color: #7d7773; }
+        .card { background-color: var(--card-bg-color); border-radius: 20px; padding: 20px; box-shadow: 0 4px 10px rgba(0,0,0,0.05); }
+        .action-btn { font-family: 'Gaegu', cursive; font-size: 1.1rem; padding: 10px 20px; border: none; color: white; border-radius: 15px; cursor: pointer; transition: background-color 0.2s, transform 0.1s; }
+        .action-btn:hover { opacity: 0.9; }
+        .action-btn:active { transform: scale(0.95); }
+        .action-btn[disabled] { background-color: var(--secondary-color); cursor: not-allowed; }
+        #foundation-cards-container { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 20px; }
+        .foundation-card { cursor: pointer; text-align: center; transition: transform 0.2s, box-shadow 0.2s; }
+        .foundation-card:hover { transform: translateY(-5px); box-shadow: 0 8px 15px rgba(0,0,0,0.08); }
+        .foundation-card .emoji { font-size: 2.5rem; margin-bottom: 10px; }
+        .foundation-card .name { font-size: 1.4rem; font-weight: 700; margin-bottom: 5px; }
+        .foundation-card .description { font-size: 1rem; }
+        .log-input-group { margin-bottom: 15px; }
+        .log-input-group label { display: block; margin-bottom: 5px; font-size: 1.2rem; }
+        .rating-stars { font-size: 2rem; cursor: pointer; }
+        .rating-stars span { transition: color 0.2s; }
+        .rating-stars span:hover, .rating-stars span.selected { color: var(--star-selected-color); }
+        .habit-checklist { display: flex; flex-wrap: wrap; gap: 10px; }
+        .habit-check { display: flex; align-items: center; gap: 5px; font-size: 1.1rem; }
+        #analysis-results .habit-result { margin-bottom: 15px; }
+        #analysis-results .habit-result p { margin-left: 1.5em; }
+        #analysis-results .comparison { font-size: 0.9rem; color: #7d7773; }
+        #pots-container, #forest-container { display: flex; flex-wrap: wrap; align-items: flex-end; justify-content: center; padding: 20px 10px; min-height: 150px; }
+        .pot { display: flex; flex-direction: column; align-items: center; text-align: center; margin: 10px; }
+        .pot-name { font-size: 1.2rem; font-weight: 700; margin-bottom: 10px; word-break: break-all; }
+        .tree { display: flex; flex-direction: column; align-items: center; margin: 0 10px; text-align: center; animation: grow-in 0.5s ease-out; }
+        .tree-name { font-size: 1rem; margin-top: 5px; background-color: var(--bg-color); padding: 2px 8px; border-radius: 10px; }
+        .water-btn { background-color: var(--water-color); }
+        #add-seed-btn { position: fixed; bottom: 30px; right: 30px; width: 60px; height: 60px; background-color: var(--primary-color); font-size: 2.5rem; line-height: 60px; text-align: center; box-shadow: 0 4px 12px rgba(0,0,0,0.15); border-radius: 50%; }
+        .modal-backdrop { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background-color: rgba(0,0,0,0.4); display: flex; justify-content: center; align-items: center; z-index: 100; opacity: 0; pointer-events: none; transition: opacity 0.3s ease; }
+        .modal-backdrop.visible { opacity: 1; pointer-events: auto; }
+        .modal-content { transform: scale(0.9); transition: transform 0.3s ease; }
+        .modal-backdrop.visible .modal-content { transform: scale(1); }
+        .modal-content h2 { margin-bottom: 15px; }
+        .modal-content h3 { margin-top: 15px; margin-bottom: 5px; border-bottom: 1px solid var(--secondary-color); padding-bottom: 2px; }
+        .modal-buttons { margin-top: 20px; display: flex; justify-content: flex-end; gap: 10px; }
+        .modal-buttons button { padding: 10px 20px; margin: 0 5px; }
+        @keyframes grow-in { from { opacity: 0; transform: scale(0.5); } to { opacity: 1; transform: scale(1); } }
+        .empty-message { width: 100%; text-align: center; padding: 40px 20px; font-size: 1.2rem; }
+        @media (max-width: 640px) {
+            body { padding: 10px; }
+            header { margin-bottom: 20px; }
+            h1 { font-size: 1.8rem; }
+            header p { font-size: 1rem; }
+            .section-title { font-size: 1.3rem; }
+            .card { padding: 15px; }
+            #foundation-cards-container { grid-template-columns: 1fr; }
+            .foundation-card .name { font-size: 1.2rem; }
+            .foundation-card .description { font-size: 0.9rem; }
+            #add-seed-btn { width: 50px; height: 50px; font-size: 2rem; line-height: 48px; bottom: 15px; right: 15px; }
+            .modal-content { padding: 20px; }
+            .modal-content h2 { font-size: 1.5rem; }
         }
     </style>
 </head>
 <body>
-
-    <header>
-        <h1>마이 포레스트</h1>
-        <p>당신의 작은 씨앗이 숲을 이루는 곳</p>
-    </header>
-
+    <header><h1>마이 포레스트</h1><p>당신의 작은 씨앗이 숲을 이루는 곳</p></header>
     <main>
-        <h2 class="section-title">🌳 나의 숲</h2>
-        <div id="forest-container">
-             <!-- 성장 완료한 나무들이 여기에 표시됩니다. -->
-        </div>
-
-        <h2 class="section-title">🌱 자라나는 씨앗들</h2>
-        <div id="pots-container">
-            <!-- 성장 중인 화분들이 여기에 표시됩니다. -->
-        </div>
-    </main>
-    
-    <button id="add-seed-btn" title="씨앗 심기">+</button>
-
-    <!-- 씨앗 심기 모달 -->
-    <div id="modal-backdrop">
-        <div id="modal-content">
-            <h2>어떤 씨앗을 심을까요?</h2>
-            <input type="text" id="seed-name-input" placeholder="예: 매일 책 10쪽 읽기" maxlength="30">
-            <div id="modal-buttons">
-                <button id="cancel-add-seed">취소</button>
-                <button id="confirm-add-seed">심기</button>
+        <section id="foundation-section">
+            <h2 class="section-title">🚀 1단계: 기반 다지기</h2>
+            <p class="section-description">삶의 질을 결정하는 가장 중요한 4가지 습관입니다. 카드를 눌러 자세히 알아보세요.</p>
+            <div id="foundation-cards-container" class="card"></div>
+        </section>
+        <section id="log-section" class="card">
+            <h2 class="section-title">📊 2단계: 자기 분석 로그</h2>
+            <p class="section-description">매일의 상태를 기록하여 어떤 습관이 나에게 가장 효과적인지 발견해보세요.</p>
+            <div class="log-input-group">
+                <label>오늘의 수면의 질은?</label>
+                <div class="rating-stars" data-metric="sleep"><span>⭐</span><span>⭐</span><span>⭐</span><span>⭐</span><span>⭐</span></div>
             </div>
-        </div>
-    </div>
-
-    <!-- 튜토리얼 오버레이 -->
-    <div id="tutorial-backdrop">
-        <div id="tutorial-box">
-            <p id="tutorial-text"></p>
-            <div id="tutorial-buttons">
-                <button id="skip-tutorial-btn">건너뛰기</button>
-                <button id="next-tutorial-btn">다음</button>
+            <div class="log-input-group">
+                <label>오전의 기분과 집중력은?</label>
+                <div class="rating-stars" data-metric="mood"><span>⭐</span><span>⭐</span><span>⭐</span><span>⭐</span><span>⭐</span></div>
+            </div>
+            <div class="log-input-group">
+                <label>오후의 에너지는?</label>
+                <div class="rating-stars" data-metric="energy"><span>⭐</span><span>⭐</span><span>⭐</span><span>⭐</span><span>⭐</span></div>
+            </div>
+            <div class="log-input-group">
+                 <label>오늘 실천한 기반 습관</label>
+                 <div id="log-habit-checklist" class="habit-checklist"></div>
+            </div>
+            <button id="save-log-btn" class="action-btn" style="background-color: var(--primary-color);">오늘의 로그 저장</button>
+        </section>
+        <section id="analysis-section" class="card">
+             <h2 class="section-title">🔍 3단계: 분석 및 확장</h2>
+             <div id="analysis-results"></div>
+             <div id="habit-expansion-guide"></div>
+        </section>
+        <section>
+            <h2 class="section-title">🌱 자라나는 씨앗들</h2>
+            <div id="pots-container" class="card"></div>
+        </section>
+        <section>
+            <h2 class="section-title">🌳 나의 숲</h2>
+            <div id="forest-container" class="card"></div>
+        </section>
+        <section id="data-management-section" class="card">
+            <h2 class="section-title">💾 데이터 관리</h2>
+            <div class="button-group" style="display: flex; gap: 10px; flex-wrap: wrap; justify-content: center;">
+                <button id="export-data-btn" class="action-btn" style="background-color: var(--primary-color);">내보내기</button>
+                <button id="import-data-btn" class="action-btn" style="background-color: var(--danger-color);">가져오기</button>
+            </div>
+        </section>
+    </main>
+    <button id="add-seed-btn" class="action-btn" title="씨앗 심기">+</button>
+    <div id="modal-backdrop" class="modal-backdrop">
+        <div id="habit-modal-content" class="modal-content card" style="display: none;">
+            <h2 id="habit-modal-title"></h2>
+            <h3>📝 행동</h3><p id="habit-modal-action"></p>
+            <h3>🔬 과학적 근거</h3><p id="habit-modal-basis"></p>
+            <h3>✅ 자기 검증</h3><p id="habit-modal-verification"></p>
+            <div class="modal-buttons">
+                <button id="close-habit-modal-btn" class="action-btn" style="background-color: #eee; color: var(--text-color);">닫기</button>
+                <button id="start-habit-btn" class="action-btn" style="background-color: var(--primary-color);">이 습관 시작하기</button>
             </div>
         </div>
     </div>
 
     <script>
-        // --- 애플리케이션 상태 및 설정 ---
-        const STORAGE_KEY = 'myForestApp';
-        const GROWTH_STAGES = {
-            SEED: 0,
-            SPROUT: 1,
-            SAPLING: 2,
-            SMALL_TREE: 3,
-            TREE: 4
-        };
-        const MATURE_DAYS = 15; // 나무로 성장하는 데 필요한 물주기 횟수
+        const PLANT_STORAGE_KEY = 'myForestApp_plants';
+        const LOG_STORAGE_KEY = 'myForestApp_log';
+        const APP_NAME = 'MyForestApp';
+        const EXPORT_VERSION = '2.0.0';
 
         let plants = [];
-
-        // --- DOM 요소 ---
-        const forestContainer = document.getElementById('forest-container');
-        const potsContainer = document.getElementById('pots-container');
-        const addSeedBtn = document.getElementById('add-seed-btn');
-        const modalBackdrop = document.getElementById('modal-backdrop');
-        const modalContent = document.getElementById('modal-content');
-        const seedNameInput = document.getElementById('seed-name-input');
-        const confirmAddSeedBtn = document.getElementById('confirm-add-seed');
-        const cancelAddSeedBtn = document.getElementById('cancel-add-seed');
-        const tutorialBackdrop = document.getElementById('tutorial-backdrop');
-        const tutorialBox = document.getElementById('tutorial-box');
-        const tutorialText = document.getElementById('tutorial-text');
-        const nextTutorialBtn = document.getElementById('next-tutorial-btn');
-        const skipTutorialBtn = document.getElementById('skip-tutorial-btn');
-
-        // --- 튜토리얼 로직 ---
-        const tutorialSteps = [
-            {
-                text: "마이 포레스트에 오신 것을 환영합니다! 당신만의 숲을 가꾸는 방법을 간단히 알려드릴게요.",
-            },
-            {
-                element: '#add-seed-btn',
-                text: "이 '더하기' 버튼을 눌러 새로운 다짐이나 목표, 즉 '씨앗'을 심을 수 있어요.",
-                position: 'left',
-            },
-            {
-                element: '#pots-container',
-                text: "심은 씨앗은 이곳 '자라나는 씨앗들' 영역에서 화분 형태로 나타납니다. 매일 목표를 실천하고 '물주기' 버튼을 눌러주세요.",
-                position: 'top',
-            },
-            {
-                element: '#forest-container',
-                text: "꾸준히 물을 주어 나무로 자란 씨앗들은 이곳 '나의 숲'으로 옮겨져 당신만의 멋진 풍경을 만들게 됩니다.",
-                position: 'bottom',
-            },
-            {
-                text: "이제 당신만의 숲을 가꾸어보세요! 여정은 이미 시작되었습니다.",
-            }
+        let logData = [];
+        const foundationHabits = [
+            { id: 'sunriseAnchor', name: "선라이즈 앵커", emoji: "☀️", description: "아침 햇빛으로 생체 시계를 재설정하고 하루의 에너지와 기분을 깨웁니다.", details: { action: "기상 후 30분 내에 15분 이상 밖에서 햇빛 쬐며 걷기 (선글라스 없이).", scientificBasis: "아침의 청색광은 멜라토닌을 억제하고 세로토닌 분비를 촉진하여 신체의 마스터 시계를 동기화하고, 14-16시간 후의 자연스러운 수면을 유도합니다.", verification: "2주간 실행 후, 오후 3시의 에너지 레벨 변화를 관찰해보세요." }, recommendedSeed: "아침 햇빛 산책하기" },
+            { id: 'metabolicBaseline', name: "대사 기준선", emoji: "🥗", description: "안정적인 에너지와 인지 기능을 위한 일관된 영양 환경을 조성합니다.", details: { action: "기상 후 90분 내에 고단백(30g 이상) 아침 식사를 하고, 모든 식사의 영양 균형을 맞추며, 가공 식품을 줄입니다.", scientificBasis: "고단백 아침은 포만감을 주고 신경전달물질 생성을 도우며, 균형 잡힌 식사는 급격한 혈당 변화를 막아 꾸준한 에너지를 제공합니다.", verification: "2주간 식단 일지를 쓰며 에너지 저하(브레인 포그) 발생 빈도 감소를 확인해보세요." }, recommendedSeed: "고단백 아침 식사하기" },
+            { id: 'sleepSanctuary', name: "수면 성역", emoji: "🌙", description: "신체적, 정신적 회복을 위해 최적의 수면 환경을 의도적으로 설계합니다.", details: { action: "취침 1시간 전 모든 스크린을 끄고, 방을 시원하고 완벽하게 어둡게 만듭니다.", scientificBasis: "빛과 온도는 수면 호르몬인 멜라토닌 분비에 큰 영향을 줍니다. 수면 환경을 제어하면 더 깊고 질 좋은 수면을 통해 회복을 극대화할 수 있습니다.", verification: "수면 추적 앱으로 '잠드는 데 걸리는 시간' 감소를 측정하거나, 아침에 느끼는 '수면의 질'을 점수로 기록해보세요." }, recommendedSeed: "취침 전 스크린 보지 않기" },
+            { id: 'gratitudeLedger', name: "감사 장부", emoji: "✍️", description: "뇌의 주의 초점을 긍정적인 방향으로 재훈련하여 회복탄력성을 키웁니다.", details: { action: "매일 저녁, 그날 잘 풀렸던 구체적인 세 가지 일과 자신의 역할을 기록합니다.", scientificBasis: "인간의 뇌는 생존을 위해 부정적인 정보에 더 민감합니다(부정성 편향). 감사 기록은 긍정적 경험을 탐색하고 저장하도록 뇌를 훈련시켜 낙관적인 심리 상태를 만듭니다.", verification: "2주간 실천 후, 하루 동안 작은 긍정적인 일들을 더 자주 알아차리는지 스스로 관찰해보세요." }, recommendedSeed: "하루 감사한 일 3가지 쓰기" }
         ];
-        let currentTutorialStep = 0;
-        let highlightedElement = null;
+        
+        let foundationCardsContainer, potsContainer, forestContainer, modalBackdrop, habitModalContent, logSection, saveLogBtn, logHabitChecklist, analysisResults, habitExpansionGuide, addSeedBtn;
+        let exportDataBtn, importDataBtn;
 
-        function endTutorial() {
-            tutorialBackdrop.classList.remove('visible');
-            if (highlightedElement) {
-                highlightedElement.classList.remove('tutorial-highlight');
-            }
-            localStorage.setItem('myForestTutorialCompleted', 'true');
+        function cacheDOMElements() {
+            foundationCardsContainer = document.getElementById('foundation-cards-container');
+            potsContainer = document.getElementById('pots-container');
+            forestContainer = document.getElementById('forest-container');
+            modalBackdrop = document.getElementById('modal-backdrop');
+            habitModalContent = document.getElementById('habit-modal-content');
+            logSection = document.getElementById('log-section');
+            saveLogBtn = document.getElementById('save-log-btn');
+            logHabitChecklist = document.getElementById('log-habit-checklist');
+            analysisResults = document.getElementById('analysis-results');
+            habitExpansionGuide = document.getElementById('habit-expansion-guide');
+            addSeedBtn = document.getElementById('add-seed-btn');
+            exportDataBtn = document.getElementById('export-data-btn');
+            importDataBtn = document.getElementById('import-data-btn');
         }
 
-        function showTutorialStep(index) {
-            if (highlightedElement) {
-                highlightedElement.classList.remove('tutorial-highlight');
-                highlightedElement = null;
+        function loadData() {
+            plants = JSON.parse(localStorage.getItem(PLANT_STORAGE_KEY)) || [];
+            logData = JSON.parse(localStorage.getItem(LOG_STORAGE_KEY)) || [];
+        }
+        function saveData() {
+            localStorage.setItem(PLANT_STORAGE_KEY, JSON.stringify(plants));
+            localStorage.setItem(LOG_STORAGE_KEY, JSON.stringify(logData));
+        }
+        function getPlantSVG(stage, daysWatered = 0) {
+            switch (stage) {
+                case 0: return `<svg width="80" height="80" viewBox="0 0 100 100"><g transform="translate(0 -5)"><path d="M50 80 C 40 85, 40 95, 50 95 C 60 95, 60 85, 50 80 Z" fill="#D2B48C" stroke="#8B5A2B" stroke-width="3"></path><text x="50" y="70" text-anchor="middle" font-size="12" font-family="Gaegu" fill="#5D5551">${daysWatered}일차</text></g></svg>`;
+                case 4: return `<svg width="100" height="120" viewBox="0 0 100 120"><g><rect x="42" y="60" width="16" height="60" fill="#8B4513" rx="5" /><path d="M50,70 C10,50 20,10 50,10 C80,10 90,50 50,70 Z" fill="#2E8B57" /><path d="M70,60 C40,50 50,20 70,20 C90,20 100,50 70,60 Z" fill="#3CB371" /><path d="M30,60 C60,50 50,20 30,20 C10,20 0,50 30,60 Z" fill="#3CB371" /></g></svg>`;
+                default: return `<svg width="80" height="80" viewBox="0 0 100 100"><g><path d="M50 90 V 40" stroke="#8B4513" stroke-width="6" stroke-linecap="round" /><circle cx="50" cy="35" r="25" fill="#90EE90" /><circle cx="65" cy="45" r="15" fill="#3CB371" /><circle cx="35" cy="45" r="15" fill="#3CB371" /><text x="50" y="20" text-anchor="middle" font-size="12" font-family="Gaegu" fill="#5D5551">${daysWatered}일차</text></g></svg>`;
             }
-
-            if (index >= tutorialSteps.length) {
-                endTutorial();
+        }
+        function calculateGrowthStage(daysWatered) {
+            if (daysWatered >= 15) return 4; if (daysWatered >= 7) return 3; if (daysWatered >= 3) return 2; if (daysWatered >= 1) return 1; return 0;
+        }
+        function renderAll() {
+            renderFoundationCards();
+            renderLogSection();
+            renderAnalysisSection();
+            renderPotsAndForest();
+        }
+        function renderFoundationCards() {
+            foundationCardsContainer.innerHTML = foundationHabits.map(habit => `
+                <div class="foundation-card card" data-habit-id="${habit.id}">
+                    <div class="emoji">${habit.emoji}</div>
+                    <div class="name">${habit.name}</div>
+                    <div class="description">${habit.description}</div>
+                </div>`).join('');
+        }
+        function renderLogSection() {
+            const todayStr = new Date().toISOString().split('T')[0];
+            const todayLog = logData.find(log => log.date === todayStr) || { habits: [] };
+            document.querySelectorAll('.rating-stars').forEach(group => {
+                const metric = group.dataset.metric;
+                Array.from(group.children).forEach((star, index) => {
+                    star.classList.toggle('selected', index < todayLog[metric]);
+                });
+            });
+            logHabitChecklist.innerHTML = foundationHabits.map(habit => `
+                <label class="habit-check">
+                    <input type="checkbox" data-habit-id="${habit.id}" ${todayLog.habits.includes(habit.id) ? 'checked' : ''}>
+                    ${habit.emoji} ${habit.name}
+                </label>`).join('');
+        }
+        function renderAnalysisSection() {
+            if (logData.length < 7) {
+                analysisResults.innerHTML = `<p>로그 데이터가 7일 이상 쌓이면, 어떤 습관이 당신에게 가장 긍정적인 영향을 주는지 분석 결과를 보여드려요.</p>`;
+                habitExpansionGuide.innerHTML = '';
                 return;
             }
-
-            const step = tutorialSteps[index];
-            tutorialText.textContent = step.text;
-            
-            const targetElement = step.element ? document.querySelector(step.element) : null;
-            
-            if (targetElement) {
-                tutorialBackdrop.style.backgroundColor = 'transparent'; // 배경을 투명하게 만듭니다.
-                tutorialBox.style.transform = 'none'; // 위치 지정 시 transform 제거
-                highlightedElement = targetElement;
-                targetElement.classList.add('tutorial-highlight');
-                targetElement.scrollIntoView({ behavior: 'smooth', block: 'center' });
-
-                setTimeout(() => { // 스크롤 후 위치 계산
-                    const rect = targetElement.getBoundingClientRect();
-                    const boxRect = tutorialBox.getBoundingClientRect();
-                    const offset = 15;
-                    const margin = 15; // 화면 가장자리와의 최소 간격
-
-                    let top, left;
-
-                    switch (step.position) {
-                        case 'top':
-                            top = rect.top - boxRect.height - offset;
-                            left = rect.left + (rect.width / 2) - (boxRect.width / 2);
-                            break;
-                        case 'bottom':
-                            top = rect.bottom + offset;
-                            left = rect.left + (rect.width / 2) - (boxRect.width / 2);
-                            break;
-                        case 'left':
-                            top = rect.top + (rect.height / 2) - (boxRect.height / 2);
-                            left = rect.left - boxRect.width - offset;
-                            break;
-                        default: // bottom이 기본값
-                            left = rect.left + (rect.width / 2) - (boxRect.width / 2);
-                            top = rect.bottom + offset;
-                    }
-                    
-                    // 화면 경계 체크 및 위치 보정
-                    if (left < margin) {
-                        left = margin;
-                    }
-                    if (left + boxRect.width > window.innerWidth - margin) {
-                        left = window.innerWidth - boxRect.width - margin;
-                    }
-                    if (top < margin) {
-                        top = margin;
-                    }
-                    if (top + boxRect.height > window.innerHeight - margin) {
-                        top = rect.top - boxRect.height - offset; // 위쪽으로 재배치
-                         if (top < margin) { // 그래도 벗어나면 상단에 고정
-                            top = margin;
+            let analysisHTML = '';
+            const metrics = { sleep: '수면의 질', mood: '오전 기분', energy: '오후 에너지' };
+            foundationHabits.forEach(habit => {
+                const logsWithHabit = logData.filter(log => log.habits.includes(habit.id));
+                const logsWithoutHabit = logData.filter(log => !log.habits.includes(habit.id));
+                if(logsWithHabit.length > 0 && logsWithoutHabit.length > 0) {
+                    analysisHTML += `<div class="habit-result"><strong>${habit.emoji} ${habit.name}</strong>`;
+                    Object.keys(metrics).forEach(metric => {
+                        const avgWith = logsWithHabit.reduce((sum, log) => sum + (log[metric] || 0), 0) / logsWithHabit.length;
+                        const avgWithout = logsWithoutHabit.reduce((sum, log) => sum + (log[metric] || 0), 0) / logsWithoutHabit.length;
+                        if(avgWith > avgWithout) {
+                            analysisHTML += `<p>✅ ${metrics[metric]} +${(avgWith - avgWithout).toFixed(1)}점 <span class="comparison">(실천 시 ${avgWith.toFixed(1)}점, 아닐 시 ${avgWithout.toFixed(1)}점)</span></p>`;
                         }
-                    }
-
-                    tutorialBox.style.top = `${top}px`;
-                    tutorialBox.style.left = `${left}px`;
-
-                }, 400); // 스크롤 애니메이션 시간
-
-            } else {
-                tutorialBackdrop.style.backgroundColor = 'rgba(0,0,0,0.6)'; // 하이라이트가 없을 땐 다시 어둡게 합니다.
-                // 특정 요소가 없을 경우 화면 중앙에 배치
-                tutorialBox.style.top = '50%';
-                tutorialBox.style.left = '50%';
-                tutorialBox.style.transform = 'translate(-50%, -50%)';
-            }
-
-            if (index === tutorialSteps.length - 1) {
-                nextTutorialBtn.textContent = '완료';
-            } else {
-                nextTutorialBtn.textContent = '다음';
-            }
-
-            currentTutorialStep = index;
+                    });
+                     analysisHTML += `</div>`;
+                }
+            });
+            analysisResults.innerHTML = analysisHTML || '<p>아직 의미 있는 데이터가 부족해요. 꾸준히 기록해보세요!</p>';
+            habitExpansionGuide.innerHTML = `
+                <h3>습관 확장하기</h3>
+                <p><strong>습관 쌓기:</strong> 이미 잘하고 있는 습관 직후에 새로운 습관을 붙여보세요. (예: 아침 산책 후, 5분 명상하기)</p>
+                <p><strong>2분 규칙:</strong> 새로운 습관이 부담된다면, 2분 안에 할 수 있는 아주 작은 버전으로 시작하세요. (예: '책 30쪽 읽기' 대신 '책 한 쪽 읽기')</p>
+            `;
         }
-
-        function startTutorial() {
-            tutorialBackdrop.classList.add('visible');
-            showTutorialStep(0);
-        }
-
-        // --- 데이터 관리 ---
-        function loadPlants() {
-            const data = localStorage.getItem(STORAGE_KEY);
-            plants = data ? JSON.parse(data) : [];
-        }
-
-        function savePlants() {
-            localStorage.setItem(STORAGE_KEY, JSON.stringify(plants));
-        }
-
-        // --- 렌더링 함수 ---
-        function getPlantSVG(stage, daysWatered) {
-            const progress = Math.min(daysWatered / MATURE_DAYS, 1);
-            switch (stage) {
-                case GROWTH_STAGES.SEED:
-                    return `<svg width="80" height="80" viewBox="0 0 100 100"><g transform="translate(0 -5)"><path d="M50 80 C 40 85, 40 95, 50 95 C 60 95, 60 85, 50 80 Z" fill="${'#D2B48C'}" stroke="${'#8B5A2B'}" stroke-width="3"></path><text x="50" y="70" text-anchor="middle" font-size="12" font-family="Gaegu" fill="#5D5551">${daysWatered}일차</text></g></svg>`;
-                case GROWTH_STAGES.SPROUT:
-                    return `<svg width="80" height="80" viewBox="0 0 100 100"><g transform="translate(0 5)"><path d="M50 90 C 40 95, 40 85, 50 85 S 60 95, 50 90" fill="${'#F5DEB3'}" /><path d="M50 85 C 50 75, 55 70, 60 65" stroke="#6B8E23" stroke-width="4" fill="none" stroke-linecap="round" /><path d="M60 65 C 58 70, 65 70, 63 60 Z" fill="#9ACD32" /><text x="50" y="55" text-anchor="middle" font-size="12" font-family="Gaegu" fill="#5D5551">${daysWatered}일차</text></g></svg>`;
-                case GROWTH_STAGES.SAPLING:
-                    return `<svg width="80" height="80" viewBox="0 0 100 100"><g><path d="M50 90 V 50" stroke="#8B4513" stroke-width="5" stroke-linecap="round" /><path d="M50 70 C 65 65, 65 50, 55 55" stroke="#8B4513" stroke-width="4" fill="none" stroke-linecap="round" /><path d="M55 55 C 60 60, 70 55, 65 50 Z" fill="#228B22" /><path d="M50 60 C 35 55, 35 40, 45 45" stroke="#8B4513" stroke-width="4" fill="none" stroke-linecap="round" /><path d="M45 45 C 40 50, 30 45, 35 40 Z" fill="#228B22" /><text x="50" y="30" text-anchor="middle" font-size="12" font-family="Gaegu" fill="#5D5551">${daysWatered}일차</text></g></svg>`;
-                case GROWTH_STAGES.SMALL_TREE:
-                    return `<svg width="80" height="80" viewBox="0 0 100 100"><g><path d="M50 90 V 40" stroke="#8B4513" stroke-width="6" stroke-linecap="round" /><circle cx="50" cy="35" r="25" fill="#90EE90" /><circle cx="65" cy="45" r="15" fill="#3CB371" /><circle cx="35" cy="45" r="15" fill="#3CB371" /><text x="50" y="20" text-anchor="middle" font-size="12" font-family="Gaegu" fill="#5D5551">${daysWatered}일차</text></g></svg>`;
-                case GROWTH_STAGES.TREE:
-                    return `<svg width="100" height="120" viewBox="0 0 100 120"><g><rect x="42" y="60" width="16" height="60" fill="#8B4513" rx="5" /><path d="M50,70 C10,50 20,10 50,10 C80,10 90,50 50,70 Z" fill="#2E8B57" /><path d="M70,60 C40,50 50,20 70,20 C90,20 100,50 70,60 Z" fill="#3CB371" /><path d="M30,60 C60,50 50,20 30,20 C10,20 0,50 30,60 Z" fill="#3CB371" /></g></svg>`;
-            }
-        }
-        
-        function calculateGrowthStage(daysWatered) {
-            if (daysWatered >= MATURE_DAYS) return GROWTH_STAGES.TREE;
-            if (daysWatered >= 7) return GROWTH_STAGES.SMALL_TREE;
-            if (daysWatered >= 3) return GROWTH_STAGES.SAPLING;
-            if (daysWatered >= 1) return GROWTH_STAGES.SPROUT;
-            return GROWTH_STAGES.SEED;
-        }
-
-        function renderApp() {
-            forestContainer.innerHTML = '';
-            potsContainer.innerHTML = '';
-
+        function renderPotsAndForest() {
             const maturePlants = plants.filter(p => p.isMature);
             const growingPlants = plants.filter(p => !p.isMature);
-
-            // 숲 렌더링
-            if (maturePlants.length === 0) {
-                forestContainer.innerHTML = `<p class="empty-message">아직 숲에 나무가 없어요.<br>씨앗을 꾸준히 키워보세요!</p>`;
-            } else {
-                maturePlants.forEach(plant => {
-                    const treeEl = document.createElement('div');
-                    treeEl.className = 'tree';
-                    treeEl.innerHTML = `
-                        ${getPlantSVG(GROWTH_STAGES.TREE)}
-                        <span class="tree-name">${plant.name}</span>
-                    `;
-                    forestContainer.appendChild(treeEl);
-                });
-            }
-
-            // 화분 렌더링
-            if (growingPlants.length === 0 && maturePlants.length === 0) {
-                potsContainer.innerHTML = `<p class="empty-message">오른쪽 아래 '+' 버튼을 눌러<br>첫 번째 씨앗을 심어보세요.</p>`;
-            } else {
-                 growingPlants.forEach(plant => {
-                    const daysWatered = plant.wateredDates.length;
-                    const stage = calculateGrowthStage(daysWatered);
-                    const today = new Date().toISOString().split('T')[0];
-                    const wateredToday = plant.wateredDates.includes(today);
-
-                    const potEl = document.createElement('div');
-                    potEl.className = 'pot';
-                    potEl.innerHTML = `
-                        <div class="pot-name">${plant.name}</div>
-                        <div class="plant-visual">${getPlantSVG(stage, daysWatered)}</div>
-                        <button class="water-btn" data-id="${plant.id}" ${wateredToday ? 'disabled' : ''}>
-                            ${wateredToday ? '물 주기 완료!' : '물주기'}
-                        </button>
-                    `;
-                    potsContainer.appendChild(potEl);
-                });
-            }
+            forestContainer.innerHTML = maturePlants.length > 0 ? maturePlants.map(p => `
+                <div class="tree"><div class="plant-visual">${getPlantSVG(4)}</div><span class="tree-name">${p.name}</span></div>`).join('') : `<p class="empty-message">아직 숲에 나무가 없어요.<br>씨앗을 꾸준히 키워보세요!</p>`;
+            potsContainer.innerHTML = growingPlants.length > 0 ? growingPlants.map(p => {
+                const daysWatered = p.wateredDates.length;
+                const wateredToday = p.wateredDates.includes(new Date().toISOString().split('T')[0]);
+                return `<div class="pot card">
+                    <div class="pot-name">${p.name}</div>
+                    <div class="plant-visual">${getPlantSVG(calculateGrowthStage(daysWatered), daysWatered)}</div>
+                    <button class="action-btn water-btn" data-id="${p.id}" ${wateredToday ? 'disabled' : ''}>${wateredToday ? '물 주기 완료!' : '물주기'}</button>
+                </div>`;
+            }).join('') : `<p class="empty-message">위의 기반 다지기 습관을 시작하거나,<br>오른쪽 아래 '+' 버튼으로 새 씨앗을 심어보세요.</p>`;
         }
-
-        // --- 이벤트 핸들러 ---
-        function handleAddSeed() {
-            const name = seedNameInput.value.trim();
-            if (!name) {
-                alert('씨앗의 이름을 입력해주세요.');
+        function handleAddSeed(seedName, isFromPrompt = false) {
+            const name = seedName.trim();
+            if (!name) return;
+            if (plants.some(p => p.name === name)) {
+                if(isFromPrompt) alert("이미 심겨진 씨앗입니다.");
                 return;
             }
-
-            const newPlant = {
-                id: Date.now(),
-                name: name,
-                createdAt: new Date().toISOString(),
-                wateredDates: [],
-                isMature: false,
-            };
-            plants.push(newPlant);
-            savePlants();
-            renderApp();
+            plants.push({ id: Date.now(), name, createdAt: new Date().toISOString(), wateredDates: [], isMature: false });
+            saveData();
+            renderPotsAndForest();
             closeModal();
         }
-
-        function handleWaterPlant(e) {
-            const button = e.target.closest('.water-btn');
-            if (!button) return;
-            
-            const plantId = Number(button.dataset.id);
-            const plant = plants.find(p => p.id === plantId);
-            const today = new Date().toISOString().split('T')[0];
-
-            if (plant && !plant.wateredDates.includes(today)) {
-                plant.wateredDates.push(today);
-                
-                // 진동 효과 (모바일 지원)
-                if(window.navigator.vibrate) window.navigator.vibrate(100);
-
-                if (plant.wateredDates.length >= MATURE_DAYS) {
-                    plant.isMature = true;
-                }
-                savePlants();
-                renderApp();
+        function handleSaveLog() {
+            const todayStr = new Date().toISOString().split('T')[0];
+            let todayLog = logData.find(log => log.date === todayStr);
+            if (!todayLog) {
+                todayLog = { date: todayStr };
+                logData.push(todayLog);
+            }
+            document.querySelectorAll('.rating-stars').forEach(group => {
+                const metric = group.dataset.metric;
+                todayLog[metric] = group.querySelectorAll('.selected').length;
+            });
+            todayLog.habits = Array.from(logHabitChecklist.querySelectorAll('input:checked')).map(cb => cb.dataset.habitId);
+            saveData();
+            alert('오늘의 로그가 저장되었습니다.');
+            renderAnalysisSection();
+        }
+        function closeModal() {
+            if (modalBackdrop) {
+                modalBackdrop.classList.remove('visible');
+                setTimeout(() => {
+                    if (habitModalContent) habitModalContent.style.display = 'none';
+                }, 300);
             }
         }
-
-        function openModal() {
-            seedNameInput.value = '';
-            modalBackdrop.classList.add('visible');
-            seedNameInput.focus();
+        function handleExportData() {
+            const dataToExport = { appName: APP_NAME, exportVersion: EXPORT_VERSION, exportDate: new Date().toISOString(), data: {} };
+            const keysToExport = [PLANT_STORAGE_KEY, LOG_STORAGE_KEY];
+            keysToExport.forEach(key => {
+                const value = localStorage.getItem(key);
+                if (value !== null) dataToExport.data[key] = value;
+            });
+            const dataStr = JSON.stringify(dataToExport, null, 2);
+            const dataBlob = new Blob([dataStr], {type: "application/json"});
+            const url = URL.createObjectURL(dataBlob);
+            const link = document.createElement('a');
+            const today = new Date().toISOString().split('T')[0];
+            link.download = `my_forest_backup_${today}.json`;
+            link.href = url;
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+            URL.revokeObjectURL(url);
+            alert('데이터를 파일로 내보냈습니다.');a
+        }
+        function handleImportData() {
+            const fileInput = document.createElement('input');
+            fileInput.type = 'file';
+            fileInput.accept = '.json';
+            fileInput.onchange = e => {
+                const file = e.target.files[0];
+                if (!file) return;
+                const reader = new FileReader();
+                reader.onload = event => {
+                    try {
+                        const importedData = JSON.parse(event.target.result);
+                        if (importedData.appName !== APP_NAME) {
+                            alert('이 앱에서 생성된 백업 파일이 아닙니다.');
+                            return;
+                        }
+                        const confirmation = confirm('데이터를 가져오면 현재 앱의 모든 데이터가 덮어씌워집니다. 정말 진행하시겠습니까?\n\n경고: 이 작업은 되돌릴 수 없습니다.');
+                        if (confirmation) {
+                            Object.keys(importedData.data).forEach(key => {
+                                localStorage.setItem(key, importedData.data[key]);
+                            });
+                            alert('데이터를 성공적으로 가져왔습니다. 앱을 새로고침합니다.');
+                            location.reload();
+                        }
+                    } catch (error) {
+                        alert('파일을 읽는 중 오류가 발생했습니다. 유효한 백업 파일인지 확인해주세요.');
+                    }
+                };
+                reader.readAsText(file);
+            };
+            fileInput.click();
         }
         
-        function closeModal() {
-            modalBackdrop.classList.remove('visible');
-        }
-
-        // --- 초기화 ---
-        function init() {
-            addSeedBtn.addEventListener('click', openModal);
-            confirmAddSeedBtn.addEventListener('click', handleAddSeed);
-            cancelAddSeedBtn.addEventListener('click', closeModal);
-            modalBackdrop.addEventListener('click', (e) => {
-                if (e.target === modalBackdrop) closeModal();
+        function initEventListeners() {
+            foundationCardsContainer.addEventListener('click', e => {
+                const card = e.target.closest('.foundation-card');
+                if (!card) return;
+                const habit = foundationHabits.find(h => h.id === card.dataset.habitId);
+                if(habit) {
+                    document.getElementById('habit-modal-title').textContent = `${habit.emoji} ${habit.name}`;
+                    document.getElementById('habit-modal-action').textContent = habit.details.action;
+                    document.getElementById('habit-modal-basis').textContent = habit.details.scientificBasis;
+                    document.getElementById('habit-modal-verification').textContent = habit.details.verification;
+                    document.getElementById('start-habit-btn').dataset.seedName = habit.recommendedSeed;
+                    habitModalContent.style.display = 'block';
+                    modalBackdrop.classList.add('visible');
+                }
             });
-            seedNameInput.addEventListener('keydown', (e) => {
-                if (e.key === 'Enter') handleAddSeed();
+            document.getElementById('start-habit-btn').addEventListener('click', e => {
+                handleAddSeed(e.target.dataset.seedName);
             });
-            potsContainer.addEventListener('click', handleWaterPlant);
-            
-            nextTutorialBtn.addEventListener('click', () => showTutorialStep(currentTutorialStep + 1));
-            skipTutorialBtn.addEventListener('click', endTutorial);
-
-            loadPlants();
-            renderApp();
-
-            const tutorialCompleted = localStorage.getItem('myForestTutorialCompleted');
-            if (!tutorialCompleted) {
-                setTimeout(startTutorial, 500);
-            }
+            document.getElementById('close-habit-modal-btn').addEventListener('click', closeModal);
+            logSection.addEventListener('click', e => {
+                if (e.target.tagName === 'SPAN' && e.target.parentElement.classList.contains('rating-stars')) {
+                    const stars = Array.from(e.target.parentElement.children);
+                    const index = stars.indexOf(e.target);
+                    const currentSelection = e.target.parentElement.querySelectorAll('.selected').length;
+                    if (currentSelection === index + 1) {
+                         stars.forEach(star => star.classList.remove('selected'));
+                    } else {
+                        stars.forEach((star, i) => star.classList.toggle('selected', i <= index));
+                    }
+                }
+            });
+            saveLogBtn.addEventListener('click', handleSaveLog);
+            potsContainer.addEventListener('click', e => {
+                const waterButton = e.target.closest('.water-btn');
+                if (waterButton) {
+                    const plantId = Number(waterButton.dataset.id);
+                    const plant = plants.find(p => p.id === plantId);
+                    const today = new Date().toISOString().split('T')[0];
+                    if (plant && !plant.wateredDates.includes(today)) {
+                        plant.wateredDates.push(today);
+                        if (plant.wateredDates.length >= 15) plant.isMature = true;
+                        saveData();
+                        renderPotsAndForest();
+                    }
+                }
+            });
+            addSeedBtn.addEventListener('click', () => {
+                const seedName = prompt("어떤 씨앗을 심을까요?", "");
+                if (seedName) {
+                    handleAddSeed(seedName, true);
+                }
+            });
+            exportDataBtn.addEventListener('click', handleExportData);
+            importDataBtn.addEventListener('click', handleImportData);
         }
-
-        init();
+        
+        document.addEventListener('DOMContentLoaded', () => {
+            cacheDOMElements();
+            loadData();
+            renderAll();
+            initEventListeners();
+        });
     </script>
 </body>
 </html>
-
 
