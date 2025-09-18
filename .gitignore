@@ -3,9 +3,9 @@ Thumbs.db
 
 .vscode/
 .idea/
-
+test/
 *.txt
 
 
 my-secret-notes/
-temp.zip
+temp.zip 
