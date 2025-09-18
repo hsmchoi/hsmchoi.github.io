@@ -40,10 +40,13 @@
         </header>
         <div class="flex flex-wrap justify-center items-center mb-6 gap-2 md:gap-4">
             <button id="view-switch-btn" class="control-button">모바일 뷰</button>
+            <button id="next-month-btn" class="control-button primary-button">다음달</button>
+            <button id="clear-stock-in-btn" class="control-button danger-button">입고 비우기</button>
+            <button id="clear-stock-out-btn" class="control-button danger-button">출고 비우기</button>
             <label for="json-upload-input" class="control-button">이전 항목 불러오기</label>
             <input type="file" id="json-upload-input" class="hidden" accept=".json">
             <button id="json-download-btn" class="control-button">현재 항목 저장하기</button>
-            <button id="svg-export-btn" class="control-button primary-button">출력하기</button>
+            <button id="svg-export-btn" class="control-button">출력하기</button>
         </div>
         <main id="main-content"></main>
         <div class="mt-6 flex justify-center">
@@ -87,7 +90,7 @@
         let currentView = 'table';
         let itemIdToDelete = null;
         let editingItemId = null;
-        let reportTitleInput, viewSwitchBtn, jsonUploadInput, jsonDownloadBtn, svgExportBtn, mainContent, addItemBtn, svgModal, svgContainer, downloadSvgBtn, mobileInputModal, mobileInputTitle, mobileInputStock, mobileInputField, mobileInputConfirm, confirmModal, confirmCancelBtn, confirmDeleteBtn;
+        let reportTitleInput, viewSwitchBtn, jsonUploadInput, jsonDownloadBtn, svgExportBtn, mainContent, addItemBtn, svgModal, svgContainer, downloadSvgBtn, mobileInputModal, mobileInputTitle, mobileInputStock, mobileInputField, mobileInputConfirm, confirmModal, confirmCancelBtn, confirmDeleteBtn, nextMonthBtn, clearStockInBtn, clearStockOutBtn;
 
         function formatCurrency(number) { return new Intl.NumberFormat('ko-KR').format(number || 0); }
         
@@ -399,6 +402,36 @@
             mobileInputModal.classList.add('hidden');
             render();
         }
+        
+        function handleNextMonth() {
+            appState.inventory.forEach(item => {
+                const currentStock = (item.stockPrev || 0) + (item.stockIn || 0) - (item.stockOut || 0);
+                item.stockPrev = currentStock;
+                item.stockIn = 0;
+                item.stockOut = 0;
+            });
+            render();
+        }
+
+        function handleClearStockIn() {
+            const isConfirmed = confirm('현재 입력된 모든 품목의 \'입고\' 수량을 0으로 초기화하시겠습니까?\n이 작업은 되돌릴 수 없습니다.');
+            if (isConfirmed) {
+                appState.inventory.forEach(item => {
+                    item.stockIn = 0;
+                });
+                render();
+            }
+        }
+
+        function handleClearStockOut() {
+            const isConfirmed = confirm('현재 입력된 모든 품목의 \'출고\' 수량을 0으로 초기화하시겠습니까?\n이 작업은 되돌릴 수 없습니다.');
+            if (isConfirmed) {
+                appState.inventory.forEach(item => {
+                    item.stockOut = 0;
+                });
+                render();
+            }
+        }
 
         const mainContentListener = (event) => {
             const target = event.target;
@@ -475,6 +508,9 @@
             confirmModal = document.getElementById('confirm-modal');
             confirmCancelBtn = document.getElementById('confirm-cancel-btn');
             confirmDeleteBtn = document.getElementById('confirm-delete-btn');
+            nextMonthBtn = document.getElementById('next-month-btn');
+            clearStockInBtn = document.getElementById('clear-stock-in-btn');
+            clearStockOutBtn = document.getElementById('clear-stock-out-btn');
             
             appState = {
                 meta: { title: "월별 재고 관리", lastModified: new Date().toISOString() },
@@ -487,6 +523,9 @@
             jsonUploadInput.addEventListener('change', handleJsonUpload);
             jsonDownloadBtn.addEventListener('click', handleJsonDownload);
             svgExportBtn.addEventListener('click', handleSvgExport);
+            nextMonthBtn.addEventListener('click', handleNextMonth);
+            clearStockInBtn.addEventListener('click', handleClearStockIn);
+            clearStockOutBtn.addEventListener('click', handleClearStockOut);
             
             viewSwitchBtn.addEventListener('click', () => {
                 editingItemId = null;
