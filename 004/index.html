@@ -31,6 +31,13 @@
         .mobile-card-actions { display: flex; gap: 0.5rem; margin-top: 0.5rem; }
         .mobile-card-actions button { flex-grow: 1; }
         #mobile-input-modal .modal-content { max-width: 300px; }
+        
+        /* Tutorial Styles */
+        #tutorial-highlight { position: fixed; border-radius: 0.375rem; box-shadow: 0 0 0 9999px rgba(0, 0, 0, 0.6); z-index: 9998; transition: all 0.3s ease-in-out; }
+        #tutorial-tooltip { position: fixed; background-color: white; padding: 1rem; border-radius: 0.5rem; z-index: 9999; width: 300px; box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1); transition: all 0.3s ease-in-out; }
+        #tutorial-tooltip h3 { font-size: 1.125rem; font-weight: bold; margin-bottom: 0.5rem; }
+        #tutorial-tooltip p { font-size: 0.875rem; color: #4b5563; margin-bottom: 1rem; }
+        .tutorial-nav { display: flex; justify-content: space-between; align-items: center; }
     </style>
 </head>
 <body class="p-2 sm:p-4 md:p-8">
@@ -39,8 +46,9 @@
             <input type="text" id="report-title" class="text-xl sm:text-2xl md:text-3xl font-bold text-gray-800 text-center w-full border-b-2 border-transparent focus:border-blue-500 outline-none p-2" value="월별 재고 관리">
         </header>
         <div class="flex flex-wrap justify-center items-center mb-6 gap-2 md:gap-4">
+            <button id="start-tutorial-btn" class="control-button primary-button">튜토리얼 시작</button>
             <button id="view-switch-btn" class="control-button">모바일 뷰</button>
-            <button id="next-month-btn" class="control-button primary-button">다음달</button>
+            <button id="next-month-btn" class="control-button">다음달</button>
             <button id="clear-stock-in-btn" class="control-button danger-button">입고 비우기</button>
             <button id="clear-stock-out-btn" class="control-button danger-button">출고 비우기</button>
             <label for="json-upload-input" class="control-button">이전 항목 불러오기</label>
@@ -53,13 +61,17 @@
             <button id="add-item-btn" class="control-button">품목 추가</button>
         </div>
     </div>
+
+    <!-- Modals -->
     <div id="svg-modal" class="modal-overlay hidden">
         <div class="modal-content">
-            <h2 class="text-lg sm:text-xl font-bold mb-4">SVG 이미지 미리보기</h2>
+            <h2 class="text-lg sm:text-xl font-bold mb-4">이미지/데이터 미리보기</h2>
             <div id="svg-container" class="border border-gray-300 mb-4 bg-gray-100 p-1 sm:p-4 overflow-auto"></div>
             <div class="flex justify-end gap-2 sm:gap-4">
                 <button class="control-button modal-close-btn">닫기</button>
                 <button id="download-svg-btn" class="control-button primary-button">SVG 다운로드</button>
+                <button id="download-png-btn" class="control-button primary-button">PNG 다운로드</button>
+                <button id="copy-excel-data-btn" class="control-button primary-button">Excel용 데이터 복사</button>
             </div>
         </div>
     </div>
@@ -85,12 +97,40 @@
         </div>
     </div>
 
+    <!-- Tutorial UI -->
+    <div id="tutorial-highlight" class="hidden"></div>
+    <div id="tutorial-tooltip" class="hidden">
+        <h3 id="tutorial-title" class="text-gray-800"></h3>
+        <p id="tutorial-content"></p>
+        <div class="tutorial-nav">
+            <span id="tutorial-step-counter" class="text-sm font-medium text-gray-600"></span>
+            <div class="flex gap-2">
+                <button id="tutorial-prev-btn" class="control-button">이전</button>
+                <button id="tutorial-next-btn" class="control-button primary-button">다음</button>
+                <button id="tutorial-end-btn" class="control-button">종료</button>
+            </div>
+        </div>
+    </div>
+
     <script>
         let appState = {};
         let currentView = 'table';
         let itemIdToDelete = null;
         let editingItemId = null;
-        let reportTitleInput, viewSwitchBtn, jsonUploadInput, jsonDownloadBtn, svgExportBtn, mainContent, addItemBtn, svgModal, svgContainer, downloadSvgBtn, mobileInputModal, mobileInputTitle, mobileInputStock, mobileInputField, mobileInputConfirm, confirmModal, confirmCancelBtn, confirmDeleteBtn, nextMonthBtn, clearStockInBtn, clearStockOutBtn;
+        let reportTitleInput, viewSwitchBtn, jsonUploadInput, jsonDownloadBtn, svgExportBtn, mainContent, addItemBtn, svgModal, svgContainer, downloadSvgBtn, downloadPngBtn, copyExcelDataBtn, mobileInputModal, mobileInputTitle, mobileInputStock, mobileInputField, mobileInputConfirm, confirmModal, confirmCancelBtn, confirmDeleteBtn, nextMonthBtn, clearStockInBtn, clearStockOutBtn;
+        
+        let startTutorialBtn, tutorialHighlight, tutorialTooltip, tutorialTitle, tutorialContent, tutorialStepCounter, tutorialPrevBtn, tutorialNextBtn, tutorialEndBtn;
+        let tutorialActive = false;
+        let currentTutorialStep = 0;
+
+        const tutorialSteps = [
+            { element: '#add-item-btn', title: '1. 품목 추가', content: '이 버튼을 눌러 재고를 관리할 새로운 품목을 표에 추가할 수 있습니다.', position: 'top', action: () => { if (appState.inventory.length === 0) handleAddItem(); } },
+            { element: '.inventory-table tbody tr:first-child .table-input[data-field="name"]', title: '2. 정보 입력', content: '추가된 품목의 이름, 단가, 재고 등을 표에서 직접 수정할 수 있습니다. 모든 변경사항은 자동으로 계산에 반영됩니다.', position: 'bottom' },
+            { element: '#next-month-btn', title: '3. 다음달로 이동', content: '이번 달의 \'현재 재고\'를 다음 달의 \'이전 재고\'로 넘기고, 입고와 출고 수량은 0으로 초기화합니다. 월말 마감 시 사용하세요.', position: 'bottom' },
+            { element: '#json-download-btn', title: '4. 데이터 저장', content: '지금까지 작업한 모든 내용을 JSON 파일 형태로 컴퓨터에 저장합니다. 나중에 \'이전 항목 불러오기\'로 다시 작업할 수 있습니다.', position: 'bottom' },
+            { element: '#svg-export-btn', title: '5. 보고서 출력', content: '현재 재고 현황을 깔끔한 표 이미지(SVG)로 만들거나 Excel에서 바로 사용할 수 있는 데이터로 복사할 수 있습니다.', position: 'bottom' },
+            { element: '#start-tutorial-btn', title: '6. 튜토리얼 종료', content: '이제 모든 준비가 끝났습니다! 이 버튼을 다시 눌러 언제든지 튜토리얼을 다시 시작할 수 있습니다. 마음껏 사용해보세요!', position: 'bottom' }
+        ];
 
         function formatCurrency(number) { return new Intl.NumberFormat('ko-KR').format(number || 0); }
         
@@ -150,7 +190,7 @@
         }
 
         function renderMobileView() {
-            const mobileHTML = `
+             const mobileHTML = `
                 <div class="mobile-view">
                     ${appState.inventory.map((item, index) => {
                         const stockCurrent = (item.stockPrev || 0) + (item.stockIn || 0) - (item.stockOut || 0);
@@ -184,13 +224,10 @@
         function updateStateFromUI(targetInput) {
             appState.meta.title = reportTitleInput.value.trim() || '제목 없음';
             if (currentView !== 'table' || !targetInput) return null;
-
             const row = targetInput.closest('tr');
             if (!row) return null;
-            
             const id = row.dataset.id;
             const item = appState.inventory.find(i => i.id === id);
-
             if (item) {
                 const field = targetInput.dataset.field;
                 const value = targetInput.type === 'number' ? (parseInt(targetInput.value, 10) || 0) : targetInput.value;
@@ -201,16 +238,13 @@
 
         function updateCalculatedFields(itemId) {
             if (currentView !== 'table') return;
-
             let totalInValue = 0, totalOutValue = 0, totalStockValue = 0;
-            
             appState.inventory.forEach(item => {
                 const stockCurrent = (item.stockPrev || 0) + (item.stockIn || 0) - (item.stockOut || 0);
                 const stockValue = stockCurrent * (item.price || 0);
                 totalInValue += (item.stockIn || 0) * (item.price || 0);
                 totalOutValue += (item.stockOut || 0) * (item.price || 0);
                 totalStockValue += stockValue;
-
                 if (item.id === itemId) {
                     const row = mainContent.querySelector(`tr[data-id="${itemId}"]`);
                     if (row) {
@@ -219,7 +253,6 @@
                     }
                 }
             });
-
             const footer = mainContent.querySelector('tfoot tr');
             if (footer) {
                 footer.cells[1].textContent = formatCurrency(totalInValue);
@@ -228,266 +261,72 @@
             }
         }
 
-        function handleAddItem() {
-            const newItem = {
-                id: `item-${Date.now()}-${Math.random()}`,
-                name: "새 품목", price: 0, stockPrev: 0, stockIn: 0, stockOut: 0
-            };
-            appState.inventory.push(newItem);
-            render();
-        }
-
-        function handleDeleteItem(id) {
-            itemIdToDelete = id;
-            confirmModal.classList.remove('hidden');
-        }
-
-        function executeDelete() {
-            if (itemIdToDelete) {
-                appState.inventory = appState.inventory.filter(item => item.id !== itemIdToDelete);
-                itemIdToDelete = null;
-                confirmModal.classList.add('hidden');
-                render();
-            }
-        }
-
-        function handleJsonUpload(event) {
-            const file = event.target.files[0];
-            if (!file) return;
-            const reader = new FileReader();
-            reader.onload = (e) => {
-                try {
-                    const data = JSON.parse(e.target.result);
-                    if (data && data.meta && data.inventory) {
-                        appState = data;
-                        render();
-                        alert('JSON 파일이 성공적으로 로드되었습니다.');
-                    } else {
-                        throw new Error('Invalid JSON structure.');
-                    }
-                } catch (error) {
-                    alert('잘못된 형식의 JSON 파일입니다.');
-                }
-            };
-            reader.readAsText(file);
-            event.target.value = null;
-        }
-
-        function handleJsonDownload() {
-            if (currentView === 'table') {
-                const firstInput = mainContent.querySelector('.table-input');
-                if(firstInput) updateStateFromUI(firstInput);
-            }
-            appState.meta.lastModified = new Date().toISOString();
-            const dataStr = JSON.stringify(appState, null, 2);
-            const dataBlob = new Blob([dataStr], { type: 'application/json' });
-            const url = URL.createObjectURL(dataBlob);
-            const link = document.createElement('a');
-            link.href = url;
-            const safeTitle = appState.meta.title.replace(/[^a-z0-9ㄱ-힣]/gi, '_').toLowerCase();
-            link.download = `${safeTitle || 'inventory'}.json`;
-            document.body.appendChild(link);
-            link.click();
-            document.body.removeChild(link);
-            URL.revokeObjectURL(url);
-        }
-
-        function generateSVG() {
-            const ROW_HEIGHT = 30, PADDING = 10, FONT_SIZE = 12, FONT_FAMILY = "'Noto Sans KR', sans-serif";
-            const COL_WIDTHS = [40, 150, 80, 80, 80, 80, 80, 100];
-            const TABLE_WIDTH = COL_WIDTHS.reduce((a, b) => a + b, 0);
-            const headers = ['번호', '품목', '단가', '이전 재고', '입고', '출고', '현재 재고', '재고 금액'];
-            const title = appState.meta.title || '제목 없음';
-            let svgContent = '', currentY = 0;
-            svgContent += `<text x="${TABLE_WIDTH / 2}" y="${currentY + ROW_HEIGHT}" dominant-baseline="middle" text-anchor="middle" font-size="16" font-weight="bold" font-family="${FONT_FAMILY}">${title}</text>`;
-            currentY += ROW_HEIGHT * 1.5;
-            let currentX = 0;
-            svgContent += `<g font-weight="bold">`;
-            headers.forEach((header, i) => {
-                svgContent += `<rect x="${currentX}" y="${currentY}" width="${COL_WIDTHS[i]}" height="${ROW_HEIGHT}" fill="#f3f4f6" stroke="#d1d5db" />`;
-                svgContent += `<text x="${currentX + COL_WIDTHS[i] / 2}" y="${currentY + ROW_HEIGHT / 2}" dominant-baseline="middle" text-anchor="middle" font-size="${FONT_SIZE}" font-family="${FONT_FAMILY}">${header}</text>`;
-                currentX += COL_WIDTHS[i];
-            });
-            svgContent += `</g>`;
-            currentY += ROW_HEIGHT;
-            let totalInValue = 0, totalOutValue = 0, totalStockValue = 0;
-            appState.inventory.forEach((item, rowIndex) => {
-                const stockCurrent = (item.stockPrev || 0) + (item.stockIn || 0) - (item.stockOut || 0);
-                const stockValue = stockCurrent * (item.price || 0);
-                totalInValue += (item.stockIn || 0) * (item.price || 0);
-                totalOutValue += (item.stockOut || 0) * (item.price || 0);
-                totalStockValue += stockValue;
-                const values = [rowIndex + 1, item.name, formatCurrency(item.price), item.stockPrev, item.stockIn, item.stockOut, stockCurrent, formatCurrency(stockValue)];
-                currentX = 0;
-                values.forEach((val, i) => {
-                    let anchor = 'end', textX = currentX + COL_WIDTHS[i] - PADDING;
-                    if (i === 0) { anchor = 'middle'; textX = currentX + COL_WIDTHS[i] / 2; } 
-                    else if (i === 1) { anchor = 'start'; textX = currentX + PADDING; }
-                    svgContent += `<rect x="${currentX}" y="${currentY}" width="${COL_WIDTHS[i]}" height="${ROW_HEIGHT}" fill="white" stroke="#d1d5db" />`;
-                    svgContent += `<text x="${textX}" y="${currentY + ROW_HEIGHT / 2}" dominant-baseline="middle" text-anchor="${anchor}" font-size="${FONT_SIZE}" font-family="${FONT_FAMILY}">${val}</text>`;
-                    currentX += COL_WIDTHS[i];
-                });
-                currentY += ROW_HEIGHT;
-            });
-            currentX = 0;
-            const footerTitleWidth = COL_WIDTHS.slice(0, 4).reduce((a, b) => a + b, 0), inValueWidth = COL_WIDTHS[4], outValueWidth = COL_WIDTHS[5], totalValueWidth = COL_WIDTHS.slice(6).reduce((a, b) => a + b, 0);
-            svgContent += `<g font-weight="bold">`;
-            svgContent += `<rect x="0" y="${currentY}" width="${TABLE_WIDTH}" height="${ROW_HEIGHT}" fill="#f9fafb" stroke="#d1d5db" />`;
-            svgContent += `<text x="${currentX + footerTitleWidth / 2}" y="${currentY + ROW_HEIGHT / 2}" dominant-baseline="middle" text-anchor="middle" font-size="${FONT_SIZE}" font-family="${FONT_FAMILY}">총계</text>`;
-            currentX += footerTitleWidth;
-            svgContent += `<text x="${currentX + inValueWidth - PADDING}" y="${currentY + ROW_HEIGHT / 2}" dominant-baseline="middle" text-anchor="end" font-size="${FONT_SIZE}" font-family="${FONT_FAMILY}">${formatCurrency(totalInValue)}</text>`;
-            currentX += inValueWidth;
-            svgContent += `<text x="${currentX + outValueWidth - PADDING}" y="${currentY + ROW_HEIGHT / 2}" dominant-baseline="middle" text-anchor="end" font-size="${FONT_SIZE}" font-family="${FONT_FAMILY}">${formatCurrency(totalOutValue * -1)}</text>`;
-            currentX += outValueWidth;
-            svgContent += `<text x="${currentX + totalValueWidth - PADDING}" y="${currentY + ROW_HEIGHT / 2}" dominant-baseline="middle" text-anchor="end" font-size="${FONT_SIZE}" font-family="${FONT_FAMILY}">${formatCurrency(totalStockValue)}</text>`;
-            svgContent += `</g>`;
-            currentY += ROW_HEIGHT;
-            return `<svg width="${TABLE_WIDTH}" height="${currentY}" xmlns="http://www.w3.org/2000/svg" font-family="${FONT_FAMILY}"><style>text { font-family: 'Noto Sans KR', sans-serif; }</style>${svgContent}</svg>`;
-        }
-
-        function handleSvgExport() {
-            if (currentView === 'table') {
-                const firstInput = mainContent.querySelector('.table-input');
-                if(firstInput) updateStateFromUI(firstInput);
-            }
-            const svgString = generateSVG();
-            svgContainer.innerHTML = svgString;
-            svgModal.classList.remove('hidden');
-        }
-
-        function handleDownloadSVG() {
-            const svgData = svgContainer.innerHTML;
-            const svgBlob = new Blob([svgData], { type: "image/svg+xml;charset=utf-8" });
-            const svgUrl = URL.createObjectURL(svgBlob);
-            const downloadLink = document.createElement("a");
-            downloadLink.href = svgUrl;
-            const safeTitle = appState.meta.title.replace(/[^a-z0-9]/gi, '_').toLowerCase();
-            downloadLink.download = `${safeTitle || 'inventory'}.svg`;
-            document.body.appendChild(downloadLink);
-            downloadLink.click();
-            document.body.removeChild(downloadLink);
-            URL.revokeObjectURL(svgUrl);
-        }
-
-        function openMobileInputModal(itemId, type) {
-            const item = appState.inventory.find(i => i.id === itemId);
-            if (!item) return;
-            const stockCurrent = (item.stockPrev || 0) + (item.stockIn || 0) - (item.stockOut || 0);
-            mobileInputTitle.textContent = `${item.name} - ${type === 'in' ? '입고' : '출고'} 수량`;
-            mobileInputStock.textContent = `현재 재고: ${stockCurrent}`;
-            mobileInputField.value = '';
-            mobileInputConfirm.onclick = () => handleMobileUpdate(itemId, type);
-            mobileInputModal.classList.remove('hidden');
-            mobileInputField.focus();
-        }
-
-        function handleMobileUpdate(itemId, type) {
-            const qty = parseInt(mobileInputField.value, 10);
-            if (isNaN(qty) || qty <= 0) {
-                mobileInputModal.classList.add('hidden');
-                return;
-            }
-            const item = appState.inventory.find(i => i.id === itemId);
-            if (!item) return;
-            if (type === 'in') {
-                item.stockIn = (item.stockIn || 0) + qty;
-            } else if (type === 'out') {
-                const stockCurrent = (item.stockPrev || 0) + (item.stockIn || 0) - (item.stockOut || 0);
-                if (qty > stockCurrent) {
-                    alert(`재고가 부족합니다. (현재 재고: ${stockCurrent})`);
-                    return;
-                }
-                item.stockOut = (item.stockOut || 0) + qty;
-            }
-            mobileInputModal.classList.add('hidden');
-            render();
-        }
+        function handleAddItem() { const newItem = { id: `item-${Date.now()}-${Math.random()}`, name: "새 품목", price: 0, stockPrev: 0, stockIn: 0, stockOut: 0 }; appState.inventory.push(newItem); render(); }
+        function handleDeleteItem(id) { itemIdToDelete = id; confirmModal.classList.remove('hidden'); }
+        function executeDelete() { if (itemIdToDelete) { appState.inventory = appState.inventory.filter(item => item.id !== itemIdToDelete); itemIdToDelete = null; confirmModal.classList.add('hidden'); render(); } }
+        function handleJsonUpload(event) { const file = event.target.files[0]; if (!file) return; const reader = new FileReader(); reader.onload = (e) => { try { const data = JSON.parse(e.target.result); if (data && data.meta && data.inventory) { appState = data; render(); alert('JSON 파일이 성공적으로 로드되었습니다.'); } else { throw new Error('Invalid JSON structure.'); } } catch (error) { alert('잘못된 형식의 JSON 파일입니다.'); } }; reader.readAsText(file); event.target.value = null; }
+        function handleJsonDownload() { if (currentView === 'table') { const firstInput = mainContent.querySelector('.table-input'); if(firstInput) updateStateFromUI(firstInput); } appState.meta.lastModified = new Date().toISOString(); const dataStr = JSON.stringify(appState, null, 2); const dataBlob = new Blob([dataStr], { type: 'application/json' }); const url = URL.createObjectURL(dataBlob); const link = document.createElement('a'); link.href = url; const safeTitle = appState.meta.title.replace(/[^a-z0-9ㄱ-힣]/gi, '_').toLowerCase(); link.download = `${safeTitle || 'inventory'}.json`; document.body.appendChild(link); link.click(); document.body.removeChild(link); URL.revokeObjectURL(url); }
+        function generateSVG() { const ROW_HEIGHT = 30, PADDING = 10, FONT_SIZE = 12, FONT_FAMILY = "'Noto Sans KR', sans-serif"; const COL_WIDTHS = [40, 150, 80, 80, 80, 80, 80, 100]; const TABLE_WIDTH = COL_WIDTHS.reduce((a, b) => a + b, 0); const headers = ['번호', '품목', '단가', '이전 재고', '입고', '출고', '현재 재고', '재고 금액']; const title = appState.meta.title || '제목 없음'; let svgContent = '', currentY = 0; svgContent += `<text x="${TABLE_WIDTH / 2}" y="${currentY + ROW_HEIGHT}" dominant-baseline="middle" text-anchor="middle" font-size="16" font-weight="bold" font-family="${FONT_FAMILY}">${title}</text>`; currentY += ROW_HEIGHT * 1.5; let currentX = 0; svgContent += `<g font-weight="bold">`; headers.forEach((header, i) => { svgContent += `<rect x="${currentX}" y="${currentY}" width="${COL_WIDTHS[i]}" height="${ROW_HEIGHT}" fill="#f3f4f6" stroke="#d1d5db" />`; svgContent += `<text x="${currentX + COL_WIDTHS[i] / 2}" y="${currentY + ROW_HEIGHT / 2}" dominant-baseline="middle" text-anchor="middle" font-size="${FONT_SIZE}" font-family="${FONT_FAMILY}">${header}</text>`; currentX += COL_WIDTHS[i]; }); svgContent += `</g>`; currentY += ROW_HEIGHT; let totalInValue = 0, totalOutValue = 0, totalStockValue = 0; appState.inventory.forEach((item, rowIndex) => { const stockCurrent = (item.stockPrev || 0) + (item.stockIn || 0) - (item.stockOut || 0); const stockValue = stockCurrent * (item.price || 0); totalInValue += (item.stockIn || 0) * (item.price || 0); totalOutValue += (item.stockOut || 0) * (item.price || 0); totalStockValue += stockValue; const values = [rowIndex + 1, item.name, formatCurrency(item.price), item.stockPrev, item.stockIn, item.stockOut, stockCurrent, formatCurrency(stockValue)]; currentX = 0; values.forEach((val, i) => { let anchor = 'end', textX = currentX + COL_WIDTHS[i] - PADDING; if (i === 0) { anchor = 'middle'; textX = currentX + COL_WIDTHS[i] / 2; } else if (i === 1) { anchor = 'start'; textX = currentX + PADDING; } svgContent += `<rect x="${currentX}" y="${currentY}" width="${COL_WIDTHS[i]}" height="${ROW_HEIGHT}" fill="white" stroke="#d1d5db" />`; svgContent += `<text x="${textX}" y="${currentY + ROW_HEIGHT / 2}" dominant-baseline="middle" text-anchor="${anchor}" font-size="${FONT_SIZE}" font-family="${FONT_FAMILY}">${val}</text>`; currentX += COL_WIDTHS[i]; }); currentY += ROW_HEIGHT; }); currentX = 0; const footerTitleWidth = COL_WIDTHS.slice(0, 4).reduce((a, b) => a + b, 0), inValueWidth = COL_WIDTHS[4], outValueWidth = COL_WIDTHS[5], totalValueWidth = COL_WIDTHS.slice(6).reduce((a, b) => a + b, 0); svgContent += `<g font-weight="bold">`; svgContent += `<rect x="0" y="${currentY}" width="${TABLE_WIDTH}" height="${ROW_HEIGHT}" fill="#f9fafb" stroke="#d1d5db" />`; svgContent += `<text x="${currentX + footerTitleWidth / 2}" y="${currentY + ROW_HEIGHT / 2}" dominant-baseline="middle" text-anchor="middle" font-size="${FONT_SIZE}" font-family="${FONT_FAMILY}">총계</text>`; currentX += footerTitleWidth; svgContent += `<text x="${currentX + inValueWidth - PADDING}" y="${currentY + ROW_HEIGHT / 2}" dominant-baseline="middle" text-anchor="end" font-size="${FONT_SIZE}" font-family="${FONT_FAMILY}">${formatCurrency(totalInValue)}</text>`; currentX += inValueWidth; svgContent += `<text x="${currentX + outValueWidth - PADDING}" y="${currentY + ROW_HEIGHT / 2}" dominant-baseline="middle" text-anchor="end" font-size="${FONT_SIZE}" font-family="${FONT_FAMILY}">${formatCurrency(totalOutValue * -1)}</text>`; currentX += outValueWidth; svgContent += `<text x="${currentX + totalValueWidth - PADDING}" y="${currentY + ROW_HEIGHT / 2}" dominant-baseline="middle" text-anchor="end" font-size="${FONT_SIZE}" font-family="${FONT_FAMILY}">${formatCurrency(totalStockValue)}</text>`; svgContent += `</g>`; currentY += ROW_HEIGHT; return `<svg width="${TABLE_WIDTH}" height="${currentY}" xmlns="http://www.w3.org/2000/svg" font-family="${FONT_FAMILY}"><style>text { font-family: 'Noto Sans KR', sans-serif; }</style>${svgContent}</svg>`; }
+        function handleSvgExport() { if (currentView === 'table') { const firstInput = mainContent.querySelector('.table-input'); if(firstInput) updateStateFromUI(firstInput); } const svgString = generateSVG(); svgContainer.innerHTML = svgString; svgModal.classList.remove('hidden'); }
+        function handleDownloadSVG() { const svgData = svgContainer.innerHTML; const svgBlob = new Blob([svgData], { type: "image/svg+xml;charset=utf-8" }); const svgUrl = URL.createObjectURL(svgBlob); const downloadLink = document.createElement("a"); downloadLink.href = svgUrl; const safeTitle = appState.meta.title.replace(/[^a-z0-9]/gi, '_').toLowerCase(); downloadLink.download = `${safeTitle || 'inventory'}.svg`; document.body.appendChild(downloadLink); downloadLink.click(); document.body.removeChild(downloadLink); URL.revokeObjectURL(svgUrl); }
+        function handleDownloadPNG() { const svgData = svgContainer.innerHTML; const canvas = document.createElement('canvas'); const ctx = canvas.getContext('2d'); const img = new Image(); const svgBlob = new Blob([svgData], { type: 'image/svg+xml;charset=utf-8' }); const url = URL.createObjectURL(svgBlob); img.onload = function() { canvas.width = img.width; canvas.height = img.height; ctx.drawImage(img, 0, 0); URL.revokeObjectURL(url); const pngUrl = canvas.toDataURL('image/png'); const downloadLink = document.createElement("a"); downloadLink.href = pngUrl; const safeTitle = appState.meta.title.replace(/[^a-z0-9]/gi, '_').toLowerCase(); downloadLink.download = `${safeTitle || 'inventory'}.png`; document.body.appendChild(downloadLink); downloadLink.click(); document.body.removeChild(downloadLink); }; img.src = url; }
         
-        function handleNextMonth() {
-            appState.inventory.forEach(item => {
-                const currentStock = (item.stockPrev || 0) + (item.stockIn || 0) - (item.stockOut || 0);
-                item.stockPrev = currentStock;
-                item.stockIn = 0;
-                item.stockOut = 0;
+        function handleExportForExcel() {
+            const headers = ['번호', '품목', '단가', '이전 재고', '입고', '출고', '현재 재고', '재고 금액'];
+            let tsvContent = headers.join('\t') + '\n';
+
+            const dataRows = appState.inventory.map((item, index) => {
+                const rowIndex = index + 2; // Excel is 1-based and we have a header row
+                
+                const rowData = [
+                    index + 1,
+                    item.name,
+                    item.price || 0,
+                    item.stockPrev || 0,
+                    item.stockIn || 0,
+                    item.stockOut || 0,
+                ];
+
+                const currentStockFormula = `=D${rowIndex}+E${rowIndex}-F${rowIndex}`;
+                const stockValueFormula = `=C${rowIndex}*G${rowIndex}`;
+                rowData.push(currentStockFormula, stockValueFormula);
+                
+                return rowData.join('\t');
             });
-            render();
-        }
 
-        function handleClearStockIn() {
-            const isConfirmed = confirm('현재 입력된 모든 품목의 \'입고\' 수량을 0으로 초기화하시겠습니까?\n이 작업은 되돌릴 수 없습니다.');
-            if (isConfirmed) {
-                appState.inventory.forEach(item => {
-                    item.stockIn = 0;
-                });
-                render();
-            }
-        }
-
-        function handleClearStockOut() {
-            const isConfirmed = confirm('현재 입력된 모든 품목의 \'출고\' 수량을 0으로 초기화하시겠습니까?\n이 작업은 되돌릴 수 없습니다.');
-            if (isConfirmed) {
-                appState.inventory.forEach(item => {
-                    item.stockOut = 0;
-                });
-                render();
-            }
-        }
-
-        const mainContentListener = (event) => {
-            const target = event.target;
-
-            if (target.classList.contains('delete-item-btn')) { 
-                handleDeleteItem(target.dataset.id); 
-            }
-
-            if (currentView === 'table' && event.type === 'input' && target.classList.contains('table-input')) {
-                 const updatedItemId = updateStateFromUI(target);
-                 if (updatedItemId) {
-                    updateCalculatedFields(updatedItemId);
-                 }
-            }
+            tsvContent += dataRows.join('\n');
             
-            if (currentView === 'mobile' && target.classList.contains('mobile-update-btn')) {
-                 openMobileInputModal(target.dataset.id, target.dataset.type); 
-            }
-
-            if (currentView === 'mobile' && target.classList.contains('mobile-item-name')) {
-                const itemId = target.closest('.mobile-card').dataset.id;
-                editingItemId = itemId;
-                render();
-            }
+            const totalRows = appState.inventory.length + 1;
             
-            if (event.type === 'focusout' && target.classList.contains('mobile-name-input')) {
-                const itemId = target.dataset.id;
-                const item = appState.inventory.find(i => i.id === itemId);
-                if (item) {
-                    item.name = target.value.trim() || "이름 없음";
-                }
-                editingItemId = null;
-                render();
-            }
+            const footerWithFormulas = [
+                '', '', '', '총계',
+                `=SUMPRODUCT(C2:C${totalRows},E2:E${totalRows})`, // 총 입고 금액
+                `=SUMPRODUCT(C2:C${totalRows},F2:F${totalRows})*-1`, // 총 출고 금액
+                '',
+                `=SUM(H2:H${totalRows})` // 총 재고 금액
+            ];
 
-            if (event.type === 'keydown' && target.classList.contains('mobile-name-input')) {
-                if (event.key === 'Enter') {
-                    target.blur();
-                } else if (event.key === 'Escape') {
-                    editingItemId = null;
-                    render();
-                }
-            }
-        };
+            tsvContent += '\n' + footerWithFormulas.join('\t');
 
-        function attachEventListeners() {
-            mainContent.removeEventListener('click', mainContentListener);
-            mainContent.removeEventListener('input', mainContentListener);
-            mainContent.removeEventListener('focusout', mainContentListener);
-            mainContent.removeEventListener('keydown', mainContentListener);
-
-            mainContent.addEventListener('click', mainContentListener);
-            mainContent.addEventListener('input', mainContentListener);
-            mainContent.addEventListener('focusout', mainContentListener);
-            mainContent.addEventListener('keydown', mainContentListener);
+            navigator.clipboard.writeText(tsvContent).then(() => {
+                alert('데이터가 클립보드에 복사되었습니다.\nExcel 시트를 열고 붙여넣기(Ctrl+V)하세요.');
+            }).catch(err => {
+                console.error('클립보드 복사 실패:', err);
+                alert('클립보드 복사에 실패했습니다.');
+            });
         }
+
+        function openMobileInputModal(itemId, type) { const item = appState.inventory.find(i => i.id === itemId); if (!item) return; const stockCurrent = (item.stockPrev || 0) + (item.stockIn || 0) - (item.stockOut || 0); mobileInputTitle.textContent = `${item.name} - ${type === 'in' ? '입고' : '출고'} 수량`; mobileInputStock.textContent = `현재 재고: ${stockCurrent}`; mobileInputField.value = ''; mobileInputConfirm.onclick = () => handleMobileUpdate(itemId, type); mobileInputModal.classList.remove('hidden'); mobileInputField.focus(); }
+        function handleMobileUpdate(itemId, type) { const qty = parseInt(mobileInputField.value, 10); if (isNaN(qty) || qty <= 0) { mobileInputModal.classList.add('hidden'); return; } const item = appState.inventory.find(i => i.id === itemId); if (!item) return; if (type === 'in') { item.stockIn = (item.stockIn || 0) + qty; } else if (type === 'out') { const stockCurrent = (item.stockPrev || 0) + (item.stockIn || 0) - (item.stockOut || 0); if (qty > stockCurrent) { alert(`재고가 부족합니다. (현재 재고: ${stockCurrent})`); return; } item.stockOut = (item.stockOut || 0) + qty; } mobileInputModal.classList.add('hidden'); render(); }
+        function handleNextMonth() { appState.inventory.forEach(item => { const currentStock = (item.stockPrev || 0) + (item.stockIn || 0) - (item.stockOut || 0); item.stockPrev = currentStock; item.stockIn = 0; item.stockOut = 0; }); render(); }
+        function handleClearStockIn() { const isConfirmed = confirm('현재 입력된 모든 품목의 \'입고\' 수량을 0으로 초기화하시겠습니까?\n이 작업은 되돌릴 수 없습니다.'); if (isConfirmed) { appState.inventory.forEach(item => { item.stockIn = 0; }); render(); } }
+        function handleClearStockOut() { const isConfirmed = confirm('현재 입력된 모든 품목의 \'출고\' 수량을 0으로 초기화하시겠습니까?\n이 작업은 되돌릴 수 없습니다.'); if (isConfirmed) { appState.inventory.forEach(item => { item.stockOut = 0; }); render(); } }
+        const mainContentListener = (event) => { const target = event.target; if (target.classList.contains('delete-item-btn')) { handleDeleteItem(target.dataset.id); } if (currentView === 'table' && event.type === 'input' && target.classList.contains('table-input')) { const updatedItemId = updateStateFromUI(target); if (updatedItemId) { updateCalculatedFields(updatedItemId); } } if (currentView === 'mobile' && target.classList.contains('mobile-update-btn')) { openMobileInputModal(target.dataset.id, target.dataset.type); } if (currentView === 'mobile' && target.classList.contains('mobile-item-name')) { const itemId = target.closest('.mobile-card').dataset.id; editingItemId = itemId; render(); } if (event.type === 'focusout' && target.classList.contains('mobile-name-input')) { const itemId = target.dataset.id; const item = appState.inventory.find(i => i.id === itemId); if (item) { item.name = target.value.trim() || "이름 없음"; } editingItemId = null; render(); } if (event.type === 'keydown' && target.classList.contains('mobile-name-input')) { if (event.key === 'Enter') { target.blur(); } else if (event.key === 'Escape') { editingItemId = null; render(); } } };
+        function attachEventListeners() { mainContent.removeEventListener('click', mainContentListener); mainContent.removeEventListener('input', mainContentListener); mainContent.removeEventListener('focusout', mainContentListener); mainContent.removeEventListener('keydown', mainContentListener); mainContent.addEventListener('click', mainContentListener); mainContent.addEventListener('input', mainContentListener); mainContent.addEventListener('focusout', mainContentListener); mainContent.addEventListener('keydown', mainContentListener); }
+        function startTutorial() { tutorialActive = true; currentTutorialStep = 0; if (tutorialSteps[0].action) { tutorialSteps[0].action(); } showStep(currentTutorialStep); window.addEventListener('resize', updateTutorialPosition); }
+        function endTutorial() { tutorialActive = false; tutorialHighlight.classList.add('hidden'); tutorialTooltip.classList.add('hidden'); window.removeEventListener('resize', updateTutorialPosition); }
+        function showStep(index) { if (index < 0 || index >= tutorialSteps.length) { endTutorial(); return; } const step = tutorialSteps[index]; const targetElement = document.querySelector(step.element); if (!targetElement) { console.warn(`Tutorial element not found: ${step.element}`); currentTutorialStep++; showStep(currentTutorialStep); return; } const rect = targetElement.getBoundingClientRect(); tutorialHighlight.style.left = `${rect.left - 4}px`; tutorialHighlight.style.top = `${rect.top - 4}px`; tutorialHighlight.style.width = `${rect.width + 8}px`; tutorialHighlight.style.height = `${rect.height + 8}px`; const tooltipRect = tutorialTooltip.getBoundingClientRect(); if (step.position === 'bottom') { tutorialTooltip.style.top = `${rect.bottom + 10}px`; tutorialTooltip.style.left = `${rect.left + rect.width / 2 - tooltipRect.width / 2}px`; } else if (step.position === 'top') { tutorialTooltip.style.top = `${rect.top - tooltipRect.height - 10}px`; tutorialTooltip.style.left = `${rect.left + rect.width / 2 - tooltipRect.width / 2}px`; } const tooltipLeft = parseFloat(tutorialTooltip.style.left); if(tooltipLeft < 10) tutorialTooltip.style.left = '10px'; if(tooltipLeft + tooltipRect.width > window.innerWidth - 10) tutorialTooltip.style.left = `${window.innerWidth - tooltipRect.width - 10}px`; tutorialTitle.textContent = step.title; tutorialContent.textContent = step.content; tutorialStepCounter.textContent = `(${index + 1}/${tutorialSteps.length})`; tutorialPrevBtn.disabled = index === 0; tutorialNextBtn.textContent = index === tutorialSteps.length - 1 ? '완료' : '다음'; tutorialHighlight.classList.remove('hidden'); tutorialTooltip.classList.remove('hidden'); }
+        function updateTutorialPosition() { if (tutorialActive) { showStep(currentTutorialStep); } }
 
         function init() {
             reportTitleInput = document.getElementById('report-title');
@@ -500,6 +339,8 @@
             svgModal = document.getElementById('svg-modal');
             svgContainer = document.getElementById('svg-container');
             downloadSvgBtn = document.getElementById('download-svg-btn');
+            downloadPngBtn = document.getElementById('download-png-btn');
+            copyExcelDataBtn = document.getElementById('copy-excel-data-btn');
             mobileInputModal = document.getElementById('mobile-input-modal');
             mobileInputTitle = document.getElementById('mobile-input-title');
             mobileInputStock = document.getElementById('mobile-input-stock');
@@ -512,11 +353,17 @@
             clearStockInBtn = document.getElementById('clear-stock-in-btn');
             clearStockOutBtn = document.getElementById('clear-stock-out-btn');
             
-            appState = {
-                meta: { title: "월별 재고 관리", lastModified: new Date().toISOString() },
-                inventory: []
-            };
+            startTutorialBtn = document.getElementById('start-tutorial-btn');
+            tutorialHighlight = document.getElementById('tutorial-highlight');
+            tutorialTooltip = document.getElementById('tutorial-tooltip');
+            tutorialTitle = document.getElementById('tutorial-title');
+            tutorialContent = document.getElementById('tutorial-content');
+            tutorialStepCounter = document.getElementById('tutorial-step-counter');
+            tutorialPrevBtn = document.getElementById('tutorial-prev-btn');
+            tutorialNextBtn = document.getElementById('tutorial-next-btn');
+            tutorialEndBtn = document.getElementById('tutorial-end-btn');
 
+            appState = { meta: { title: "월별 재고 관리", lastModified: new Date().toISOString() }, inventory: [] };
             render();
 
             addItemBtn.addEventListener('click', handleAddItem);
@@ -526,25 +373,19 @@
             nextMonthBtn.addEventListener('click', handleNextMonth);
             clearStockInBtn.addEventListener('click', handleClearStockIn);
             clearStockOutBtn.addEventListener('click', handleClearStockOut);
-            
-            viewSwitchBtn.addEventListener('click', () => {
-                editingItemId = null;
-                currentView = currentView === 'table' ? 'mobile' : 'table';
-                viewSwitchBtn.textContent = currentView === 'table' ? '모바일 뷰' : '테이블 뷰';
-                render();
-            });
-
-            document.querySelectorAll('.modal-close-btn').forEach(btn => {
-                btn.addEventListener('click', () => btn.closest('.modal-overlay').classList.add('hidden'));
-            });
-
+            viewSwitchBtn.addEventListener('click', () => { editingItemId = null; currentView = currentView === 'table' ? 'mobile' : 'table'; viewSwitchBtn.textContent = currentView === 'table' ? '모바일 뷰' : '테이블 뷰'; render(); });
+            document.querySelectorAll('.modal-close-btn').forEach(btn => { btn.addEventListener('click', () => btn.closest('.modal-overlay').classList.add('hidden')); });
             downloadSvgBtn.addEventListener('click', handleDownloadSVG);
+            downloadPngBtn.addEventListener('click', handleDownloadPNG);
+            copyExcelDataBtn.addEventListener('click', handleExportForExcel);
             reportTitleInput.addEventListener('change', () => { appState.meta.title = reportTitleInput.value.trim(); });
             confirmDeleteBtn.addEventListener('click', executeDelete);
-            confirmCancelBtn.addEventListener('click', () => {
-                itemIdToDelete = null;
-                confirmModal.classList.add('hidden');
-            });
+            confirmCancelBtn.addEventListener('click', () => { itemIdToDelete = null; confirmModal.classList.add('hidden'); });
+
+            startTutorialBtn.addEventListener('click', startTutorial);
+            tutorialEndBtn.addEventListener('click', endTutorial);
+            tutorialNextBtn.addEventListener('click', () => { currentTutorialStep++; showStep(currentTutorialStep); });
+            tutorialPrevBtn.addEventListener('click', () => { currentTutorialStep--; showStep(currentTutorialStep); });
         }
         document.addEventListener('DOMContentLoaded', init);
     </script>
