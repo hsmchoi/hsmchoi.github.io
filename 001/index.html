@@ -125,6 +125,36 @@
         .driver-popover-navigation-btns button { text-shadow: none; background-color: var(--c-bg-tertiary); color: var(--c-text-primary); border-radius: var(--radius-m); }
         .driver-popover-navigation-btns .driver-popover-next-btn { background-color: var(--c-accent-primary); color: var(--c-bg-primary); }
 
+        @media (max-width: 768px) {
+            #retrospective-modal .modal-content {
+                height: 90vh;
+                max-height: 800px;
+                padding: var(--space-m);
+            }
+            .retrospective-body {
+                flex-direction: column;
+                overflow-y: auto;
+            }
+            .retrospective-sidebar, .retrospective-main {
+                flex-basis: auto;
+            }
+            #retro-type-filter {
+                flex-direction: row;
+                overflow-x: auto;
+                padding-bottom: var(--space-s);
+                -ms-overflow-style: none;
+                scrollbar-width: none;
+            }
+            #retro-type-filter::-webkit-scrollbar {
+                display: none;
+            }
+            .retro-filter-btn {
+                flex-direction: column;
+                flex: 0 0 auto;
+                width: 90px;
+            }
+        }
+
     </style>
 </head>
 <body>
@@ -133,43 +163,9 @@
         <div id="pair-view-container" class="view-container"></div>
         
         <div id="bottom-app-bar">
-            <button data-menu-action="profile" class="menu-button"><span class="material-symbols-outlined">person</span><span>프로필</span></button>
             <button data-menu-action="retrospective" class="menu-button"><span class="material-symbols-outlined">history</span><span>회고록</span></button>
             <button data-menu-action="today" class="menu-button"><span class="material-symbols-outlined">today</span><span>오늘로</span></button>
             <button data-menu-action="theme" class="menu-button"><span class="material-symbols-outlined">palette</span><span>테마</span></button>
-        </div>
-    </div>
-    
-    <div id="profile-modal" class="modal-backdrop">
-        <div class="modal-content">
-            <div style="display: flex; justify-content: center; align-items: center; gap: var(--space-s); margin-bottom: var(--space-xs);">
-                <svg width="28" height="28" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><circle cx="4" cy="12" r="2" fill="currentColor" opacity="0.6"/><circle cx="9" cy="12" r="2.5" fill="currentColor" opacity="0.8"/><circle cx="15.5" cy="12" r="3.5" fill="currentColor"/></svg>
-                <h3 class="modal-headline" style="margin-bottom: 0;">Momentum</h3>
-            </div>
-            <p style="text-align: center; font-size: var(--font-size-s); color: var(--c-text-secondary); margin-top: calc(-1 * var(--space-xs)); margin-bottom: var(--space-l);">당신의 하루가 모여, 당신의 인생이 됩니다.</p>
-            <div style="display: flex; flex-direction: column; gap: var(--space-l);">
-                <div class="form-group"><label class="form-label" for="profile-name">이름</label><input type="text" id="profile-name" class="input-field"></div>
-                <div class="form-group"><label class="form-label" for="profile-dob">생년월일</label><input type="date" id="profile-dob" class="input-field" style="text-align: center;"></div>
-                <div class="form-group"><label class="form-label" for="profile-wake-up-time">기상 시간</label><input type="time" id="profile-wake-up-time" class="input-field" style="text-align: center;"></div>
-                <button id="manage-routines-btn" class="action-button tertiary" style="width: 100%;">반복 행동 관리</button>
-            </div>
-            <div class="modal-actions" style="margin-top: var(--space-xl);"><button class="action-button tertiary" style="padding: var(--space-s) var(--space-m);" data-action="close"><span class="material-symbols-outlined">close</span></button><button class="action-button" data-action="save">저장</button></div>
-        </div>
-    </div>
-
-    <div id="routine-modal" class="modal-backdrop">
-        <div class="modal-content">
-            <h3 class="modal-headline">성장을 만드는 꾸준한 습관</h3>
-            <p style="text-align: center; font-weight: 500; font-size: var(--font-size-m); color: var(--c-text-secondary); margin-top: calc(-1 * var(--space-m)); margin-bottom: var(--space-m);">매일의 노력이 당신을 만듭니다.</p>
-            <div id="routine-list" style="display: flex; flex-direction: column; gap: var(--space-s); max-height: 40vh; overflow-y: auto; margin-bottom: var(--space-m);"></div>
-            <div style="display: flex; flex-direction: column; gap: var(--space-m); padding-top: var(--space-m); border-top: 1px solid var(--c-border);">
-                <input type="text" id="routine-name" placeholder="행동 이름 (예: 아침 명상)" class="input-field">
-                <input type="time" id="routine-time" class="input-field" style="text-align: center;">
-                <div style="font-size: var(--font-size-s); text-align: center; color: var(--c-text-secondary);">색상 선택</div>
-                <div id="routine-color-palette" style="display: flex; justify-content: center; flex-wrap: wrap; gap: var(--space-m);"></div>
-                <button id="add-routine-btn" class="action-button" style="width: 100%;">추가하기</button>
-            </div>
-            <div class="modal-actions"><button class="action-button tertiary" style="padding: var(--space-s) var(--space-m);" data-action="close"><span class="material-symbols-outlined">close</span></button></div>
         </div>
     </div>
     
@@ -312,8 +308,6 @@
             saveWorkoutLog: (date, log) => localStorage.setItem(`workout_log_${formatDate(date)}`, JSON.stringify(log)),
             getMemos: (date) => safeJSONParse(`memos_${formatDate(date)}`, []),
             saveMemos: (date, log) => localStorage.setItem(`memos_${formatDate(date)}`, JSON.stringify(log)),
-            getProfile: () => safeJSONParse('user-profile-v2', { routines: [] }),
-            saveProfile: (profile) => localStorage.setItem('user-profile-v2', JSON.stringify(profile)),
             getEvents: () => safeJSONParse('user-events', []),
             saveEvents: (events) => localStorage.setItem('user-events', JSON.stringify(events)),
             getSettings: () => safeJSONParse('user-settings', { fontSize: 16, spacing: 8 }),
@@ -447,6 +441,55 @@
                 });
             }
         };
+        
+        const CertificateGenerator = {
+            async generate(date, workout) {
+                const canvas = document.createElement('canvas');
+                canvas.width = 1200;
+                canvas.height = 630; 
+                const ctx = canvas.getContext('2d');
+
+                const getStyle = (variable) => getComputedStyle(document.documentElement).getPropertyValue(variable).trim();
+
+                ctx.fillStyle = getStyle('--c-bg-primary');
+                ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+                ctx.strokeStyle = getStyle('--c-accent-primary');
+                ctx.lineWidth = 20;
+                ctx.strokeRect(10, 10, canvas.width - 20, canvas.height - 20);
+
+                ctx.fillStyle = getStyle('--c-text-primary');
+                ctx.font = 'bold 80px Poppins';
+                ctx.textAlign = 'center';
+                ctx.fillText('WORKOUT COMPLETE', canvas.width / 2, 150);
+                
+                ctx.fillStyle = getStyle(`--c-accent-${workout.type}`);
+                ctx.font = '60px Poppins';
+                ctx.fillText(workout.title, canvas.width / 2, 240);
+                
+                ctx.fillStyle = getStyle('--c-text-secondary');
+                ctx.font = '40px Inter';
+                const dateString = `${date.getFullYear()}년 ${date.getMonth() + 1}월 ${date.getDate()}일`;
+                ctx.fillText(dateString, canvas.width / 2, 320);
+
+                ctx.textAlign = 'left';
+                ctx.fillStyle = getStyle('--c-text-primary');
+                ctx.font = '32px Inter';
+                const exercises = workout.exercises;
+                const startY = 380;
+                const lineHeight = 50;
+                exercises.forEach((ex, index) => {
+                    ctx.fillText(`✓ ${ex.name}`, 100, startY + (index * lineHeight));
+                });
+
+                ctx.fillStyle = getStyle('--c-text-secondary');
+                ctx.font = '24px Inter';
+                ctx.textAlign = 'right';
+                ctx.fillText('Momentum App', canvas.width - 50, canvas.height - 40);
+
+                return canvas.toDataURL('image/png');
+            }
+        };
 
         function createTodayCard(date) { 
             const cardWrapper = document.createElement('div'); 
@@ -454,7 +497,6 @@
             cardWrapper.style.cssText = "width: 100%; max-width: 480px;"; 
             cardWrapper.dataset.date = formatDate(date); 
             const isRealToday = formatDate(date) === formatDate(REAL_TODAY); 
-            const dateAccentClass = isRealToday ? 'text-[var(--c-accent-primary)] font-bold' : 'text-[var(--c-text-secondary)]'; 
             cardWrapper.innerHTML = `<div class="day-card-content" data-flip-id="card-${formatDate(date)}"><div style="display: flex; justify-content: space-between; align-items: center;"><div class="date-picker-trigger" style="text-align: left; cursor: pointer;"><h2 style="font-weight: 700;">${date.getDate()}</h2><p style="color: ${isRealToday ? 'var(--c-accent-primary)' : 'var(--c-text-secondary)'}; font-weight: ${isRealToday ? '700' : '400'};">${date.toLocaleString('ko-KR', { weekday: 'long' })}</p></div></div><div style="border-top: 1px solid var(--c-border); margin: var(--space-m) 0;"></div><div class="card-inner-content" style="flex-grow: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; min-height: 350px;"></div></div>`; 
             updateTodayCard(cardWrapper); 
             return cardWrapper; 
@@ -480,8 +522,12 @@
 
         function renderPlanView(container, date, workout) {
             const logData = Data.getWorkoutLog(date);
+            const allExercises = workout.exercises || [];
+            const completedExercises = logData.filter(log => log.endTime);
+            const allDone = allExercises.length > 0 && completedExercises.length === allExercises.length;
 
-            const exercisesHTML = (workout.exercises || []).map(ex => {
+
+            const exercisesHTML = allExercises.map(ex => {
                 const exerciseLog = logData.find(log => log.name === ex.name);
                 let status = 'pending';
                 let durationHTML = '';
@@ -523,6 +569,20 @@
                     </button>
                 `;
             }).join('');
+            
+            let downloadButtonHTML = '';
+            if (allDone) {
+                downloadButtonHTML = `
+                    <button
+                        data-action="download-certificate"
+                        class="action-button"
+                        style="width: 100%; margin-top: var(--space-l);"
+                    >
+                        <span class="material-symbols-outlined">military_tech</span>
+                        <span>완료 인증서 다운로드</span>
+                    </button>
+                `;
+            }
 
             container.innerHTML = `
                 <div style="width: 100%; height: 100%; display: flex; flex-direction: column; align-items: center; justify-content: space-between; position: relative;">
@@ -531,6 +591,7 @@
                         <h3 style="font-weight: 700; font-size: var(--font-size-l);">${workout.title}</h3>
                     </div>
                     <div style="width: 100%; flex-grow: 1; display: flex; flex-direction: column; gap: var(--space-s);">${exercisesHTML}</div>
+                    ${downloadButtonHTML}
                 </div>`;
         }
         
@@ -624,7 +685,7 @@
         }
 
         function init() { 
-            DOMElements.modals = { profile: document.getElementById('profile-modal'), routine: document.getElementById('routine-modal'), event: document.getElementById('event-modal'), retrospective: document.getElementById('retrospective-modal'), memo: document.getElementById('memo-modal'), memoFeed: document.getElementById('memo-feed-modal'), themePicker: document.getElementById('theme-picker-modal'), settings: document.getElementById('settings-modal') }; 
+            DOMElements.modals = { event: document.getElementById('event-modal'), retrospective: document.getElementById('retrospective-modal'), memo: document.getElementById('memo-modal'), memoFeed: document.getElementById('memo-feed-modal'), themePicker: document.getElementById('theme-picker-modal'), settings: document.getElementById('settings-modal') }; 
             DOMElements.pairViewContainer = document.getElementById('pair-view-container'); 
             DOMElements.eventTimeLaterCheckbox = document.getElementById('event-time-later'); 
             DOMElements.eventTimeInput = document.getElementById('event-time'); 
@@ -638,15 +699,28 @@
             bgAnimation.init(); 
             setupPalettes(); 
             setupEventListeners(); 
-            const profile = Data.getProfile(); 
-            if (!profile.name || !profile.dob) { 
-                DOMElements.modals.profile.classList.add('visible'); 
-            } else if (!localStorage.getItem('v2_tutorial_completed')) { 
+            
+            if (!localStorage.getItem('v2_tutorial_completed')) { 
                 setTimeout(TutorialManager.start, 1000); 
             } 
             renderCurrentView(); 
         }
-        function setupPalettes() { const createSwatches = (container, items, type, contentFn) => { const containerEl = document.getElementById(container); containerEl.innerHTML = ''; items.forEach(item => { const swatch = document.createElement('div'); swatch.className = `${type}-swatch`; swatch.style.cssText = 'width: 36px; height: 36px; border-radius: 50%; cursor: pointer; border: 2px solid transparent; transition: all 0.2s ease; display: flex; align-items: center; justify-content: center; font-family: "Material Symbols Outlined"; font-size: 24px; user-select: none;'; swatch.dataset.value = item; swatch.innerHTML = contentFn(item); containerEl.appendChild(swatch); }); }; createSwatches('routine-color-palette', AppState.palettes.routine, 'color', color => `<div style="width: 100%; height: 100%; border-radius: 50%; background-color: ${color}"></div>`); createSwatches('event-shape-palette', AppState.palettes.eventShapes, 'shape', shape => `<span>${shape}</span>`); createSwatches('event-color-palette', AppState.palettes.eventColors, 'color', color => `<div style="width: 100%; height: 100%; border-radius: 50%; background-color: ${color}"></div>`); }
+        function setupPalettes() { 
+            const createSwatches = (container, items, type, contentFn) => { 
+                const containerEl = document.getElementById(container); 
+                if (!containerEl) return;
+                containerEl.innerHTML = ''; 
+                items.forEach(item => { 
+                    const swatch = document.createElement('div'); 
+                    swatch.className = `${type}-swatch`; 
+                    swatch.style.cssText = 'width: 36px; height: 36px; border-radius: 50%; cursor: pointer; border: 2px solid transparent; transition: all 0.2s ease; display: flex; align-items: center; justify-content: center; font-family: "Material Symbols Outlined"; font-size: 24px; user-select: none;'; 
+                    swatch.dataset.value = item; swatch.innerHTML = contentFn(item); 
+                    containerEl.appendChild(swatch); 
+                }); 
+            }; 
+            createSwatches('event-shape-palette', AppState.palettes.eventShapes, 'shape', shape => `<span>${shape}</span>`); 
+            createSwatches('event-color-palette', AppState.palettes.eventColors, 'color', color => `<div style="width: 100%; height: 100%; border-radius: 50%; background-color: ${color}"></div>`); 
+        }
         function setupEventListeners() { 
             document.body.addEventListener('click', (e) => { 
                 const button = e.target.closest('[data-action]'); 
@@ -662,11 +736,8 @@
                 DOMElements.eventTimeInput.disabled = e.target.checked; 
                 if (e.target.checked) DOMElements.eventTimeInput.value = ''; 
             }); 
-            document.getElementById('manage-routines-btn').addEventListener('click', () => { 
-                RoutineManager.show(); DOMElements.modals.routine.classList.add('visible'); 
-            }); 
         }
-        function handleAction(action, element) {
+        async function handleAction(action, element) {
             const cardWrapper = element.closest('.today-card');
             const dateStr = cardWrapper?.dataset.date;
             
@@ -700,6 +771,19 @@
                     updateTodayCard(cardWrapper);
                     break;
                 }
+                case 'download-certificate': {
+                    const date = new Date(dateStr);
+                    const workoutType = getWorkoutTypeForDate(date);
+                    const workout = WORKOUT_DEFINITIONS[workoutType];
+                    const dataUrl = await CertificateGenerator.generate(date, workout);
+                    const link = document.createElement('a');
+                    link.href = dataUrl;
+                    link.download = `Momentum-Workout-${formatDate(date)}.png`;
+                    document.body.appendChild(link);
+                    link.click();
+                    document.body.removeChild(link);
+                    break;
+                }
             }
         }
         function handleMenuAction(action, element) { 
@@ -707,13 +791,6 @@
             gsap.fromTo(icon, { y: 0 }, { y: -5, duration: 0.1, yoyo: true, repeat: 1, ease: 'power2.out' }); 
             Object.values(DOMElements.modals).forEach(modal => modal.classList.remove('visible')); 
             switch (action) { 
-                case 'profile': 
-                    const p = Data.getProfile(); 
-                    document.getElementById('profile-name').value = p.name || ''; 
-                    document.getElementById('profile-dob').value = p.dob || ''; 
-                    document.getElementById('profile-wake-up-time').value = p.wakeUpTime || '06:30'; 
-                    DOMElements.modals.profile.classList.add('visible'); 
-                    break; 
                 case 'retrospective': 
                     RetrospectiveManager.show(); 
                     break; 
@@ -740,17 +817,6 @@
         }
         function handleSave(modalId) { 
             switch(modalId) { 
-                case 'profile-modal': 
-                    const wasProfileEmpty = !Data.getProfile().name; 
-                    const profile = { name: document.getElementById('profile-name').value, dob: document.getElementById('profile-dob').value, wakeUpTime: document.getElementById('profile-wake-up-time').value, routines: Data.getProfile().routines || [] }; 
-                    if (profile.name && profile.dob) { 
-                        Data.saveProfile(profile); 
-                        document.getElementById(modalId).classList.remove('visible'); 
-                        if (wasProfileEmpty && !localStorage.getItem('v2_tutorial_completed')) { 
-                            TutorialManager.start(); 
-                        } 
-                    } 
-                    break; 
                 case 'event-modal': 
                     const events = Data.getEvents(); 
                     const newEvent = { id: Date.now(), name: document.getElementById('event-name').value, date: document.getElementById('event-date').value, time: DOMElements.eventTimeInput.disabled ? null : DOMElements.eventTimeInput.value, shape: document.querySelector('#event-shape-palette .selected')?.dataset.value, color: document.querySelector('#event-color-palette .selected')?.dataset.value, }; 
@@ -789,50 +855,7 @@
                     break; 
             } 
         }
-        const RoutineManager = { 
-            show() { 
-                this.renderList(); 
-                this.addEventListeners(); 
-            }, 
-            renderList() { 
-                const listEl = document.getElementById('routine-list'); 
-                listEl.innerHTML = ''; 
-                const profile = Data.getProfile(); 
-                (profile.routines || []).forEach(r => { 
-                    const item = document.createElement('div'); 
-                    item.className = 'routine-list-item'; 
-                    item.style.cssText = 'display: flex; align-items: center; justify-content: space-between; padding: var(--space-s); background-color: var(--c-bg-tertiary); border-radius: var(--radius-m);'; 
-                    item.innerHTML = `<div style="display: flex; align-items: center; gap: var(--space-s);"><div style="width: 20px; height: 20px; border-radius: 50%; background-color:${r.color}"></div><span>${r.name} (${r.time})</span></div><button class="icon-button" data-id="${r.id}"><span class="material-symbols-outlined">delete</span></button>`; 
-                    listEl.appendChild(item); 
-                }); 
-            }, 
-            addEventListeners() { 
-                if (this.listenersAdded) return; 
-                document.getElementById('add-routine-btn').addEventListener('click', () => { 
-                    const profile = Data.getProfile(); 
-                    const newRoutine = { id: Date.now(), name: document.getElementById('routine-name').value, time: document.getElementById('routine-time').value, color: document.querySelector('#routine-color-palette .selected')?.dataset.value }; 
-                    if (newRoutine.name && newRoutine.time && newRoutine.color) { 
-                        if(!profile.routines) profile.routines = []; 
-                        profile.routines.push(newRoutine); 
-                        Data.saveProfile(profile); 
-                        this.renderList(); 
-                    } 
-                }); 
-                document.getElementById('routine-list').addEventListener('click', e => { 
-                    const delBtn = e.target.closest('button[data-id]'); 
-                    if(delBtn) { 
-                        const itemToRemove = delBtn.closest('.routine-list-item'); 
-                        gsap.to(itemToRemove, { x: -50, opacity: 0, height: 0, paddingTop: 0, paddingBottom: 0, marginTop: 0, marginBottom: 0, duration: 0.4, ease: 'power2.in', onComplete: () => { 
-                            let p = Data.getProfile(); 
-                            p.routines = p.routines.filter(r => r.id !== parseInt(delBtn.dataset.id)); 
-                            Data.saveProfile(p); 
-                            this.renderList(); 
-                        } }); 
-                    } 
-                }); 
-                this.listenersAdded = true; 
-            } 
-        }
+        
         const RetrospectiveManager = { 
             show() { 
                 DOMElements.modals.retrospective.classList.add('visible'); 
@@ -945,7 +968,6 @@
                         { element: '.today-card .day-card-content', popover: { title: '오늘의 카드', description: '이곳에서 오늘의 활동을 확인하고 시작합니다.' } }, 
                         { popover: { title: '운동 시작하기', description: '운동 항목을 바로 클릭하여 기록을 시작하고, 다시 클릭하여 종료하세요!' } },
                         { element: '[data-menu-action="retrospective"]', popover: { title: '회고록', description: '과거의 모든 활동 기록을 이곳에서 확인하세요.' } }, 
-                        { element: '[data-menu-action="profile"]', popover: { title: '프로필', description: '이름, 생년월일 등 개인 정보를 설정합니다.' } }, 
                         { popover: { title: '스와이프', description: '카드를 좌우로 스와이프하여 날짜를 변경하고, 아래로 스와이프하여 메모를 추가할 수 있습니다.' } } 
                     ], 
                     onClose: () => { 
@@ -1007,3 +1029,4 @@
     </script>
 </body>
 </html>
+
