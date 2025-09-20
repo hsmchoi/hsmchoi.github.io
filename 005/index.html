@@ -11,17 +11,17 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/all.min.css">
     <style>
         :root {
-            --bg-color: #f3f4f6;
-            --card-bg: #ffffff;
-            --text-color: #1f2937;
-            --accent-color: #6366f1;
-            --accent-dark: #4f46e5;
-            --success-color: #22c55e;
-            --warning-color: #f97316;
-            --error-color: #ef4444;
-            --border-color: #e5e7eb;
+            --bg-color: #f0f4f8;
+            --card-bg: #e3f2fd;
+            --text-color: #263238;
+            --accent-color: #5c6bc0;
+            --accent-dark: #3f51b5;
+            --success-color: #66bb6a;
+            --warning-color: #ffb74d;
+            --error-color: #ef5350;
+            --border-color: #b0bec5;
             --shadow-color: rgba(0, 0, 0, 0.1);
-            --shadow-accent: rgba(99, 102, 241, 0.3);
+            --shadow-accent: rgba(92, 107, 192, 0.3);
             --gold-ratio: 1.618;
             --font-sm: 10px;
             --font-base: 16px;
@@ -133,14 +133,6 @@
             background-color: #f9fafb;
             position: relative;
         }
-        .target-input {
-            height: calc(3rem * 1.618);
-            padding: 0 2rem;
-            border-radius: 9999px;
-            border: 1px solid var(--border-color);
-            text-align: center;
-        }
-        
         .floating-message-container {
             position: fixed;
             bottom: calc(var(--spacing-unit) * 4);
@@ -177,10 +169,79 @@
             background-color: var(--accent-color);
             transition: width 0.5s ease-in-out;
         }
+        .mobile-view .container {
+            padding: 0.5rem;
+        }
+        .mobile-view .card {
+            border-radius: 1rem;
+            padding: 1.5rem;
+        }
+        .mobile-view .compact-bar-container {
+            width: 25%;
+        }
+        .mobile-view .gender-btn {
+            width: 4rem;
+            font-size: 1.5rem;
+        }
+        .mobile-view .target-input, .mobile-view .btn {
+            height: 3rem;
+        }
+        .mobile-view h1 {
+            font-size: 2.5rem;
+        }
+        .mobile-view h2 {
+            font-size: 1.5rem;
+        }
+        .mobile-view .space-y-8 > :not([hidden]) ~ :not([hidden]) {
+            --tw-space-y-reverse: 0;
+            margin-top: calc(1rem * calc(1 - var(--tw-space-y-reverse)));
+            margin-bottom: calc(1rem * var(--tw-space-y-reverse));
+        }
+        .mobile-view .space-y-12 > :not([hidden]) ~ :not([hidden]) {
+            --tw-space-y-reverse: 0;
+            margin-top: calc(1.5rem * calc(1 - var(--tw-space-y-reverse)));
+            margin-bottom: calc(1.5rem * var(--tw-space-y-reverse));
+        }
+        .mobile-view-toggle {
+            position: fixed;
+            bottom: 2rem;
+            right: 2rem;
+            width: 3.5rem;
+            height: 3.5rem;
+            border-radius: 50%;
+            background-color: var(--accent-color);
+            color: white;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            box-shadow: 0 4px 6px -1px var(--shadow-accent), 0 2px 4px -1px rgba(99, 102, 241, 0.1);
+            cursor: pointer;
+            font-size: 1.5rem;
+            transition: transform 0.2s ease-in-out;
+        }
+        .mobile-view-toggle:hover {
+            transform: scale(1.1);
+        }
+        .target-input-label-group {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+        .target-input {
+            width: 8rem;
+            height: 4rem;
+            font-size: 1.5rem;
+            font-weight: bold;
+            text-align: center;
+            border-radius: 1rem;
+            border: 1px solid var(--border-color);
+            padding: 0;
+            margin-top: 0.5rem;
+        }
     </style>
 </head>
 <body class="flex flex-col items-center justify-center min-h-screen p-4">
-    <div class="container mx-auto p-6">
+    <div id="appContainer" class="container mx-auto p-6">
         <div class="card p-8 md:p-12 space-y-8 md:space-y-12">
             <div class="text-center">
                 <h1 class="text-3xl md:text-5xl font-extrabold mb-2" style="font-size: var(--font-xl);">스피치 분석기</h1>
@@ -188,67 +249,71 @@
                     아래 '녹음 시작' 버튼을 눌러 스피치 훈련을 시작하세요.
                 </p>
             </div>
-            <div id="goalSettings" class="space-y-8">
-                <h2 class="text-2xl font-bold text-center" style="font-size: var(--font-lg);">훈련 목표 설정</h2>
-                <div class="flex flex-col items-center gap-4">
-                    <p class="text-sm font-medium text-gray-700" style="font-size: var(--font-base);">성별 선택</p>
-                    <div class="flex justify-center gap-8">
-                        <button id="maleBtn" class="gender-btn" data-gender="male" aria-label="남성 선택">
-                            <i class="fas fa-male"></i>
+            <div id="mainLayout" class="flex flex-col md:flex-row space-y-8 md:space-y-0 md:space-x-8">
+                <div id="goalSettings" class="md:w-1/2 space-y-8 md:border-r md:pr-8">
+                    <h2 class="text-2xl font-bold text-center" style="font-size: var(--font-lg);">훈련 목표 설정</h2>
+                    <div class="flex flex-col items-center gap-4">
+                        <p class="text-sm font-medium text-gray-700" style="font-size: var(--font-base);">성별 선택</p>
+                        <div class="flex justify-center gap-8">
+                            <button id="maleBtn" class="gender-btn" data-gender="male" aria-label="남성 선택">
+                                <i class="fas fa-male"></i>
+                            </button>
+                            <button id="femaleBtn" class="gender-btn" data-gender="female" aria-label="여성 선택">
+                                <i class="fas fa-female"></i>
+                            </button>
+                        </div>
+                    </div>
+                    <p id="templateHint" class="text-sm text-gray-500 italic text-center" style="font-size: var(--font-sm);">
+                        <i class="fas fa-lightbulb"></i> 성별을 선택하고 템플릿을 선택하거나 목표를 직접 입력하세요.
+                    </p>
+                    <div class="flex flex-wrap justify-center gap-4">
+                        <button id="leadershipBtn" class="px-6 py-3 bg-blue-500 text-white font-medium rounded-full hover:bg-blue-600 transition disabled:opacity-50 disabled:cursor-not-allowed" style="font-size: var(--font-base);" disabled>
+                            리더십
                         </button>
-                        <button id="femaleBtn" class="gender-btn" data-gender="female" aria-label="여성 선택">
-                            <i class="fas fa-female"></i>
+                        <button id="storytellingBtn" class="px-6 py-3 bg-purple-500 text-white font-medium rounded-full hover:bg-purple-600 transition disabled:opacity-50 disabled:cursor-not-allowed" style="font-size: var(--font-base);" disabled>
+                            스토리텔링
+                        </button>
+                        <button id="persuasionBtn" class="px-6 py-3 bg-yellow-500 text-white font-medium rounded-full hover:bg-yellow-600 transition disabled:opacity-50 disabled:cursor-not-allowed" style="font-size: var(--font-base);" disabled>
+                            설득
                         </button>
                     </div>
                 </div>
-                <p id="templateHint" class="text-sm text-gray-500 italic text-center" style="font-size: var(--font-sm);">
-                    <i class="fas fa-lightbulb"></i> 성별을 선택하고 템플릿을 선택하거나 목표를 직접 입력하세요.
-                </p>
-                <div class="flex flex-wrap justify-center gap-4">
-                    <button id="leadershipBtn" class="px-6 py-3 bg-blue-500 text-white font-medium rounded-full hover:bg-blue-600 transition disabled:opacity-50 disabled:cursor-not-allowed" style="font-size: var(--font-base);" disabled>
-                        리더십
-                    </button>
-                    <button id="storytellingBtn" class="px-6 py-3 bg-purple-500 text-white font-medium rounded-full hover:bg-purple-600 transition disabled:opacity-50 disabled:cursor-not-allowed" style="font-size: var(--font-base);" disabled>
-                        스토리텔링
-                    </button>
-                    <button id="persuasionBtn" class="px-6 py-3 bg-yellow-500 text-white font-medium rounded-full hover:bg-yellow-600 transition disabled:opacity-50 disabled:cursor-not-allowed" style="font-size: var(--font-base);" disabled>
-                        설득
-                    </button>
-                </div>
-                <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
-                    <div class="col-span-1 text-center">
-                        <label for="targetWPM" class="block text-sm font-medium text-gray-700 mb-2" style="font-size: var(--font-sm);">목표 WPM</label>
-                        <input type="number" id="targetWPM" class="target-input" placeholder="120">
+                <div class="md:w-1/2 space-y-8 md:pl-8">
+                    <div class="grid grid-cols-2 gap-4">
+                        <div class="target-input-label-group">
+                            <label for="targetWPM" class="block text-sm font-medium text-gray-700" style="font-size: var(--font-sm);">목표 WPM</label>
+                            <input type="number" id="targetWPM" class="target-input" placeholder="120">
+                        </div>
+                        <div class="target-input-label-group">
+                            <label for="targetVolume" class="block text-sm font-medium text-gray-700" style="font-size: var(--font-sm);">목표 음량 (dB)</label>
+                            <input type="number" id="targetVolume" class="target-input" placeholder="-15">
+                        </div>
+                        <div class="target-input-label-group">
+                            <label for="targetPitch" class="block text-sm font-medium text-gray-700" style="font-size: var(--font-sm);">목표 피치 (Hz)</label>
+                            <input type="number" id="targetPitch" class="target-input" placeholder="150">
+                        </div>
+                        <div class="target-input-label-group">
+                            <label for="targetPauses" class="block text-sm font-medium text-gray-700" style="font-size: var(--font-sm);">목표 일시 정지</label>
+                            <input type="number" id="targetPauses" class="target-input" placeholder="5">
+                        </div>
                     </div>
-                    <div class="col-span-1 text-center">
-                        <label for="targetVolume" class="block text-sm font-medium text-gray-700 mb-2" style="font-size: var(--font-sm);">목표 음량 (dB)</label>
-                        <input type="number" id="targetVolume" class="target-input" placeholder="-15">
+                    <div id="controls" class="flex flex-col items-center space-y-4">
+                        <button id="recordButton" class="btn btn-record w-full max-w-xs">
+                            <i class="fas fa-microphone"></i> 녹음 시작
+                        </button>
+                        <button id="stopButton" class="btn btn-stop w-full max-w-xs btn-disabled" disabled>
+                            <i class="fas fa-stop-circle"></i> 녹음 중지
+                        </button>
+                        <button id="downloadButton" class="btn bg-gray-500 text-white hover:bg-gray-600 w-full max-w-xs hidden">
+                            <i class="fas fa-download"></i> 녹음 다운로드
+                        </button>
+                        <div id="progressContainer" class="w-full max-w-xs hidden mt-4">
+                            <div class="progress-bar-container">
+                                <div id="progressBar" class="progress-bar"></div>
+                            </div>
+                            <p id="progressText" class="text-sm text-gray-500 text-center">00:00 / 00:00</p>
+                        </div>
                     </div>
-                    <div class="col-span-1 text-center">
-                        <label for="targetPitch" class="block text-sm font-medium text-gray-700 mb-2" style="font-size: var(--font-sm);">목표 피치 (Hz)</label>
-                        <input type="number" id="targetPitch" class="target-input" placeholder="150">
-                    </div>
-                    <div class="col-span-1 text-center">
-                        <label for="targetPauses" class="block text-sm font-medium text-gray-700 mb-2" style="font-size: var(--font-sm);">목표 일시 정지</label>
-                        <input type="number" id="targetPauses" class="target-input" placeholder="5">
-                    </div>
-                </div>
-            </div>
-            <div id="controls" class="flex flex-col items-center space-y-4">
-                <button id="recordButton" class="btn btn-record w-full max-w-xs">
-                    <i class="fas fa-microphone"></i> 녹음 시작
-                </button>
-                <button id="stopButton" class="btn btn-stop w-full max-w-xs btn-disabled" disabled>
-                    <i class="fas fa-stop-circle"></i> 녹음 중지
-                </button>
-                <button id="downloadButton" class="btn bg-gray-500 text-white hover:bg-gray-600 w-full max-w-xs hidden">
-                    <i class="fas fa-download"></i> 녹음 다운로드
-                </button>
-                <div id="progressContainer" class="w-full max-w-xs hidden mt-4">
-                    <div class="progress-bar-container">
-                        <div id="progressBar" class="progress-bar"></div>
-                    </div>
-                    <p id="progressText" class="text-sm text-gray-500 text-center">00:00 / 00:00</p>
                 </div>
             </div>
             <div id="results" class="space-y-8 hidden">
@@ -298,6 +363,9 @@
             </div>
         </div>
     </div>
+    <button id="mobileViewToggle" class="mobile-view-toggle" aria-label="모바일 뷰 전환">
+        <i class="fas fa-mobile-alt"></i>
+    </button>
     <div id="messageBox" class="floating-message-container">
         <div class="floating-message px-6 py-4 rounded-full text-center hidden">
             <span id="errorMessage"></span>
@@ -312,10 +380,7 @@
             audioContext: null,
             audioSource: null,
             workletNode: null,
-            wpmHistory: [],
-            volumeHistory: [],
-            pitchHistory: [],
-            pausesHistory: [],
+            analysisSession: null, // 중앙 분석 세션 객체
             selectedGender: null,
             speechChart: null,
             chartData: {
@@ -324,21 +389,21 @@
                     label: 'WPM',
                     data: [],
                     borderColor: 'var(--accent-color)',
-                    backgroundColor: 'rgba(99, 102, 241, 0.2)',
+                    backgroundColor: 'rgba(92, 107, 192, 0.2)',
                     fill: true,
                     tension: 0.3
                 }, {
                     label: '음량 (dB)',
                     data: [],
                     borderColor: 'var(--success-color)',
-                    backgroundColor: 'rgba(34, 197, 94, 0.2)',
+                    backgroundColor: 'rgba(102, 187, 106, 0.2)',
                     fill: true,
                     tension: 0.3
                 }, {
                     label: '피치 (Hz)',
                     data: [],
                     borderColor: 'var(--warning-color)',
-                    backgroundColor: 'rgba(249, 115, 22, 0.2)',
+                    backgroundColor: 'rgba(255, 183, 77, 0.2)',
                     fill: true,
                     tension: 0.3
                 }]
@@ -370,7 +435,6 @@
                     leadershipBtn: document.getElementById('leadershipBtn'),
                     storytellingBtn: document.getElementById('storytellingBtn'),
                     persuasionBtn: document.getElementById('persuasionBtn'),
-                    templateButtons: document.querySelectorAll('#goalSettings button'),
                     targetWPMInput: document.getElementById('targetWPM'),
                     targetVolumeInput: document.getElementById('targetVolume'),
                     targetPitchInput: document.getElementById('targetPitch'),
@@ -386,7 +450,10 @@
                     errorMessage: document.getElementById('errorMessage'),
                     progressContainer: document.getElementById('progressContainer'),
                     progressBar: document.getElementById('progressBar'),
-                    progressText: document.getElementById('progressText')
+                    progressText: document.getElementById('progressText'),
+                    mobileViewToggle: document.getElementById('mobileViewToggle'),
+                    appContainer: document.getElementById('appContainer'),
+                    mainLayout: document.getElementById('mainLayout'),
                 };
                 this.initEventListeners();
                 this.initChart();
@@ -400,6 +467,10 @@
                 this.els.leadershipBtn.onclick = () => this.setGoalTemplate('leadership');
                 this.els.storytellingBtn.onclick = () => this.setGoalTemplate('storytelling');
                 this.els.persuasionBtn.onclick = () => this.setGoalTemplate('persuasion');
+                this.els.mobileViewToggle.onclick = () => this.toggleMobileView();
+            },
+            toggleMobileView() {
+                this.els.appContainer.classList.toggle('mobile-view');
             },
             async startRecording() {
                 try {
@@ -412,9 +483,13 @@
                     this.audioSource.connect(this.workletNode);
                     this.workletNode.connect(this.audioContext.destination);
                     this.workletNode.port.onmessage = (event) => {
-                        this.currentMetrics = event.data;
-                        this.updateResults();
-                        this.drawWaveform(event.data.isSpeaking);
+                        // AudioWorklet에서 받은 프레임 데이터를 history에 저장
+                        const frameData = event.data;
+                        if (this.analysisSession) {
+                            this.analysisSession.history.push(frameData);
+                            this.updateResults(); // 새로운 데이터로 UI 업데이트
+                            this.drawWaveform(frameData.isSpeaking);
+                        }
                     };
                     this.mediaRecorder = new MediaRecorder(stream);
                     this.mediaRecorder.ondataavailable = (e) => this.audioChunks.push(e.data);
@@ -443,6 +518,9 @@
                 if (this.workletNode) {
                     this.workletNode.disconnect();
                 }
+                
+                this.finalizeAnalysis(); // 최종 분석 실행
+                
                 if (this.audioContext) {
                     this.audioContext.close();
                 }
@@ -457,8 +535,59 @@
                         gsap.fromTo(this.els.goalSettingsDiv, { opacity: 0, y: -20 }, { opacity: 1, y: 0, duration: 0.5 });
                     }
                 });
-                this.showMessage('✅ 녹음 완료. 결과를 분석 중입니다.');
+                
                 this.els.downloadButton.classList.remove('hidden');
+            },
+            finalizeAnalysis() {
+                if (!this.analysisSession || this.analysisSession.history.length === 0) {
+                    this.showMessage('분석할 데이터가 없습니다.');
+                    return;
+                }
+                const history = this.analysisSession.history;
+                this.analysisSession.endTime = performance.now();
+
+                const totalDuration = (this.analysisSession.endTime - this.analysisSession.startTime) / 1000;
+                const frameDuration = 128 / this.audioContext.sampleRate; 
+
+                const speakingFrames = history.filter(d => d.isSpeaking);
+                const speakingDuration = speakingFrames.length * frameDuration;
+                const silenceDuration = totalDuration - speakingDuration;
+
+                const avgRms = speakingFrames.length > 0 ? speakingFrames.reduce((sum, d) => sum + d.rms, 0) / speakingFrames.length : 0;
+                const avgVolumeDb = avgRms > 0 ? 20 * Math.log10(avgRms) : -100;
+
+                const pitchFrames = speakingFrames.filter(d => d.pitch > 0);
+                const avgPitchHz = pitchFrames.length > 0 ? pitchFrames.reduce((sum, d) => sum + d.pitch, 0) / pitchFrames.length : 0;
+                
+                let numPauses = 0;
+                for (let i = 1; i < history.length; i++) {
+                    if (history[i-1].isSpeaking && !history[i].isSpeaking && (history[i].timestamp - history[i-1].timestamp > 300)) {
+                        numPauses++;
+                    }
+                }
+
+                let totalSpeechSegments = 0;
+                for (let i = 1; i < history.length; i++) {
+                    if (!history[i-1].isSpeaking && history[i].isSpeaking) {
+                        totalSpeechSegments++;
+                    }
+                }
+                const totalWords = totalSpeechSegments * 1.5;
+                const speakingMinutes = speakingDuration / 60;
+                const avgWpm = speakingMinutes > 0 ? totalWords / speakingMinutes : 0;
+
+                this.analysisSession.summary = {
+                    totalDuration: totalDuration.toFixed(1),
+                    speakingDuration: speakingDuration.toFixed(1),
+                    silenceDuration: silenceDuration.toFixed(1),
+                    numPauses,
+                    avgWpm: avgWpm.toFixed(0),
+                    avgVolumeDb: avgVolumeDb.toFixed(1),
+                    avgPitchHz: avgPitchHz.toFixed(1),
+                };
+
+                console.log('Final Analysis Summary:', this.analysisSession.summary);
+                this.showMessage('✅ 최종 분석 완료!');
             },
             downloadAudio() {
                 if (this.audioChunks.length === 0) {
@@ -475,10 +604,6 @@
                 document.body.removeChild(downloadLink);
             },
             resetState() {
-                this.wpmHistory = [];
-                this.volumeHistory = [];
-                this.pitchHistory = [];
-                this.pausesHistory = [];
                 this.audioChunks = [];
                 this.chartData.labels = [];
                 this.chartData.datasets[0].data = [];
@@ -487,13 +612,26 @@
                 if (this.speechChart) {
                     this.speechChart.update();
                 }
-                this.currentMetrics = {
-                    totalSpeakingTime: 0,
-                    totalSilentPeriods: 0,
-                    totalWords: 0,
-                    totalVolumeSum: 0,
-                    totalPitchSum: 0,
-                    speakingFramesCount: 0,
+                // 중앙 분석 세션 객체 초기화
+                this.analysisSession = {
+                    startTime: performance.now(),
+                    endTime: null,
+                    targetMetrics: {
+                        wpm: parseFloat(this.els.targetWPMInput.value) || 120,
+                        volume: parseFloat(this.els.targetVolumeInput.value) || -15,
+                        pitch: parseFloat(this.els.targetPitchInput.value) || 150,
+                        pauses: parseInt(this.els.targetPausesInput.value, 10) || 5,
+                    },
+                    history: [],
+                    summary: {
+                        totalDuration: 0,
+                        speakingDuration: 0,
+                        silenceDuration: 0,
+                        numPauses: 0,
+                        avgWpm: 0,
+                        avgVolumeDb: 0,
+                        avgPitchHz: 0,
+                    }
                 };
             },
             updateUIForRecording(isRecording) {
@@ -504,29 +642,68 @@
                 this.els.downloadButton.classList.add('hidden');
             },
             updateResults() {
-                const { totalSpeakingTime, totalSilentPeriods, totalWords, totalVolumeSum, totalPitchSum, speakingFramesCount } = this.currentMetrics;
-                const durationSeconds = totalSpeakingTime;
-                const wpm = (totalWords / durationSeconds) * 60 || 0;
-                const averageVolume = speakingFramesCount > 0 ? totalVolumeSum / speakingFramesCount : 0;
-                const averagePitch = speakingFramesCount > 0 ? totalPitchSum / speakingFramesCount : 0;
-                const volumeInDb = averageVolume > 0 ? 20 * Math.log10(averageVolume) : -100;
+                if (!this.analysisSession || this.analysisSession.history.length < 10) return; // 데이터가 충분히 쌓인 후 분석 시작
+
+                const SLIDING_WINDOW_SECONDS = 3; // 최근 3초간의 데이터를 기반으로 실시간 피드백 계산
+                const now = performance.now();
+                const history = this.analysisSession.history;
+
+                // 1. 슬라이딩 윈도우에 해당하는 데이터 필터링
+                const windowStartTime = now - SLIDING_WINDOW_SECONDS * 1000;
+                const windowHistory = history.filter(d => d.timestamp >= windowStartTime);
+                if (windowHistory.length === 0) return;
+
+                const speakingInWindow = windowHistory.filter(d => d.isSpeaking);
+                const durationSeconds = (now - this.analysisSession.startTime) / 1000;
+
+                // 2. WPM 계산 로직 개선 (음성 시작 횟수 기반 추정)
+                let speechSegments = 0;
+                for (let i = 1; i < windowHistory.length; i++) {
+                    if (!windowHistory[i-1].isSpeaking && windowHistory[i].isSpeaking) {
+                        speechSegments++;
+                    }
+                }
+                const wordsInWindow = speechSegments * 1.5; // 한 음절당 평균 1.5 단어로 추정
+                const wpm = (wordsInWindow / SLIDING_WINDOW_SECONDS) * 60 || 0;
+
+                // 3. 음량 및 피치 계산 (슬라이딩 윈도우 기준)
+                const avgRms = speakingInWindow.length > 0 ? speakingInWindow.reduce((sum, d) => sum + d.rms, 0) / speakingInWindow.length : 0;
+                const volumeInDb = avgRms > 0 ? 20 * Math.log10(avgRms) : -100;
+
+                const pitchInWindow = speakingInWindow.filter(d => d.pitch > 0);
+                const averagePitch = pitchInWindow.length > 0 ? pitchInWindow.reduce((sum, d) => sum + d.pitch, 0) / pitchInWindow.length : 0;
+
+                // 4. 일시정지 횟수 계산 (전체 녹음 시간 기준)
+                let pauses = 0;
+                for(let i = 1; i < history.length; i++) {
+                    // 300ms 이상 지속되는 침묵을 하나의 '일시정지'로 간주
+                    if(history[i-1].isSpeaking && !history[i].isSpeaking && (history[i].timestamp - history[i-1].timestamp > 300)) {
+                        pauses++;
+                    }
+                }
+
+                // 5. UI 업데이트
                 this.els.wpmResult.textContent = wpm.toFixed(0);
                 this.els.volumeResult.textContent = volumeInDb.toFixed(1);
                 this.els.pitchResult.textContent = averagePitch.toFixed(1);
-                this.els.pausesResult.textContent = totalSilentPeriods;
-                const targetWPM = parseFloat(this.els.targetWPMInput.value) || 120;
-                const targetVolume = parseFloat(this.els.targetVolumeInput.value) || -15;
-                const targetPitch = parseFloat(this.els.targetPitchInput.value) || 150;
-                const targetPauses = parseInt(this.els.targetPausesInput.value, 10) || 5;
+                this.els.pausesResult.textContent = pauses;
+
+                const { targetWPM, targetVolume, targetPitch, targetPauses } = this.analysisSession.targetMetrics;
+
                 this.updateIndicator(this.els.wpmIndicator, wpm, targetWPM, targetWPM * 0.5, targetWPM * 1.5);
                 this.updateIndicator(this.els.volumeIndicator, volumeInDb, targetVolume, targetVolume - 10, targetVolume + 10);
                 this.updateIndicator(this.els.pitchIndicator, averagePitch, targetPitch, targetPitch * 0.5, targetPitch * 1.5);
-                this.updateIndicator(this.els.pausesIndicator, totalSilentPeriods, targetPauses, targetPauses - 3, targetPauses + 3);
+                this.updateIndicator(this.els.pausesIndicator, pauses, targetPauses, targetPauses > 3 ? targetPauses - 3: 0, targetPauses + 3);
+
                 this.els.wpmFeedback.textContent = this.getFeedback(wpm, targetWPM, 'wpm');
                 this.els.volumeFeedback.textContent = this.getFeedback(volumeInDb, targetVolume, 'volume');
                 this.els.pitchFeedback.textContent = this.getFeedback(averagePitch, targetPitch, 'pitch');
-                this.els.pausesFeedback.textContent = this.getFeedback(totalSilentPeriods, targetPauses, 'pauses');
-                this.updateChart(wpm, volumeInDb, averagePitch, durationSeconds);
+                this.els.pausesFeedback.textContent = this.getFeedback(pauses, targetPauses, 'pauses');
+                
+                // 차트는 1초에 한 번만 업데이트하여 성능 확보
+                if (history.length % Math.floor(this.audioContext.sampleRate / 128) === 0) {
+                    this.updateChart(wpm, volumeInDb, averagePitch, durationSeconds);
+                }
             },
             updateIndicator(indicator, currentValue, targetValue, minBound, maxBound) {
                 if (isNaN(targetValue) || targetValue === 0) {
@@ -692,66 +869,57 @@
                     }
                     constructor() {
                         super();
-                        this.sampleRate = 48000;
-                        this.isSpeaking = false;
-                        this.totalSilentPeriods = 0;
-                        this.totalWords = 0;
-                        this.speakingFrames = 0;
-                        this.totalVolumeSum = 0;
-                        this.totalPitchSum = 0;
+                        this.sampleRate = sampleRate; // AudioWorkletGlobalScope.sampleRate
                         this.silenceThreshold = 0.01;
+                        // 상태를 관리하는 변수들을 모두 제거
                     }
-                    process(inputs) {
-                        const input = inputs[0];
-                        if (!input || input.length === 0) return true;
-                        const channelData = input[0];
-                        const frameLength = channelData.length;
-                        let isCurrentSpeaking = false;
-                        let sumOfSquares = 0;
-                        let pitch = 0;
-                        for (let i = 0; i < frameLength; i++) {
-                            sumOfSquares += channelData[i] * channelData[i];
-                        }
-                        const rms = Math.sqrt(sumOfSquares / frameLength);
-                        if (rms > this.silenceThreshold) {
-                            isCurrentSpeaking = true;
-                        }
-                        const buffer = channelData.slice(0, frameLength);
+                    
+                    // Autocorrelation-based pitch detection
+                    getPitch(buffer) {
+                        const bufferSize = buffer.length;
                         let maxCorrelation = 0;
-                        let maxLag = -1;
-                        for (let lag = 1; lag < frameLength / 2; lag++) {
+                        let bestLag = -1;
+
+                        // 음성 주파수 범위 (75Hz ~ 300Hz)에 해당하는 lag만 탐색
+                        const minLag = Math.floor(this.sampleRate / 300);
+                        const maxLag = Math.ceil(this.sampleRate / 75);
+
+                        for (let lag = minLag; lag <= maxLag; lag++) {
                             let correlation = 0;
-                            for (let j = 0; j < frameLength - lag; j++) {
-                                correlation += buffer[j] * buffer[j + lag];
+                            for (let i = 0; i < bufferSize - lag; i++) {
+                                correlation += buffer[i] * buffer[i + lag];
                             }
                             if (correlation > maxCorrelation) {
                                 maxCorrelation = correlation;
-                                maxLag = lag;
+                                bestLag = lag;
                             }
                         }
-                        if (isCurrentSpeaking) {
-                            this.speakingFrames++;
-                            this.totalVolumeSum += rms;
-                            if (maxLag > 0) {
-                                pitch = this.sampleRate / maxLag;
-                                this.totalPitchSum += pitch;
-                            }
+
+                        return bestLag > 0 ? this.sampleRate / bestLag : 0;
+                    }
+
+                    process(inputs) {
+                        const input = inputs[0];
+                        if (!input || input.length === 0) return true;
+                        
+                        const channelData = input[0];
+                        let sumOfSquares = 0;
+                        for (let i = 0; i < channelData.length; i++) {
+                            sumOfSquares += channelData[i] * channelData[i];
                         }
-                        if (this.isSpeaking && !isCurrentSpeaking) {
-                            this.totalSilentPeriods++;
-                        }
-                        this.isSpeaking = isCurrentSpeaking;
-                        const estimatedWordsInFrame = (frameLength / this.sampleRate) * (isCurrentSpeaking ? 150/60 : 0);
-                        this.totalWords += estimatedWordsInFrame;
+                        
+                        const rms = Math.sqrt(sumOfSquares / channelData.length);
+                        const isSpeaking = rms > this.silenceThreshold;
+                        const pitch = isSpeaking ? this.getPitch(channelData) : 0;
+                        
+                        // 계산된 프레임별 원시 데이터를 메인 스레드로 전송
                         this.port.postMessage({
-                            isSpeaking: this.isSpeaking,
-                            totalSpeakingTime: this.speakingFrames * (frameLength / this.sampleRate),
-                            totalSilentPeriods: this.totalSilentPeriods,
-                            totalWords: this.totalWords,
-                            totalVolumeSum: this.totalVolumeSum,
-                            totalPitchSum: this.totalPitchSum,
-                            speakingFramesCount: this.speakingFrames
+                            rms,
+                            pitch,
+                            isSpeaking,
+                            timestamp: performance.now()
                         });
+                        
                         return true;
                     }
                 }
@@ -766,3 +934,4 @@
     </script>
 </body>
 </html>
+
