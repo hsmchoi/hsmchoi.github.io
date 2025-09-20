@@ -22,8 +22,9 @@
             --font-size-lg: 28px;
         }
         body { font-family: 'Noto Sans KR', sans-serif; background-color: var(--bg-color); color: var(--text-color); transition: background-color 0.5s ease, color 0.5s ease; overflow: hidden; }
-        .app-container { display: flex; flex-direction: column; height: 100vh; height: calc(100vh - var(--safe-area-inset-bottom)); max-width: 640px; margin: 0 auto; }
-        .page-content { flex-grow: 1; overflow: hidden; position: relative; }
+        /* Safe Area를 고려하여 전체 높이를 조정하고, 하단 패딩을 추가 */
+        .app-container { display: flex; flex-direction: column; height: 100vh; max-width: 640px; margin: 0 auto; }
+        .page-content { flex-grow: 1; overflow: hidden; position: relative; padding-bottom: calc(4rem + var(--safe-area-inset-bottom)); }
         .screen { position: absolute; top: 0; left: 0; right: 0; bottom: 0; display: flex; flex-direction: column; height: 100%; background-color: var(--bg-color); }
         .action-button { transition: all 0.2s ease-in-out; }
         .action-button:active { transform: scale(0.95); }
@@ -578,4 +579,3 @@
   </script>
 </body>
 </html>
-
