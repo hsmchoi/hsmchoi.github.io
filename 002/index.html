@@ -2,7 +2,7 @@
 <html lang="ko">
 <head>
     <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
     <title>Lyric Flow</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://unpkg.com/react@18/umd/react.development.js"></script>
@@ -21,9 +21,8 @@
             --font-size-lg: 28px;
         }
         body { font-family: 'Noto Sans KR', sans-serif; background-color: var(--bg-color); color: var(--text-color); transition: background-color 0.5s ease, color 0.5s ease; overflow: hidden; }
-        /* Safe Area를 고려하여 전체 높이를 조정하고, 하단 패딩을 추가 */
-        .app-container { display: flex; flex-direction: column; height: 100vh; max-width: 640px; margin: 0 auto; }
-        .page-content { flex-grow: 1; overflow: hidden; position: relative; padding-bottom: calc(4rem + var(--safe-area-inset-bottom)); }
+        .app-container { display: flex; flex-direction: column; height: 100vh; height: calc(100vh - var(--safe-area-inset-bottom)); max-width: 640px; margin: 0 auto; }
+        .page-content { flex-grow: 1; overflow: hidden; position: relative; }
         .screen { position: absolute; top: 0; left: 0; right: 0; bottom: 0; display: flex; flex-direction: column; height: 100%; background-color: var(--bg-color); }
         .action-button { transition: all 0.2s ease-in-out; }
         .action-button:active { transform: scale(0.95); }
@@ -48,7 +47,7 @@
         .card-common-content { width: 100%; height: 100%; display: flex; flex-direction: column; justify-content: space-between; color: white; }
         .selection-overlay { position: absolute; top: 0; left: 0; right: 0; bottom: 0; background-color: rgba(0,0,0,0.3); border-radius: 1.25rem; border: 3px solid var(--primary-color); display: flex; justify-content: flex-end; align-items: flex-start; padding: 1rem; opacity: 0; transition: opacity 0.2s ease; }
         .selection-overlay.selected { opacity: 1; }
-        .selection-checkbox { width: 1.5rem; height: 1.5rem; border-radius: 9999px; background-color: rgba(255,255,255,0.8); display: flex; align-items: center; justify-content: center; color: var(--primary-color); }
+        .selection-checkbox { width: 1.5rem; height: 1.5rem; border-radius: 9999px; background-color: rgba(255,255,255,0.8); display: flex; items-center; justify-content: center; color: var(--primary-color); }
         .judgement-effect { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -150%); font-size: 3rem; font-weight: 900; z-index: 10; pointer-events: none; animation: judgement-pop 0.5s forwards; }
         @keyframes judgement-pop { 0% { transform: translate(-50%, -150%) scale(0.8); opacity: 0; } 50% { transform: translate(-50%, -150%) scale(1.2); opacity: 1; } 100% { transform: translate(-50%, -150%) scale(1); opacity: 0; } }
         .rhythm-track-container { position: absolute; top: 50%; left: 0; right: 0; transform: translateY(-50%); display: flex; flex-direction: column; align-items: center; justify-content: center; }
@@ -65,7 +64,12 @@
     const { useState, useEffect, useMemo, useCallback, useRef } = React;
     
     const GRADIENTS = ["linear-gradient(135deg, #4A00E0, #8E2DE2)","linear-gradient(135deg, #00b09b, #96c93d)","linear-gradient(135deg, #ff4e50, #f9d423)","linear-gradient(135deg, #f09819, #edde5d)","linear-gradient(135deg, #00c6ff, #0072ff)","linear-gradient(135deg, #DA4453, #89216B)"];
-    const THEMES = [ { name: 'dark', display: '#121212', values: { '--bg-color': '#121212', '--text-color': '#E0E0E0', '--text-secondary-color': '#a0a0a0', '--surface-color': '#1e1e1e', '--surface-strong-color': '#3E3E3E', '--surface-border-color': '#4A4A4A', '--surface-transparent-color': '#1e1e1e80' } }, { name: 'light', display: '#F5F5F5', values: { '--bg-color': '#F5F5F5', '--text-color': '#212121', '--text-secondary-color': '#757575', '--surface-color': '#ffffff', '--surface-strong-color': '#E0E0E0', '--surface-border-color': '#BDBDBD', '--surface-transparent-color': '#ffffffa0' } }, { name: 'rose', display: '#2B0B13', values: { '--bg-color': '#2B0B13', '--text-color': '#F5DCE3', '--text-secondary-color': '#D1A8B4', '--surface-color': '#421D2A', '--surface-strong-color': '#592F3D', '--surface-border-color': '#704251', '--surface-transparent-color': '#421d2a80' } }, { name: 'forest', display: '#0B2B13', values: { '--bg-color': '#0B2B13', '--text-color': '#DCE3F5', '--text-secondary-color': '#A8B4D1', '--surface-color': '#1D422A', '--surface-strong-color': '#2F593D', '--surface-border-color': '#427051', '--surface-transparent-color': '#1d422a80' } }, ];
+    const THEMES = [
+        { name: 'dark', display: '#121212', values: { '--bg-color': '#121212', '--text-color': '#E0E0E0', '--text-secondary-color': '#a0a0a0', '--surface-color': '#1e1e1e', '--surface-strong-color': '#3E3E3E', '--surface-border-color': '#4A4A4A', '--surface-transparent-color': '#1e1e1e80' } },
+        { name: 'light', display: '#F5F5F5', values: { '--bg-color': '#F5F5F5', '--text-color': '#212121', '--text-secondary-color': '#616161', '--surface-color': '#ffffff', '--surface-strong-color': '#E0E0E0', '--surface-border-color': '#BDBDBD', '--surface-transparent-color': '#ffffffa0' } },
+        { name: 'rose', display: '#2B0B13', values: { '--bg-color': '#2B0B13', '--text-color': '#F5DCE3', '--text-secondary-color': '#E0BCC8', '--surface-color': '#421D2A', '--surface-strong-color': '#592F3D', '--surface-border-color': '#704251', '--surface-transparent-color': '#421d2a80' } },
+        { name: 'forest', display: '#0B2B13', values: { '--bg-color': '#0B2B13', '--text-color': '#DCE3F5', '--text-secondary-color': '#A8B4D1', '--surface-color': '#1D422A', '--surface-strong-color': '#2F593D', '--surface-border-color': '#427051', '--surface-transparent-color': '#1d422a80' } }
+    ];
 
     const AppHeader = ({ title, children, onBack, isPlayerHeader }) => ( <header className={`flex-shrink-0 flex items-center justify-between p-4 z-10 h-16 ${isPlayerHeader ? 'absolute top-0 left-0 right-0' : ''}`}><div className="w-10">{onBack && <button onClick={onBack} className="text-secondary-color hover:text-text-color text-xl action-button w-10 h-10 flex items-center justify-center"><i className="fas fa-times"></i></button>}</div><h1 className="text-sm font-bold tracking-tight text-center truncate">{title}</h1><div className="w-10">{children}</div></header> );
     const CardContent = ({ song, requestDelete, openColorPicker, onDownloadSong }) => ( <div className="card-common-content"><div className="flex justify-between items-start text-sm opacity-80"><h3 className="font-bold">Lyric Flow</h3><div className="flex items-center gap-2"><span className="flex items-center gap-1.5 bg-black/20 px-2 py-1 rounded-full text-xs"><i className="fas fa-headphones-alt"></i><span>{song.practiceCount || 0}</span></span><button onClick={(e) => { e.stopPropagation(); onDownloadSong(song); }} className="w-8 h-8 rounded-full bg-black/20 flex items-center justify-center text-blue-400 hover:bg-blue-500 hover:text-white action-button"><i className="fas fa-download"></i></button><button onClick={(e) => { e.stopPropagation(); requestDelete(song); }} className="w-8 h-8 rounded-full bg-black/20 flex items-center justify-center text-red-400 hover:bg-red-500 hover:text-white action-button"><i className="fas fa-trash-alt"></i></button></div></div><div className="text-center"><h2 className="font-bold text-2xl truncate" style={{fontSize: '1.618rem'}}>{song.title}</h2></div><div className="flex justify-between items-end text-sm opacity-80"><span>{song.timedLines.length} Lines</span><button onClick={(e) => { e.stopPropagation(); openColorPicker(song); }} className="w-8 h-8 rounded-full bg-black/20 flex items-center justify-center action-button"><i className="fas fa-palette"></i></button></div></div> );
@@ -403,7 +407,7 @@
                     </main>
                 ) : (
                     <>
-                        <div className="flex-shrink-0 p-4 pt-20 text-center space-y-2">
+                        <div className="flex-shrink-0 p-4 pt-16 text-center space-y-2">
                             <div className="flex justify-around items-center w-full max-w-md mx-auto">
                                 <div className="flex-1 text-left"><span className="text-sm text-secondary-color">SCORE</span><br/><span className="font-bold text-2xl">{totalScore.toLocaleString()}</span></div>
                                 <div className="flex-1 text-right"><span className="text-sm text-secondary-color">PROGRESS</span><br/><span className="font-bold text-2xl">{currentLineIndex} / {timedLinesWithStartTime.length}</span></div>
@@ -430,6 +434,115 @@
             </div>
         );
     }
+
+    const MainMenu = ({ menuData, onToggle, onNavigate, currentScreen, onFileAdd, onSessionAdd }) => {
+        const { isOpen, x, y } = menuData;
+        const menuItemsRef = useRef([]);
+        const centerButtonRef = useRef(null);
+
+        const MENU_CONFIG = {
+            radius: 90,
+            startAngle: 0,
+            itemSize: 48,
+        };
+
+        const navItems = [
+            { id: 'library', icon: 'fa-book', screen: 'library' },
+            { id: 'creator', icon: 'fa-pen-ruler', screen: 'creator' },
+            { id: 'settings', icon: 'fa-cog', screen: 'settings' },
+        ];
+
+        const libraryItems = [
+            { id: 'add_file', icon: 'fa-file-import', action: onFileAdd },
+            { id: 'add_session', icon: 'fa-folder-plus', action: onSessionAdd },
+        ];
+
+        const itemsToShow = currentScreen === 'library' ? [...navItems, ...libraryItems] : navItems;
+        const angleStep = itemsToShow.length > 1 ? 120 / (itemsToShow.length - 1) : 0;
+
+        useEffect(() => {
+            const targets = menuItemsRef.current.filter(el => el);
+            const allTargets = centerButtonRef.current ? [centerButtonRef.current, ...targets] : targets;
+            gsap.set(allTargets, { scale: 0, opacity: 0 });
+            if (isOpen) {
+                gsap.to(allTargets, {
+                    duration: 0.3,
+                    scale: 1,
+                    opacity: 1,
+                    stagger: 0.05,
+                    ease: 'back.out(1.7)',
+                });
+            }
+        }, [isOpen, itemsToShow.length]);
+        
+        if (!isOpen) return null;
+
+        return (
+             <>
+                <div className="fixed inset-0 z-20" onClick={onToggle}></div>
+                <div className="fixed z-30" style={{ left: x, top: y, transform: 'translate(-50%, -50%)' }}>
+                    <div className="relative flex items-center justify-center" style={{width: `${MENU_CONFIG.radius * 2.5}px`, height: `${MENU_CONFIG.radius * 2.5}px`}}>
+                        <button
+                            ref={centerButtonRef}
+                            onClick={onToggle}
+                            className="absolute w-16 h-16 rounded-full bg-primary-color text-white text-2xl shadow-lg action-button flex items-center justify-center z-10"
+                        >
+                            <i className="fas fa-times"></i>
+                        </button>
+                        {itemsToShow.map((item, index) => {
+                            const angle = MENU_CONFIG.startAngle + (angleStep * index);
+                            const itemX = MENU_CONFIG.radius * Math.cos(angle * Math.PI / 180);
+                            const itemY = MENU_CONFIG.radius * Math.sin(angle * Math.PI / 180);
+
+                            return (
+                                <button
+                                    key={item.id}
+                                    ref={el => menuItemsRef.current[index] = el}
+                                    onClick={() => {
+                                        if (item.screen) onNavigate(item.screen);
+                                        if (item.action) item.action();
+                                        onToggle();
+                                    }}
+                                    className={`absolute w-12 h-12 rounded-full flex items-center justify-center text-xl shadow-lg action-button
+                                        ${item.screen === currentScreen ? 'bg-primary-color text-white' : 'bg-surface-strong-color text-text-color'}`}
+                                    style={{ transform: `translate(${itemX}px, ${itemY}px)` }}
+                                >
+                                    <i className={`fas ${item.icon}`}></i>
+                                </button>
+                            );
+                        })}
+                    </div>
+                </div>
+            </>
+        );
+    };
+
+    const useLongPress = (callback = () => {}, ms = 500) => {
+        const timerRef = useRef();
+
+        const start = useCallback((event) => {
+            if (event.target.closest('.action-button, input, textarea, .player-controls-overlay')) {
+                return;
+            }
+            const posX = event.touches ? event.touches[0].clientX : event.clientX;
+            const posY = event.touches ? event.touches[0].clientY : event.clientY;
+            timerRef.current = setTimeout(() => {
+                callback({ x: posX, y: posY });
+            }, ms);
+        }, [callback, ms]);
+
+        const stop = useCallback(() => {
+            clearTimeout(timerRef.current);
+        }, []);
+
+        return {
+            onMouseDown: (e) => start(e),
+            onTouchStart: (e) => start(e),
+            onMouseUp: stop,
+            onMouseLeave: stop,
+            onTouchEnd: stop,
+        };
+    };
     
     function App() {
         const [currentScreen, setCurrentScreen] = useState('library');
@@ -442,12 +555,16 @@
         const [isColorPickerOpen, setIsColorPickerOpen] = useState(false);
         const [activeSongMenu, setActiveSongMenu] = useState(null);
         const [renamingSong, setRenamingSong] = useState(null);
+        const [mainMenu, setMainMenu] = useState({ isOpen: false, x: 0, y: 0 });
         
         const singleFileRef = useRef(null);
         const sessionFileRef = useRef(null);
-        const [isAddSongMenuOpen, setIsAddSongMenuOpen] = useState(false);
         const triggerFileAdd = () => singleFileRef.current.click();
         const triggerSessionAdd = () => sessionFileRef.current.click();
+
+        const longPressEvents = useLongPress(({x, y}) => {
+            setMainMenu({ isOpen: true, x, y });
+        });
 
         const creatorHook = useLyricsTiming();
 
@@ -480,21 +597,10 @@
         if (editingSong) return <LibraryTimingEditScreen initialSongData={editingSong} onSave={handleSaveSong} onCancel={() => setEditingSong(null)} />;
 
         return (
-            <div className="app-container">
+            <div className="app-container" {...longPressEvents}>
                 <div className="page-content">
                     <div className="screen" style={{transform: currentScreen === 'library' ? 'translateX(0)' : 'translateX(-100%)', transition: 'transform 0.4s ease-in-out', zIndex: currentScreen === 'library' ? 1 : 0}}>
                         <LyricsPracticeApp songs={practiceSongs} setPracticeSongs={setPracticeSongs} openSongMenu={setActiveSongMenu} onSongDelete={requestDelete} onSongColorChange={requestColorChange} onSongEdit={handleSongEdit} />
-                        <div className="absolute bottom-20 right-4 z-20">
-                             <button onClick={() => setIsAddSongMenuOpen(p => !p)} className="w-16 h-16 rounded-2xl bg-primary-color text-white text-3xl shadow-lg action-button flex items-center justify-center fab-button">
-                                <i className={`fas ${isAddSongMenuOpen ? 'fa-times' : 'fa-plus'}`} style={{transition: 'transform 0.2s ease-in-out', transform: isAddSongMenuOpen ? 'rotate(90deg)' : 'rotate(0deg)'}}></i>
-                             </button>
-                             {isAddSongMenuOpen && (
-                                <div className="absolute bottom-20 right-0 w-48 bg-surface-strong-color rounded-lg shadow-xl p-2 space-y-1 add-song-menu">
-                                    <button onClick={() => { triggerFileAdd(); setIsAddSongMenuOpen(false); }} className="w-full text-left p-2 rounded hover:bg-surface-color action-button text-sm">단일 파일 추가</button>
-                                    <button onClick={() => { triggerSessionAdd(); setIsAddSongMenuOpen(false); }} className="w-full text-left p-2 rounded hover:bg-surface-color action-button text-sm">세션 불러오기</button>
-                                </div>
-                             )}
-                        </div>
                     </div>
                     <div className="screen" style={{transform: currentScreen === 'creator' ? 'translateX(0)' : 'translateX(100%)', transition: 'transform 0.4s ease-in-out', zIndex: currentScreen === 'creator' ? 1 : 0}}>
                         <TimingAnalyzerApp onComplete={handleAddNewSong} onBack={() => setCurrentScreen('library')} />
@@ -503,13 +609,16 @@
                         <SettingsApp onOpenThemePicker={() => setIsThemePickerOpen(true)} onTriggerFileAdd={triggerFileAdd} onTriggerSessionAdd={triggerSessionAdd} onSessionExport={handleSessionExport} />
                      </div>
                 </div>
-                <div className="flex-shrink-0 border-t border-surface-border-color bg-surface-color" style={{paddingBottom: 'var(--safe-area-inset-bottom)'}}>
-                    <nav className="flex justify-around items-center h-16">
-                         <button onClick={() => setCurrentScreen('library')} className={`flex flex-col items-center gap-1 p-2 rounded-lg action-button w-20 ${currentScreen === 'library' ? 'text-primary-color' : 'text-secondary-color'}`}><i className="fas fa-book"></i><span className="text-xs">라이브러리</span></button>
-                         <button onClick={() => setCurrentScreen('creator')} className={`flex flex-col items-center gap-1 p-2 rounded-lg action-button w-20 ${currentScreen === 'creator' ? 'text-primary-color' : 'text-secondary-color'}`}><i className="fas fa-pen-ruler"></i><span className="text-xs">제작</span></button>
-                         <button onClick={() => setCurrentScreen('settings')} className={`flex flex-col items-center gap-1 p-2 rounded-lg action-button w-20 ${currentScreen === 'settings' ? 'text-primary-color' : 'text-secondary-color'}`}><i className="fas fa-cog"></i><span className="text-xs">설정</span></button>
-                    </nav>
-                </div>
+
+                <MainMenu 
+                    menuData={mainMenu}
+                    onToggle={() => setMainMenu(prev => ({ ...prev, isOpen: !prev.isOpen }))}
+                    onNavigate={setCurrentScreen}
+                    currentScreen={currentScreen}
+                    onFileAdd={triggerFileAdd}
+                    onSessionAdd={triggerSessionAdd}
+                />
+
                 <input type="file" ref={singleFileRef} onChange={handleFileAdd} accept=".json" className="hidden" />
                 <input type="file" ref={sessionFileRef} onChange={handleSessionAdd} accept=".json" className="hidden" />
                 {isColorPickerOpen && <ColorPicker onSelect={confirmColorChange} onClose={() => setIsColorPickerOpen(false)} />}
@@ -601,3 +710,4 @@
     </script>
 </body>
 </html>
+
