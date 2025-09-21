@@ -2,7 +2,7 @@
 <html lang="ko">
 <head>
     <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
     <title>Lyric Flow</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://unpkg.com/react@18/umd/react.development.js"></script>
@@ -21,8 +21,9 @@
             --font-size-lg: 28px;
         }
         body { font-family: 'Noto Sans KR', sans-serif; background-color: var(--bg-color); color: var(--text-color); transition: background-color 0.5s ease, color 0.5s ease; overflow: hidden; }
-        .app-container { display: flex; flex-direction: column; height: 100vh; height: calc(100vh - var(--safe-area-inset-bottom)); max-width: 640px; margin: 0 auto; }
-        .page-content { flex-grow: 1; overflow: hidden; position: relative; }
+        /* Safe Area를 고려하여 전체 높이를 조정하고, 하단 패딩을 추가 */
+        .app-container { display: flex; flex-direction: column; height: 100vh; max-width: 640px; margin: 0 auto; }
+        .page-content { flex-grow: 1; overflow: hidden; position: relative; padding-bottom: calc(4rem + var(--safe-area-inset-bottom)); }
         .screen { position: absolute; top: 0; left: 0; right: 0; bottom: 0; display: flex; flex-direction: column; height: 100%; background-color: var(--bg-color); }
         .action-button { transition: all 0.2s ease-in-out; }
         .action-button:active { transform: scale(0.95); }
@@ -402,7 +403,7 @@
                     </main>
                 ) : (
                     <>
-                        <div className="flex-shrink-0 p-4 pt-16 text-center space-y-2">
+                        <div className="flex-shrink-0 p-4 pt-20 text-center space-y-2">
                             <div className="flex justify-around items-center w-full max-w-md mx-auto">
                                 <div className="flex-1 text-left"><span className="text-sm text-secondary-color">SCORE</span><br/><span className="font-bold text-2xl">{totalScore.toLocaleString()}</span></div>
                                 <div className="flex-1 text-right"><span className="text-sm text-secondary-color">PROGRESS</span><br/><span className="font-bold text-2xl">{currentLineIndex} / {timedLinesWithStartTime.length}</span></div>
