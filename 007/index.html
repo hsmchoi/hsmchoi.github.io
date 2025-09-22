@@ -35,14 +35,11 @@
             background-color: var(--bg-color);
             color: var(--text-color);
             transition: background-color 0.5s ease;
-            padding-bottom: 80px; /* Space for the bottom bar */
         }
         .container-card {
-            width: 100%;
-            max-width: 600px;
-            margin: 0 auto;
+            max-width: calc(600px * var(--gold-ratio));
             border-radius: var(--spacing-lg);
-            padding: var(--spacing-md);
+            padding: var(--spacing-xl);
             box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
             background-color: var(--surface-color);
             transition: transform 0.3s ease-in-out;
@@ -55,44 +52,27 @@
             transition: transform 0.3s ease-in-out;
         }
         .section-card:hover {
-            transform: translateY(0); /* Remove hover effect for mobile */
+            transform: translateY(-5px);
         }
         h1 {
-            font-size: calc(1rem * var(--gold-ratio));
+            font-size: calc(1rem * var(--gold-ratio) * var(--gold-ratio)); /* S * phi^2 */
         }
         h2 {
-            font-size: 1.2rem;
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
+            font-size: calc(1rem * var(--gold-ratio)); /* S * phi^1 */
         }
-        h2.accordion-title::after {
-            content: '+';
-            font-size: 1.5rem;
-            transition: transform 0.3s ease;
-        }
-        h2.accordion-title.active::after {
-            content: '−';
-            transform: rotate(180deg);
-        }
-        .accordion-content {
-            max-height: 0;
-            overflow: hidden;
-            transition: max-height 0.4s ease-out;
-        }
-        .accordion-content.open {
-            max-height: 500px; /* A large value to allow transition */
-            padding-top: var(--spacing-md);
+        h3 {
+            font-size: 1rem;
         }
         button {
-            border-radius: var(--spacing-md);
-            padding: var(--spacing-sm) var(--spacing-md);
+            border-radius: calc(var(--spacing-md) * 1.618);
+            padding-top: var(--spacing-sm);
+            padding-bottom: var(--spacing-sm);
             transition: all 0.2s ease-in-out;
             transform-origin: center;
         }
         button:hover {
-            opacity: 1; /* Adjust for mobile */
-            transform: scale(1.0);
+            opacity: 0.8;
+            transform: scale(1.02);
         }
         .cta-button {
             background-color: var(--primary-color);
@@ -100,16 +80,15 @@
             font-weight: 600;
         }
         .lottie-container {
-            width: 30px;
-            height: 30px;
+            width: 50px;
+            height: 50px;
             display: inline-block;
-            vertical-align: middle;
         }
         .toggle-switch {
             position: relative;
             display: inline-block;
-            width: 50px;
-            height: 28px;
+            width: 60px;
+            height: 34px;
         }
         .toggle-switch input {
             opacity: 0;
@@ -125,13 +104,13 @@
             bottom: 0;
             background-color: var(--surface-color);
             transition: .4s;
-            border-radius: 28px;
+            border-radius: 34px;
         }
         .slider:before {
             position: absolute;
             content: "";
-            height: 20px;
-            width: 20px;
+            height: 26px;
+            width: 26px;
             left: 4px;
             bottom: 4px;
             background-color: white;
@@ -142,7 +121,7 @@
             background-color: var(--primary-color);
         }
         input:checked + .slider:before {
-            transform: translateX(22px);
+            transform: translateX(26px);
         }
         .happy-mode-bg {
             background: linear-gradient(135deg, var(--happy-color-start) 0%, var(--happy-color-end) 100%);
@@ -151,151 +130,98 @@
             animation: pulse-ring 1.5s infinite;
         }
         @keyframes pulse-ring {
-            0% { box-shadow: 0 0 0 0 var(--primary-color); }
-            70% { box-shadow: 0 0 0 15px rgba(255, 192, 203, 0); }
-            100% { box-shadow: 0 0 0 0 rgba(255, 192, 203, 0); }
+            0% {
+                box-shadow: 0 0 0 0 var(--primary-color);
+            }
+            70% {
+                box-shadow: 0 0 0 15px rgba(255, 192, 203, 0);
+            }
+            100% {
+                box-shadow: 0 0 0 0 rgba(255, 192, 203, 0);
+            }
         }
         .fade-in {
             animation: fadeIn 0.8s ease-in-out forwards;
             opacity: 0;
         }
         @keyframes fadeIn {
-            to { opacity: 1; }
-        }
-        .bottom-action-bar {
-            position: fixed;
-            bottom: 0;
-            left: 0;
-            right: 0;
-            background-color: var(--surface-strong-color);
-            border-top: 1px solid var(--surface-color);
-            padding: var(--spacing-sm) var(--spacing-md);
-            display: flex;
-            justify-content: space-around;
-            align-items: center;
-            z-index: 1000;
-            box-shadow: 0 -5px 20px rgba(0,0,0,0.2);
-        }
-        .bottom-action-bar button {
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
-            flex: 1;
-            padding: var(--spacing-xs);
-            background: none;
-            color: var(--text-secondary-color);
-            font-size: 0.75rem;
-            font-weight: 500;
-        }
-        .bottom-action-bar button.active {
-            color: var(--primary-color);
-        }
-        .bottom-action-bar button svg {
-            width: 24px;
-            height: 24px;
-            margin-bottom: 4px;
-        }
-        .main-content {
-            padding-bottom: 80px;
+            to {
+                opacity: 1;
+            }
         }
     </style>
 </head>
-<body class="flex flex-col min-h-screen">
-    <div class="container-card main-content mt-4 mb-4">
-        <h1 class="font-bold text-center mb-2">
+<body class="flex items-center justify-center p-4">
+    <div class="container-card w-full">
+        <h1 class="font-bold text-center mb-4">
             <span class="text-primary-color">Slow-Aging</span>
             <br/>
             <span class="text-text-secondary-color">Solution</span>
         </h1>
-        <p class="text-center text-text-secondary-color mb-6 text-sm">Personalized Diet Coaching</p>
+        <p class="text-center text-secondary-color mb-8 text-sm">Personalized Diet Coaching</p>
 
-        <div class="section-card mb-4">
-            <h2 class="font-semibold accordion-title mb-0" onclick="toggleAccordion('inbody-accordion')">
-                1. 인바디 데이터
-                <span class="accordion-icon"></span>
-            </h2>
-            <div id="inbody-accordion" class="accordion-content">
-                <textarea id="inbody-text" rows="6" class="w-full p-4 mt-2 border-2 border-surface-color rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-color transition-all bg-surface-color text-text-color" placeholder="여기에 인바디 데이터를 붙여넣으세요..."></textarea>
-                <div id="status-message" class="mt-4 text-center text-sm font-semibold text-text-secondary-color"></div>
+        <div class="section-card mb-8">
+            <h2 class="font-semibold mb-4">1. InBody Data</h2>
+            <textarea id="inbody-text" rows="6" class="w-full p-4 border-2 border-surface-color rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-color transition-all bg-surface-color text-text-color" placeholder="Paste your InBody text here..."></textarea>
+            <div class="mt-4 flex gap-4">
+                <input type="file" id="local-file-input" accept=".json" class="hidden" onchange="window.handleFileLoad(event)">
+                <button onclick="window.handleLoadData()" id="load-btn" class="w-full bg-blue-600 text-white font-medium">Load</button>
+                <button onclick="window.handleSaveData()" id="save-btn" class="w-full bg-success-color text-bg-color font-medium" disabled>Save</button>
             </div>
+            <div id="status-message" class="mt-4 text-center text-sm font-semibold text-text-secondary-color"></div>
+            <button onclick="window.handleInputData()" id="input-btn" class="w-full bg-primary-color cta-button mt-4 pulse-animation" disabled>
+                <span id="input-btn-text">Input Data</span>
+                <div id="loading-animation" class="lottie-container hidden"></div>
+            </button>
         </div>
         
-        <div class="section-card mb-4">
-            <h2 class="font-semibold accordion-title mb-0" onclick="toggleAccordion('status-accordion')">
-                2. 오늘의 상태
-                <span class="accordion-icon"></span>
-            </h2>
-            <div id="status-accordion" class="accordion-content">
-                <div class="flex items-center justify-between mb-4 mt-2">
-                    <span class="text-text-secondary-color font-medium">운동한 날인가요?</span>
-                    <label class="toggle-switch">
-                        <input type="checkbox" id="is-workout-day-toggle">
-                        <span class="slider"></span>
-                    </label>
-                </div>
-                <div class="flex items-center justify-between">
-                    <span class="text-text-secondary-color font-medium">행복 모드?</span>
-                    <label class="toggle-switch">
-                        <input type="checkbox" id="is-happy-mode-toggle" onchange="toggleHappyMode()">
-                        <span class="slider"></span>
-                    </label>
-                </div>
+        <div class="section-card mb-8">
+            <h2 class="font-semibold mb-4">2. Today's Status</h2>
+            <div class="flex items-center justify-between mb-4">
+                <span class="text-text-secondary-color font-medium">Workout Day?</span>
+                <label class="toggle-switch">
+                    <input type="checkbox" id="is-workout-day-toggle">
+                    <span class="slider"></span>
+                </label>
             </div>
+            <div class="flex items-center justify-between">
+                <span class="text-text-secondary-color font-medium">Happy Mode?</span>
+                <label class="toggle-switch">
+                    <input type="checkbox" id="is-happy-mode-toggle" onchange="toggleHappyMode()">
+                    <span class="slider"></span>
+                </label>
+            </div>
+            <button onclick="window.runAnalysis()" id="run-analysis-btn" class="w-full bg-primary-color cta-button mt-6" disabled>Start Analysis</button>
         </div>
 
         <div class="section-card">
-            <h2 class="font-semibold accordion-title mb-0" onclick="toggleAccordion('meal-plan-accordion')">
-                3. 식단 계획
-                <span class="accordion-icon"></span>
-            </h2>
-            <div id="meal-plan-accordion" class="accordion-content">
-                <div id="result-display" class="space-y-6 mt-2">
-                    <div id="summary-section" class="bg-surface-color p-4 rounded-lg text-primary-color text-center font-bold text-md hidden fade-in"></div>
-                    
-                    <div id="breakfast-plan" class="bg-surface-color p-4 rounded-lg border border-surface-color hidden fade-in">
-                        <h3 class="font-bold text-primary-color">아침 식사</h3>
-                        <p class="text-text-secondary-color text-sm"></p>
-                    </div>
-                    
-                    <div id="lunch-plan" class="bg-surface-color p-4 rounded-lg border border-surface-color hidden fade-in">
-                        <h3 class="font-bold text-primary-color">점심 식사</h3>
-                        <p class="text-text-secondary-color text-sm"></p>
-                    </div>
-                    
-                    <div id="dinner-plan" class="bg-surface-color p-4 rounded-lg border border-surface-color hidden fade-in">
-                        <h3 class="font-bold text-primary-color">저녁 식사</h3>
-                        <p class="text-text-secondary-color text-sm"></p>
-                    </div>
+            <h2 class="font-semibold mb-4">3. Meal Plan</h2>
+            <div id="result-display" class="space-y-6">
+                <div id="summary-section" class="bg-surface-color p-4 rounded-lg text-primary-color text-center font-bold text-md hidden fade-in"></div>
+                
+                <div id="breakfast-plan" class="bg-surface-color p-4 rounded-lg border border-surface-color hidden fade-in">
+                    <h3 class="font-bold text-primary-color">Breakfast</h3>
+                    <p class="text-text-secondary-color text-sm"></p>
                 </div>
-                <div id="message-box" class="mt-4 p-4 rounded-lg hidden"></div>
+                
+                <div id="lunch-plan" class="bg-surface-color p-4 rounded-lg border border-surface-color hidden fade-in">
+                    <h3 class="font-bold text-primary-color">Lunch</h3>
+                    <p class="text-text-secondary-color text-sm"></p>
+                </div>
+                
+                <div id="dinner-plan" class="bg-surface-color p-4 rounded-lg border border-surface-color hidden fade-in">
+                    <h3 class="font-bold text-primary-color">Dinner</h3>
+                    <p class="text-text-secondary-color text-sm"></p>
+                </div>
             </div>
+            <div id="message-box" class="mt-4 p-4 rounded-lg hidden"></div>
         </div>
 
         <div class="mt-8 text-center text-gray-400 text-xs">
-            <p>User ID: <span id="user-id" class="font-mono text-text-secondary-color">...</span></p>
+            <p>User ID: <span id="user-id" class="font-mono text-secondary-color">...</span></p>
         </div>
     </div>
-
-    <div class="bottom-action-bar">
-        <button onclick="window.handleLoadData()">
-            <svg xmlns="http://www.w3.org/2000/svg" class="w-6 h-6" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 14.899A7 7 0 0 1 15.983 13.9a5 5 0 0 1 9.775 2.112A7.5 7.5 0 0 1 15 22H4a7 7 0 0 1 0-14.901z"></path></svg>
-            <span>불러오기</span>
-        </button>
-        <button onclick="window.handleSaveData()" disabled id="save-btn">
-            <svg xmlns="http://www.w3.org/2000/svg" class="w-6 h-6" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"></path><polyline points="17 21 17 13 7 13 7 21"></polyline><polyline points="7 3 7 8 15 8"></polyline></svg>
-            <span>저장하기</span>
-        </button>
-        <button onclick="window.runAnalysis()" class="cta-button" disabled id="run-analysis-btn">
-            <span class="pulse-animation p-2 rounded-full">
-                <svg xmlns="http://www.w3.org/2000/svg" class="w-6 h-6" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2a10 10 0 1 0 0 20 10 10 0 0 0 0-20z"></path><path d="M12 6v6l4 2"></path></svg>
-            </span>
-            <span>분석 시작</span>
-        </button>
-    </div>
     
-    <input type="file" id="local-file-input" accept=".json" class="hidden" onchange="window.handleFileLoad(event)">
-
     <script>
         let userData = {
             inbody: {},
@@ -309,24 +235,13 @@
         };
 
         const lottie_loading_animation = {
-            container: null, // Will be set later
+            container: document.getElementById('loading-animation'),
             renderer: 'svg',
             loop: true,
             autoplay: false,
             path: 'https://assets5.lottiefiles.com/packages/lf20_t9u2l4.json'
         };
-        let anim;
-        
-        function toggleAccordion(id) {
-            const content = document.getElementById(id);
-            const title = content.previousElementSibling;
-            const isOpen = content.classList.toggle('open');
-            title.classList.toggle('active', isOpen);
-            if (isOpen) {
-                // Adjust scroll to make sure the title is visible
-                title.scrollIntoView({ behavior: 'smooth', block: 'start' });
-            }
-        }
+        const anim = lottie.loadAnimation(lottie_loading_animation);
 
         function showMessageBox(message, type = 'info') {
             const box = document.getElementById('message-box');
@@ -391,8 +306,10 @@
         
         window.handleInputData = function() {
             const inbodyText = document.getElementById('inbody-text');
+            const inputBtnText = document.getElementById('input-btn-text');
+            const loadingAnimation = document.getElementById('loading-animation');
             const statusMessage = document.getElementById('status-message');
-            
+
             if (inbodyText.value.trim() === '') {
                 inbodyText.classList.add('border-error-color');
                 setTimeout(() => inbodyText.classList.remove('border-error-color'), 1500);
@@ -400,29 +317,39 @@
                 return;
             }
 
-            const parsedData = parseInbodyText(inbodyText.value);
-            if (Object.keys(parsedData).length > 0) {
-                const today = new Date().toISOString().split('T')[0];
-                const lastEntry = userData.inbody_history[userData.inbody_history.length - 1];
-                const newEntry = { ...parsedData, date: today };
+            inputBtnText.classList.add('hidden');
+            loadingAnimation.classList.remove('hidden');
+            anim.play();
 
-                if (lastEntry && lastEntry.date === today && lastEntry['골격근'] === parsedData['골격근']) {
-                    showMessageBox("이미 오늘의 데이터가 저장되어 있습니다.", 'info');
-                } else {
-                    if (!userData.inbody_history) {
-                        userData.inbody_history = [];
+            setTimeout(() => {
+                const parsedData = parseInbodyText(inbodyText.value);
+                if (Object.keys(parsedData).length > 0) {
+                    const today = new Date().toISOString().split('T')[0];
+                    const lastEntry = userData.inbody_history[userData.inbody_history.length - 1];
+                    const newEntry = { ...parsedData, date: today };
+
+                    if (lastEntry && lastEntry.date === today && lastEntry['골격근'] === parsedData['골격근']) {
+                        showMessageBox("이미 오늘의 데이터가 저장되어 있습니다.", 'info');
+                    } else {
+                        if (!userData.inbody_history) {
+                            userData.inbody_history = [];
+                        }
+                        userData.inbody_history.push(newEntry);
+                        userData.inbody = parsedData;
+                        updateDailyGoals(parsedData);
+                        showMessageBox("인바디 데이터가 성공적으로 입력되었습니다.", 'success');
+                        displayDataOnUI(userData);
+                        updateButtonStates();
                     }
-                    userData.inbody_history.push(newEntry);
-                    userData.inbody = parsedData;
-                    updateDailyGoals(parsedData);
-                    showMessageBox("인바디 데이터가 성공적으로 입력되었습니다.", 'success');
-                    displayDataOnUI(userData);
-                    updateButtonStates();
+                } else {
+                    inbodyText.classList.add('border-error-color');
+                    showMessageBox("유효한 인바디 데이터를 찾을 수 없습니다. 형식을 확인하세요.", 'error');
                 }
-            } else {
-                inbodyText.classList.add('border-error-color');
-                showMessageBox("유효한 인바디 데이터를 찾을 수 없습니다. 형식을 확인하세요.", 'error');
-            }
+
+                inputBtnText.classList.remove('hidden');
+                loadingAnimation.classList.add('hidden');
+                anim.stop();
+            }, 1000);
         }
 
         function displayDataOnUI(data) {
@@ -572,11 +499,6 @@
 
             userData.today_log.is_workout_day = document.getElementById('is-workout-day-toggle').checked;
             userData.today_log.is_happy_mode = document.getElementById('is-happy-mode-toggle').checked;
-            
-            const inbodyText = document.getElementById('inbody-text');
-            if (inbodyText.value.trim() !== '') {
-                window.handleInputData();
-            }
 
             const mealPlan = getDailyMealPlan(userData);
             const proteinSummary = getDailyProteinSummary(mealPlan, userData);
@@ -585,15 +507,18 @@
             const summarySection = document.getElementById('summary-section');
             summarySection.textContent = proteinSummary.summary;
             summarySection.classList.remove('hidden');
-
-            toggleAccordion('meal-plan-accordion');
         }
 
         function updateButtonStates() {
+            const inbodyTextarea = document.getElementById('inbody-text');
+            const inputBtn = document.getElementById('input-btn');
             const saveBtn = document.getElementById('save-btn');
             const runAnalysisBtn = document.getElementById('run-analysis-btn');
+
+            const hasInbodyText = inbodyTextarea.value.trim() !== '';
+            inputBtn.disabled = !hasInbodyText;
+
             const hasInbodyData = userData.inbody && Object.keys(userData.inbody).length > 0;
-            
             saveBtn.disabled = !hasInbodyData;
             runAnalysisBtn.disabled = !hasInbodyData;
         }
@@ -602,7 +527,6 @@
             document.getElementById('user-id').textContent = '로컬 모드';
             document.getElementById('inbody-text').addEventListener('input', updateButtonStates);
             updateButtonStates();
-            toggleAccordion('inbody-accordion'); // Open the first accordion by default
         };
     </script>
 </body>
