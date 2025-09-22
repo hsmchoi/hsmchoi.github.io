@@ -1,0 +1,609 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>저속노화 통합 솔루션</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Noto+Sans+KR:wght@400;500;700&family=Poppins:wght@700&display=swap" rel="stylesheet">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/lottie-web/5.10.2/lottie.min.js"></script>
+    <style>
+        :root {
+            --bg-color: #1A1A2E;
+            --text-color: #E0E0E0;
+            --text-secondary-color: #a0a0a0;
+            --surface-color: #2D2D44;
+            --surface-strong-color: #4C4C6A;
+            --primary-color: #FFC0CB; /* Warm, soft pink */
+            --primary-color-dark: #FF9AA2;
+            --success-color: #82E0AA;
+            --error-color: #EF4444;
+            --happy-color-start: #FFD479;
+            --happy-color-end: #FF9A73;
+            --gold-ratio: 1.618;
+            --u: 8px; /* Base unit for spacing */
+            --spacing-xs: calc(var(--u) * 0.618);
+            --spacing-sm: calc(var(--u) * 1);
+            --spacing-md: calc(var(--u) * 1.618);
+            --spacing-lg: calc(var(--u) * 2.618);
+            --spacing-xl: calc(var(--u) * 4.236);
+        }
+        body {
+            font-family: 'Inter', 'Noto Sans KR', sans-serif;
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            transition: background-color 0.5s ease;
+            padding-bottom: 80px; /* Space for the bottom bar */
+        }
+        .container-card {
+            width: 100%;
+            max-width: 600px;
+            margin: 0 auto;
+            border-radius: var(--spacing-lg);
+            padding: var(--spacing-md);
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+            background-color: var(--surface-color);
+            transition: transform 0.3s ease-in-out;
+        }
+        .section-card {
+            background-color: var(--surface-strong-color);
+            border-radius: var(--spacing-md);
+            padding: var(--spacing-lg);
+            border: 1px solid var(--surface-color);
+            transition: transform 0.3s ease-in-out;
+        }
+        .section-card:hover {
+            transform: translateY(0); /* Remove hover effect for mobile */
+        }
+        h1 {
+            font-size: calc(1rem * var(--gold-ratio));
+        }
+        h2 {
+            font-size: 1.2rem;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+        h2.accordion-title::after {
+            content: '+';
+            font-size: 1.5rem;
+            transition: transform 0.3s ease;
+        }
+        h2.accordion-title.active::after {
+            content: '−';
+            transform: rotate(180deg);
+        }
+        .accordion-content {
+            max-height: 0;
+            overflow: hidden;
+            transition: max-height 0.4s ease-out;
+        }
+        .accordion-content.open {
+            max-height: 500px; /* A large value to allow transition */
+            padding-top: var(--spacing-md);
+        }
+        button {
+            border-radius: var(--spacing-md);
+            padding: var(--spacing-sm) var(--spacing-md);
+            transition: all 0.2s ease-in-out;
+            transform-origin: center;
+        }
+        button:hover {
+            opacity: 1; /* Adjust for mobile */
+            transform: scale(1.0);
+        }
+        .cta-button {
+            background-color: var(--primary-color);
+            color: var(--bg-color);
+            font-weight: 600;
+        }
+        .lottie-container {
+            width: 30px;
+            height: 30px;
+            display: inline-block;
+            vertical-align: middle;
+        }
+        .toggle-switch {
+            position: relative;
+            display: inline-block;
+            width: 50px;
+            height: 28px;
+        }
+        .toggle-switch input {
+            opacity: 0;
+            width: 0;
+            height: 0;
+        }
+        .slider {
+            position: absolute;
+            cursor: pointer;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background-color: var(--surface-color);
+            transition: .4s;
+            border-radius: 28px;
+        }
+        .slider:before {
+            position: absolute;
+            content: "";
+            height: 20px;
+            width: 20px;
+            left: 4px;
+            bottom: 4px;
+            background-color: white;
+            transition: .4s;
+            border-radius: 50%;
+        }
+        input:checked + .slider {
+            background-color: var(--primary-color);
+        }
+        input:checked + .slider:before {
+            transform: translateX(22px);
+        }
+        .happy-mode-bg {
+            background: linear-gradient(135deg, var(--happy-color-start) 0%, var(--happy-color-end) 100%);
+        }
+        .pulse-animation {
+            animation: pulse-ring 1.5s infinite;
+        }
+        @keyframes pulse-ring {
+            0% { box-shadow: 0 0 0 0 var(--primary-color); }
+            70% { box-shadow: 0 0 0 15px rgba(255, 192, 203, 0); }
+            100% { box-shadow: 0 0 0 0 rgba(255, 192, 203, 0); }
+        }
+        .fade-in {
+            animation: fadeIn 0.8s ease-in-out forwards;
+            opacity: 0;
+        }
+        @keyframes fadeIn {
+            to { opacity: 1; }
+        }
+        .bottom-action-bar {
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            background-color: var(--surface-strong-color);
+            border-top: 1px solid var(--surface-color);
+            padding: var(--spacing-sm) var(--spacing-md);
+            display: flex;
+            justify-content: space-around;
+            align-items: center;
+            z-index: 1000;
+            box-shadow: 0 -5px 20px rgba(0,0,0,0.2);
+        }
+        .bottom-action-bar button {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            flex: 1;
+            padding: var(--spacing-xs);
+            background: none;
+            color: var(--text-secondary-color);
+            font-size: 0.75rem;
+            font-weight: 500;
+        }
+        .bottom-action-bar button.active {
+            color: var(--primary-color);
+        }
+        .bottom-action-bar button svg {
+            width: 24px;
+            height: 24px;
+            margin-bottom: 4px;
+        }
+        .main-content {
+            padding-bottom: 80px;
+        }
+    </style>
+</head>
+<body class="flex flex-col min-h-screen">
+    <div class="container-card main-content mt-4 mb-4">
+        <h1 class="font-bold text-center mb-2">
+            <span class="text-primary-color">Slow-Aging</span>
+            <br/>
+            <span class="text-text-secondary-color">Solution</span>
+        </h1>
+        <p class="text-center text-text-secondary-color mb-6 text-sm">Personalized Diet Coaching</p>
+
+        <div class="section-card mb-4">
+            <h2 class="font-semibold accordion-title mb-0" onclick="toggleAccordion('inbody-accordion')">
+                1. 인바디 데이터
+                <span class="accordion-icon"></span>
+            </h2>
+            <div id="inbody-accordion" class="accordion-content">
+                <textarea id="inbody-text" rows="6" class="w-full p-4 mt-2 border-2 border-surface-color rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-color transition-all bg-surface-color text-text-color" placeholder="여기에 인바디 데이터를 붙여넣으세요..."></textarea>
+                <div id="status-message" class="mt-4 text-center text-sm font-semibold text-text-secondary-color"></div>
+            </div>
+        </div>
+        
+        <div class="section-card mb-4">
+            <h2 class="font-semibold accordion-title mb-0" onclick="toggleAccordion('status-accordion')">
+                2. 오늘의 상태
+                <span class="accordion-icon"></span>
+            </h2>
+            <div id="status-accordion" class="accordion-content">
+                <div class="flex items-center justify-between mb-4 mt-2">
+                    <span class="text-text-secondary-color font-medium">운동한 날인가요?</span>
+                    <label class="toggle-switch">
+                        <input type="checkbox" id="is-workout-day-toggle">
+                        <span class="slider"></span>
+                    </label>
+                </div>
+                <div class="flex items-center justify-between">
+                    <span class="text-text-secondary-color font-medium">행복 모드?</span>
+                    <label class="toggle-switch">
+                        <input type="checkbox" id="is-happy-mode-toggle" onchange="toggleHappyMode()">
+                        <span class="slider"></span>
+                    </label>
+                </div>
+            </div>
+        </div>
+
+        <div class="section-card">
+            <h2 class="font-semibold accordion-title mb-0" onclick="toggleAccordion('meal-plan-accordion')">
+                3. 식단 계획
+                <span class="accordion-icon"></span>
+            </h2>
+            <div id="meal-plan-accordion" class="accordion-content">
+                <div id="result-display" class="space-y-6 mt-2">
+                    <div id="summary-section" class="bg-surface-color p-4 rounded-lg text-primary-color text-center font-bold text-md hidden fade-in"></div>
+                    
+                    <div id="breakfast-plan" class="bg-surface-color p-4 rounded-lg border border-surface-color hidden fade-in">
+                        <h3 class="font-bold text-primary-color">아침 식사</h3>
+                        <p class="text-text-secondary-color text-sm"></p>
+                    </div>
+                    
+                    <div id="lunch-plan" class="bg-surface-color p-4 rounded-lg border border-surface-color hidden fade-in">
+                        <h3 class="font-bold text-primary-color">점심 식사</h3>
+                        <p class="text-text-secondary-color text-sm"></p>
+                    </div>
+                    
+                    <div id="dinner-plan" class="bg-surface-color p-4 rounded-lg border border-surface-color hidden fade-in">
+                        <h3 class="font-bold text-primary-color">저녁 식사</h3>
+                        <p class="text-text-secondary-color text-sm"></p>
+                    </div>
+                </div>
+                <div id="message-box" class="mt-4 p-4 rounded-lg hidden"></div>
+            </div>
+        </div>
+
+        <div class="mt-8 text-center text-gray-400 text-xs">
+            <p>User ID: <span id="user-id" class="font-mono text-text-secondary-color">...</span></p>
+        </div>
+    </div>
+
+    <div class="bottom-action-bar">
+        <button onclick="window.handleLoadData()">
+            <svg xmlns="http://www.w3.org/2000/svg" class="w-6 h-6" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 14.899A7 7 0 0 1 15.983 13.9a5 5 0 0 1 9.775 2.112A7.5 7.5 0 0 1 15 22H4a7 7 0 0 1 0-14.901z"></path></svg>
+            <span>불러오기</span>
+        </button>
+        <button onclick="window.handleSaveData()" disabled id="save-btn">
+            <svg xmlns="http://www.w3.org/2000/svg" class="w-6 h-6" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"></path><polyline points="17 21 17 13 7 13 7 21"></polyline><polyline points="7 3 7 8 15 8"></polyline></svg>
+            <span>저장하기</span>
+        </button>
+        <button onclick="window.runAnalysis()" class="cta-button" disabled id="run-analysis-btn">
+            <span class="pulse-animation p-2 rounded-full">
+                <svg xmlns="http://www.w3.org/2000/svg" class="w-6 h-6" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2a10 10 0 1 0 0 20 10 10 0 0 0 0-20z"></path><path d="M12 6v6l4 2"></path></svg>
+            </span>
+            <span>분석 시작</span>
+        </button>
+    </div>
+    
+    <input type="file" id="local-file-input" accept=".json" class="hidden" onchange="window.handleFileLoad(event)">
+
+    <script>
+        let userData = {
+            inbody: {},
+            goals: { daily_protein_g: 116.0 },
+            supplements: [
+                { "name": "베네틴 토핑 프로틴 쉐이크 아이솔레이트", "protein_g": 27.0 },
+                { "name": "베네틴 몬스터 프로틴 게이너", "protein_g": 19.0 }
+            ],
+            inbody_history: [],
+            today_log: { is_workout_day: false, is_happy_mode: false }
+        };
+
+        const lottie_loading_animation = {
+            container: null, // Will be set later
+            renderer: 'svg',
+            loop: true,
+            autoplay: false,
+            path: 'https://assets5.lottiefiles.com/packages/lf20_t9u2l4.json'
+        };
+        let anim;
+        
+        function toggleAccordion(id) {
+            const content = document.getElementById(id);
+            const title = content.previousElementSibling;
+            const isOpen = content.classList.toggle('open');
+            title.classList.toggle('active', isOpen);
+            if (isOpen) {
+                // Adjust scroll to make sure the title is visible
+                title.scrollIntoView({ behavior: 'smooth', block: 'start' });
+            }
+        }
+
+        function showMessageBox(message, type = 'info') {
+            const box = document.getElementById('message-box');
+            box.textContent = message;
+            box.classList.remove('hidden', 'bg-red-100', 'text-red-800', 'bg-green-100', 'text-green-800', 'bg-yellow-100', 'text-yellow-800');
+            if (type === 'success') {
+                box.classList.add('bg-success-color', 'text-bg-color');
+            } else if (type === 'error') {
+                box.classList.add('bg-error-color', 'text-white');
+            } else {
+                box.classList.add('bg-primary-color-dark', 'text-white');
+            }
+            box.classList.remove('hidden');
+        }
+
+        function downloadJsonFile(data, filename) {
+            const jsonStr = JSON.stringify(data, null, 2);
+            const blob = new Blob([jsonStr], { type: 'application/json' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = filename;
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
+        }
+
+        window.handleFileLoad = function(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+            
+            const reader = new FileReader();
+            reader.onload = (e) => {
+                try {
+                    const loadedData = JSON.parse(e.target.result);
+                    if (loadedData.inbody_history) {
+                        userData = loadedData;
+                        showMessageBox("데이터를 성공적으로 불러왔습니다.", 'success');
+                        displayDataOnUI(userData);
+                        updateButtonStates();
+                    } else {
+                        showMessageBox("잘못된 파일 형식입니다. 'inbody_history'가 포함된 JSON 파일을 선택하세요.", 'error');
+                    }
+                } catch (error) {
+                    showMessageBox("파일을 읽는 중 오류가 발생했습니다. 유효한 JSON 파일인지 확인하세요.", 'error');
+                }
+            };
+            reader.readAsText(file);
+        }
+
+        window.handleLoadData = function() {
+            document.getElementById('local-file-input').click();
+        }
+
+        window.handleSaveData = function() {
+            const today = new Date().toISOString().split('T')[0];
+            const filename = `${today}_inbody_data.json`;
+            downloadJsonFile(userData, filename);
+            showMessageBox(`데이터가 성공적으로 '${filename}' 파일로 저장(다운로드)되었습니다.`, 'success');
+        }
+        
+        window.handleInputData = function() {
+            const inbodyText = document.getElementById('inbody-text');
+            const statusMessage = document.getElementById('status-message');
+            
+            if (inbodyText.value.trim() === '') {
+                inbodyText.classList.add('border-error-color');
+                setTimeout(() => inbodyText.classList.remove('border-error-color'), 1500);
+                showMessageBox("인바디 데이터를 먼저 입력하세요.", 'error');
+                return;
+            }
+
+            const parsedData = parseInbodyText(inbodyText.value);
+            if (Object.keys(parsedData).length > 0) {
+                const today = new Date().toISOString().split('T')[0];
+                const lastEntry = userData.inbody_history[userData.inbody_history.length - 1];
+                const newEntry = { ...parsedData, date: today };
+
+                if (lastEntry && lastEntry.date === today && lastEntry['골격근'] === parsedData['골격근']) {
+                    showMessageBox("이미 오늘의 데이터가 저장되어 있습니다.", 'info');
+                } else {
+                    if (!userData.inbody_history) {
+                        userData.inbody_history = [];
+                    }
+                    userData.inbody_history.push(newEntry);
+                    userData.inbody = parsedData;
+                    updateDailyGoals(parsedData);
+                    showMessageBox("인바디 데이터가 성공적으로 입력되었습니다.", 'success');
+                    displayDataOnUI(userData);
+                    updateButtonStates();
+                }
+            } else {
+                inbodyText.classList.add('border-error-color');
+                showMessageBox("유효한 인바디 데이터를 찾을 수 없습니다. 형식을 확인하세요.", 'error');
+            }
+        }
+
+        function displayDataOnUI(data) {
+            if (data.inbody && data.inbody['골격근']) {
+                document.getElementById('status-message').textContent = `최근 골격근량: ${data.inbody['골격근']}kg / 단백질 목표: ${data.goals.daily_protein_g}g`;
+            }
+        }
+
+        function parseInbodyText(text_data) {
+            const inbody_data = {};
+            const patterns = {
+                '골격근': /골격근\s*([\d\.]+)kg/i,
+                '체지방률': /체지방률\s*([\d\.]+)%/i,
+                '체중': /체중\s*([\d\.]+)kg/i,
+                '건강 점수': /건강 점수\s*[\d\.]+\s*([\d\.]+)/i
+            };
+
+            for (const key in patterns) {
+                const match = text_data.match(patterns[key]);
+                if (match) {
+                    inbody_data[key] = parseFloat(match[1]);
+                }
+            }
+            return inbody_data;
+        }
+
+        function getDailyMealPlan(user_data) {
+            const is_workout_day = user_data.today_log.is_workout_day;
+            const is_happy_mode = user_data.today_log.is_happy_mode;
+            
+            const lunch_plan = {
+                meal: "점심 식사",
+                description: "저속 노화 밥(렌틸, 귀리, 현미, 백미) 120g과 함께 충분한 양의 단백질(닭가슴살 250g 또는 두부)을 섭취합니다. '거꾸로 식사법'(채소/나물 -> 단백질 -> 밥 순서)을 반드시 실천합니다. 이는 오후 집중력 유지와 인슐린 저항성 예방에 핵심입니다."
+            };
+
+            if (is_workout_day) {
+                if (is_happy_mode) {
+                    return {
+                        breakfast: {
+                            meal: "아침 식사",
+                            description: "아침 운동 직후, 베네틴 토핑 프로틴 쉐이크(2스쿱)를 섭취하여 근육 회복을 시작하고, 올리브 오일(2스푼)과 영양제를 함께 복용하여 영양 밀도를 높입니다. 소화 부담이 없다면 견과류나 씨앗류를 추가합니다."
+                        },
+                        lunch: lunch_plan,
+                        dinner: {
+                            meal: "저녁 식사",
+                            description: "오늘은 '행복 모드'이므로, 죄책감 없이 저녁 식사를 즐깁니다. 단, '저속노화 외식 원칙'을 기억하여 채소 먼저, 단백질 위주로 섭취하고 탄수화물과 술은 최소화합니다."
+                        }
+                    };
+                } else {
+                    return {
+                        breakfast: {
+                            meal: "아침 식사",
+                            description: "아침 운동 직후, 베네틴 토핑 프로틴 쉐이크(2스쿱)를 섭식하여 근육 회복을 시작하고, 올리브 오일(2스푼)과 영양제를 함께 복용하여 영양 밀도를 높입니다. 소화 부담이 없다면 견과류나 씨앗류를 추가합니다."
+                        },
+                        lunch: lunch_plan,
+                        dinner: {
+                            meal: "저녁 식사",
+                            description: "운동한 날은 밤사이 근성장을 위한 '전략적 영양 공급'입니다. 베네틴 몬스터 프로틴 게이너(2스쿱)를 섭취하여 잠자는 동안 꾸준히 아미노산을 공급받습니다. 이는 흡수가 느린 '미셀라 카제인'이 포함되어 있기 때문입니다."
+                        }
+                    };
+                }
+            } else {
+                return {
+                    breakfast: {
+                        meal: "아침 식사",
+                        description: "아침 공복에 유기농 엑스트라 버진 올리브 오일(2스푼)과 영양제를 섭취하여 하루를 시작합니다. 소화에 부담이 없다면 견과류나 씨앗류를 소량 추가하여 영양 밀도를 완성합니다."
+                    },
+                    lunch: lunch_plan,
+                    dinner: {
+                        meal: "저녁 식사",
+                        description: "휴식하는 날은 세포 정비를 위한 '공복 모드'입니다. 저녁 식사를 생략하여 최소 16시간의 공복을 확보하고 '오토파지' 시스템을 활성화합니다. 이 과정을 통해 세포가 스스로를 정화하고 재활용하도록 돕습니다."
+                    }
+                };
+            }
+        }
+
+        function getDailyProteinSummary(meal_plan, user_data) {
+            let total_protein = 0;
+            const target_protein = user_data.goals.daily_protein_g;
+
+            const supplements_data = {};
+            user_data.supplements.forEach(sup => {
+                supplements_data[sup.name] = sup.protein_g;
+            });
+
+            const lunch_protein = 70.0;
+            total_protein += lunch_protein;
+
+            const breakfast_desc = meal_plan.breakfast.description;
+            if (breakfast_desc.includes("베네틴 토핑 프로틴")) {
+                total_protein += supplements_data["베네틴 토핑 프로틴 쉐이크 아이솔레이트"] || 0;
+            }
+
+            const dinner_desc = meal_plan.dinner.description;
+            if (dinner_desc.includes("베네틴 몬스터 프로틴")) {
+                total_protein += supplements_data["베네틴 몬스터 프로틴 게이너"] || 0;
+            } else if (dinner_desc.includes("행복 모드") && user_data.today_log.is_workout_day) {
+                total_protein += 20;
+            }
+
+            const summary_message = `총 단백질 섭취량: ${total_protein.toFixed(2)}g`;
+            const goal_message = total_protein >= target_protein 
+                ? `(목표(${target_protein.toFixed(2)}g) 달성!)`
+                : `(목표(${target_protein.toFixed(2)}g)에 ${(target_protein - total_protein).toFixed(2)}g 부족)`;
+            
+            return {
+                total_protein_g: parseFloat(total_protein.toFixed(2)),
+                target_protein_g: target_protein,
+                summary: `${summary_message} ${goal_message}`
+            };
+        }
+
+        function updateDailyGoals(new_inbody) {
+            const current_protein_goal = userData.goals.daily_protein_g;
+            const target_muscle = userData.inbody.target_muscle_mass_kg || 31.0;
+            
+            const new_muscle = new_inbody['골격근'];
+            
+            if (new_muscle >= target_muscle) {
+                userData.goals.daily_protein_g = current_protein_goal + 5.0;
+                showMessageBox(`축하합니다! 골격근량 목표(${target_muscle}kg)를 달성했습니다. 새로운 단백질 목표가 ${userData.goals.daily_protein_g}g으로 상향 조정되었습니다.`, 'success');
+            } else {
+                showMessageBox("목표에 근접했거나 현재 목표를 유지합니다.", 'info');
+            }
+            
+            userData.inbody = new_inbody;
+        }
+
+        function displayMealPlan(plan) {
+            const plans = {
+                breakfast: document.getElementById('breakfast-plan'),
+                lunch: document.getElementById('lunch-plan'),
+                dinner: document.getElementById('dinner-plan')
+            };
+            
+            for (const key in plans) {
+                plans[key].classList.remove('hidden');
+                plans[key].querySelector('p').textContent = plan[key].description;
+            }
+        }
+
+        window.runAnalysis = function() {
+            if (!userData.inbody || Object.keys(userData.inbody).length === 0) {
+                showMessageBox("분석을 시작하기 전에 인바디 데이터를 입력하거나 불러오세요.", 'error');
+                return;
+            }
+
+            userData.today_log.is_workout_day = document.getElementById('is-workout-day-toggle').checked;
+            userData.today_log.is_happy_mode = document.getElementById('is-happy-mode-toggle').checked;
+            
+            const inbodyText = document.getElementById('inbody-text');
+            if (inbodyText.value.trim() !== '') {
+                window.handleInputData();
+            }
+
+            const mealPlan = getDailyMealPlan(userData);
+            const proteinSummary = getDailyProteinSummary(mealPlan, userData);
+            
+            displayMealPlan(mealPlan);
+            const summarySection = document.getElementById('summary-section');
+            summarySection.textContent = proteinSummary.summary;
+            summarySection.classList.remove('hidden');
+
+            toggleAccordion('meal-plan-accordion');
+        }
+
+        function updateButtonStates() {
+            const saveBtn = document.getElementById('save-btn');
+            const runAnalysisBtn = document.getElementById('run-analysis-btn');
+            const hasInbodyData = userData.inbody && Object.keys(userData.inbody).length > 0;
+            
+            saveBtn.disabled = !hasInbodyData;
+            runAnalysisBtn.disabled = !hasInbodyData;
+        }
+
+        window.onload = function() {
+            document.getElementById('user-id').textContent = '로컬 모드';
+            document.getElementById('inbody-text').addEventListener('input', updateButtonStates);
+            updateButtonStates();
+            toggleAccordion('inbody-accordion'); // Open the first accordion by default
+        };
+    </script>
+</body>
+</html>
