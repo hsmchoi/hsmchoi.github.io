@@ -1,0 +1,396 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>나의 지속가능성 여정</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        :root {
+            --golden-ratio: 1.618;
+            --font-size-base: 17px;
+            --font-size-sm: calc(var(--font-size-base) * 0.8);
+            --font-size-md: calc(var(--font-size-base));
+            --font-size-h2: calc(var(--font-size-base) * var(--golden-ratio));
+            --font-size-h1: calc(var(--font-size-base) * var(--golden-ratio) * var(--golden-ratio));
+
+            --space-u: 8px;
+            --space-xs: calc(var(--space-u) * 0.618);
+            --space-s: var(--space-u);
+            --space-m: calc(var(--space-u) * var(--golden-ratio));
+            --space-l: calc(var(--space-u) * var(--golden-ratio) * var(--golden-ratio));
+            --space-xl: calc(var(--space-u) * var(--golden-ratio) * var(--golden-ratio) * var(--golden-ratio));
+            
+            --golden-container-width: 676px;
+        }
+        
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #F0F4EF;
+        }
+
+        .golden-ratio-container {
+            max-width: var(--golden-container-width);
+            width: 90%;
+            padding: var(--space-l);
+            margin-top: var(--space-l);
+        }
+
+        @media (max-width: 768px) {
+            .golden-ratio-container {
+                width: 61.8%;
+                min-width: 320px;
+            }
+        }
+
+        .golden-text-h1 { font-size: var(--font-size-h1); }
+        .golden-text-h2 { font-size: var(--font-size-h2); }
+        .golden-text-sm { font-size: var(--font-size-sm); }
+        .golden-text-md { font-size: var(--font-size-md); }
+
+        .golden-shadow {
+            box-shadow: 0 4px 12px -2px rgba(0,0,0,0.1), 0 2px 6px -1px rgba(0,0,0,0.06);
+        }
+
+        .slider-thumb::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            appearance: none;
+            width: var(--space-m);
+            height: var(--space-m);
+            background: #3A6B48;
+            cursor: grab;
+            border-radius: 50%;
+            border: calc(var(--space-u) * 0.382) solid #fff;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+            transition: transform 0.2s ease-in-out;
+        }
+
+        .slider-thumb:active::-webkit-slider-thumb {
+            transform: scale(1.2);
+            cursor: grabbing;
+        }
+        
+        @keyframes fadeAndScale {
+            from { opacity: 0; transform: scale(0.9); }
+            to { opacity: 1; transform: scale(1); }
+        }
+        .pop-text { animation: fadeAndScale 0.3s ease-in-out; }
+        
+        .fade-in-up {
+            animation: fadeInUp 0.5s ease-out forwards;
+        }
+        @keyframes fadeInUp {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .golden-button {
+            height: calc(var(--space-l) * 1.8);
+            width: calc(var(--space-l) * 1.8 * var(--golden-ratio));
+            border-radius: calc(var(--space-s) * 1.618);
+            font-size: var(--font-size-md);
+        }
+
+        .golden-card {
+            border-radius: 1.5rem;
+            padding: var(--space-l);
+            background-color: #E8F0EA;
+            border: 1px solid #C3D9C9;
+            box-shadow: 0 4px 12px -2px rgba(0,0,0,0.1), 0 2px 6px -1px rgba(0,0,0,0.06);
+        }
+
+        .check-item:checked + .peer-checked-bg {
+            background-color: #E8F0EA;
+            border-color: #3A6B48;
+            border-width: 2px;
+        }
+
+        .status-icon {
+            width: 2rem;
+            height: 2rem;
+            transition: color 0.5s ease-in-out;
+        }
+    </style>
+</head>
+<body class="flex flex-col items-center justify-start min-h-screen p-8">
+
+    <div id="app" class="w-full golden-ratio-container bg-white rounded-[2rem] golden-shadow">
+        
+        <div class="flex items-center justify-between" style="margin-bottom: var(--space-l);">
+            <h1 class="golden-text-h1 font-extrabold text-zinc-800">지속가능성 여정</h1>
+            <div class="flex items-center" style="gap: var(--space-s);">
+                <svg id="burnoutStatusIcon" class="status-icon" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    </svg>
+                <span id="burnoutScoreDisplay" class="font-bold text-gray-700 golden-text-h1"></span>
+            </div>
+        </div>
+
+        <div class="golden-card relative overflow-hidden" style="margin-bottom: var(--space-l);">
+            <label for="moodSlider" class="block font-semibold text-zinc-800 relative z-10 golden-text-h2" style="margin-bottom: var(--space-s);">오늘의 활력 지수</label>
+            <div class="flex items-center justify-between relative z-10" style="margin-bottom: var(--space-m);">
+                <span class="text-[#3A6B48] golden-text-sm">최저</span>
+                <span id="moodValue" class="font-extrabold text-[#3A6B48] pop-text" style="font-size: var(--font-size-h1);">5</span>
+                <span class="text-[#3A6B48] golden-text-sm">최고</span>
+            </div>
+            <input type="range" id="moodSlider" min="1" max="10" value="5" class="w-full h-2 bg-[#C3D9C9] rounded-lg appearance-none cursor-pointer slider-thumb relative z-10">
+            <p id="moodExample" class="text-center font-medium text-[#3A6B48] leading-relaxed fade-in-up relative z-10" style="margin-top: var(--space-s); font-size: var(--font-size-sm);"></p>
+        </div>
+
+        <div id="dashboardSection" class="hidden fade-in-up">
+            <div class="golden-card text-[#3A6B48] relative overflow-hidden" style="padding: var(--space-l); margin-bottom: var(--space-l);">
+                <p id="burnoutInterpretation" class="font-medium leading-relaxed relative z-10" style="font-size: var(--font-size-sm);"></p>
+            </div>
+            
+            <div style="margin-bottom: var(--space-l);">
+                <h2 class="golden-text-h2 font-bold text-zinc-800" style="margin-bottom: var(--space-s);">당신을 방해하는 것</h2>
+                <div id="barriersContainer" class="grid grid-cols-2" style="gap: var(--space-s);">
+                </div>
+            </div>
+
+            <div>
+                <h2 class="golden-text-h2 font-bold text-zinc-800" style="margin-bottom: var(--space-s);">오늘의 기록</h2>
+                <textarea id="notesArea" class="w-full h-32 text-zinc-700 bg-white rounded-xl border border-gray-300 focus:outline-none focus:ring-2 focus:ring-[#3A6B48] resize-none golden-shadow" placeholder="자유롭게 오늘을 기록해보세요..." style="padding: var(--space-m); font-size: var(--font-size-sm);"></textarea>
+            </div>
+        </div>
+        
+        <div class="flex" style="gap: var(--space-s); margin-top: var(--space-l);">
+            <input type="file" id="fileInput" accept=".json" class="hidden" />
+            <button id="loadRecordsBtn" class="flex-1 golden-button px-4 bg-gray-200 text-zinc-800 font-bold rounded-xl golden-shadow transition-all hover:bg-[#D6E0D8] active:scale-95">과거 기록 불러오기</button>
+            <button id="downloadRecordsBtn" class="flex-1 golden-button px-4 bg-[#3A6B48] text-white font-bold rounded-xl golden-shadow transition-all hover:bg-[#2A5734] active:scale-95">기록 다운로드</button>
+        </div>
+    </div>
+
+    <script>
+        let allRecords = [];
+        
+        const svgIcons = {
+            healthy: `<path d="M12 22s-8-4-8-12a8 8 0 1 1 16 0c0 8-8 12-8 12z" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/><path d="M12 18V8" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>`,
+            warning: `<path d="M12 19v-7" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/><path d="M14 17l-2 2-2-2" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/><path d="M17 12a5 5 0 0 0-10 0" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>`,
+            severe: `<path d="M12 22s-8-4-8-12a8 8 0 1 1 16 0c0 8-8 12-8 12z" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/><path d="M8 16c2-1 4-1 6 0" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>`
+        };
+
+        const burnoutScoreDisplay = document.getElementById('burnoutScoreDisplay');
+        const burnoutInterpretation = document.getElementById('burnoutInterpretation');
+        const dashboardSection = document.getElementById('dashboardSection');
+        const barriersContainer = document.getElementById('barriersContainer');
+        const notesArea = document.getElementById('notesArea');
+        const moodSlider = document.getElementById('moodSlider');
+        const moodValue = document.getElementById('moodValue');
+        const moodExample = document.getElementById('moodExample');
+        const burnoutStatusIcon = document.getElementById('burnoutStatusIcon');
+        
+        const fileInput = document.getElementById('fileInput');
+        const loadRecordsBtn = document.getElementById('loadRecordsBtn');
+        const downloadRecordsBtn = document.getElementById('downloadRecordsBtn');
+
+        const mindsetBarriersMap = {
+            "Lack of motivation": "동기 부족",
+            "Fear of failure": "실패에 대한 두려움",
+            "Perfectionism": "완벽주의",
+            "Imposter syndrome": "자신감 부족",
+            "Idea drought": "영감 고갈"
+        };
+        const environmentalBarriersMap = {
+            "Tool issues": "필수 도구 부족",
+            "Time constraints": "시간 부족",
+            "Lack of skill": "기술적 어려움",
+            "Poor workspace": "작업 공간"
+        };
+        
+        let userState = {};
+
+        function calculateBurnoutScore(currentMoodScore, lastActivityDate) {
+            if (currentMoodScore < 1 || currentMoodScore > 10) {
+                return 0;
+            }
+            const baseScore = (10 - currentMoodScore) * 10;
+            let frequencyScore = 0;
+            
+            if (lastActivityDate) {
+                const lastActivityDt = new Date(lastActivityDate);
+                const now = new Date();
+                const daysSinceLastActivity = Math.floor((now - lastActivityDt) / (1000 * 60 * 60 * 24));
+
+                if (daysSinceLastActivity >= 30) frequencyScore = 15;
+                else if (daysSinceLastActivity >= 14) frequencyScore = 10;
+                else if (daysSinceLastActivity >= 7) frequencyScore = 5;
+            }
+
+            const rawScore = baseScore + frequencyScore;
+            const burnoutScore = Math.min(Math.max(rawScore, 1), 100);
+            return burnoutScore;
+        }
+
+        function getMoodExample(score) {
+            if (score >= 9) return "새로운 목표에 도전할 준비가 되었어요! 🚀";
+            else if (score >= 7) return "오늘 하루는 즐겁고 생산적이었어요! ✨";
+            else if (score >= 5) return "그저 평범한 하루였어요. 😌";
+            else if (score >= 3) return "무언가 힘들었지만, 그래도 괜찮아요. 💪";
+            else return "오늘은 정말 힘들어서 쉬고 싶어요. 😥";
+        }
+        
+        function interpretBurnoutScore(score) {
+            if (score < 30) return "훌륭합니다! 당신은 지금 매우 좋은 상태에 있습니다. 이 긍정적인 에너지를 바탕으로 다음 단계로 나아가 보세요.";
+            else if (score < 60) return "잠재적인 번아웃 신호가 감지됩니다. 잠시 멈춰서 당신의 감정과 작업 환경을 돌아볼 시간이 필요합니다. '5 Whys' 기법을 활용해 오늘 무엇이 힘들었는지 탐색해보는 건 어떨까요?";
+            else if (score < 85) return "경고! 번아웃 위험이 높습니다. 잠시 모든 활동을 중단하고 충분한 휴식을 취하는 것이 중요합니다. 당신의 활력은 기계처럼 작동하지 않습니다. 재충전 시간을 가지세요.";
+            else return "위험! 심각한 번아웃 상태입니다. 즉각적으로 모든 활동을 멈추세요. 문제 해결을 위한 어떤 노력보다도 먼저 당신의 정신적, 신체적 건강을 회복하는 것이 가장 시급한 목표입니다.";
+        }
+        
+        function updateUI(score) {
+            burnoutScoreDisplay.textContent = `${score}`;
+            burnoutInterpretation.textContent = interpretBurnoutScore(score);
+            dashboardSection.classList.remove('hidden');
+            renderBarriers(score);
+            
+            if (score >= 85) {
+                burnoutStatusIcon.style.color = '#B91C1C';
+                burnoutStatusIcon.innerHTML = svgIcons.severe;
+                burnoutScoreDisplay.className = 'font-bold text-red-500 golden-text-h1 pop-text';
+            } else if (score >= 60) {
+                burnoutStatusIcon.style.color = '#718096';
+                burnoutStatusIcon.innerHTML = svgIcons.warning;
+                burnoutScoreDisplay.className = 'font-bold text-orange-500 golden-text-h1 pop-text';
+            } else {
+                burnoutStatusIcon.style.color = '#3A6B48';
+                burnoutStatusIcon.innerHTML = svgIcons.healthy;
+                burnoutScoreDisplay.className = 'font-bold text-[#3A6B48] golden-text-h1 pop-text';
+            }
+        }
+
+        function getLastActivityDate() {
+            if (allRecords.length === 0) return null;
+            const lastRecord = allRecords.slice(-1)[0];
+            return lastRecord.creation_date;
+        }
+
+        moodSlider.addEventListener('input', () => {
+            const currentScore = parseInt(moodSlider.value);
+            moodValue.textContent = currentScore;
+            moodExample.textContent = getMoodExample(currentScore);
+            if (navigator.vibrate) navigator.vibrate(5);
+        });
+
+        moodSlider.addEventListener('change', () => {
+            const moodScore = parseInt(moodSlider.value);
+            const today = new Date().toISOString();
+            const lastActivityDate = getLastActivityDate();
+
+            userState = {
+                record_id: today,
+                creation_date: today,
+                current_mood_score: moodScore,
+                last_activity_date: lastActivityDate,
+                mindset_barriers: [],
+                environmental_barriers: [],
+                notes: ""
+            };
+            
+            const burnoutScore = calculateBurnoutScore(moodScore, lastActivityDate);
+            updateUI(burnoutScore);
+            allRecords.push(userState);
+        });
+
+        notesArea.addEventListener('blur', () => {
+            if (allRecords.length > 0) {
+                const lastRecord = allRecords.slice(-1)[0];
+                lastRecord.notes = notesArea.value;
+            }
+        });
+
+        loadRecordsBtn.addEventListener('click', () => {
+            fileInput.click();
+            if (navigator.vibrate) navigator.vibrate(50);
+        });
+        
+        fileInput.addEventListener('change', (event) => {
+            const file = event.target.files[0];
+            if (!file) return;
+            const reader = new FileReader();
+            reader.onload = (e) => {
+                try {
+                    const loadedData = JSON.parse(e.target.result);
+                    if (Array.isArray(loadedData)) {
+                        allRecords = [...allRecords, ...loadedData];
+                        allRecords.sort((a, b) => new Date(a.creation_date) - new Date(b.creation_date));
+                        alert('과거 기록이 성공적으로 불러와졌습니다.');
+                        console.log('총 기록:', allRecords);
+                    } else {
+                        alert('유효한 JSON 파일 형식이 아닙니다.');
+                    }
+                } catch (error) {
+                    alert('파일을 읽는 중 오류가 발생했습니다.');
+                }
+            };
+            reader.readAsText(file);
+        });
+
+        downloadRecordsBtn.addEventListener('click', () => {
+            const dataStr = JSON.stringify(allRecords, null, 2);
+            const blob = new Blob([dataStr], {type: 'application/json'});
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `sustainability_records_${new Date().toISOString().slice(0, 10)}.json`;
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
+            if (navigator.vibrate) navigator.vibrate([10, 5, 10]);
+        });
+        
+        function renderBarriers(burnoutScore) {
+            barriersContainer.innerHTML = '';
+            let barriersToShow = {};
+
+            if (burnoutScore >= 60) barriersToShow = { ...mindsetBarriersMap, ...environmentalBarriersMap };
+            else if (burnoutScore >= 30) barriersToShow = { ...mindsetBarriersMap };
+            else barriersToShow = { ...environmentalBarriersMap };
+            
+            for (const key in barriersToShow) {
+                const barrierLabel = document.createElement('label');
+                barrierLabel.className = 'flex items-center space-x-2 p-4 rounded-lg shadow-sm cursor-pointer transition duration-200 ease-in-out bg-[#F2F6F1] hover:bg-[#E8F0EA] border border-transparent';
+                
+                const checkbox = document.createElement('input');
+                checkbox.type = 'checkbox';
+                checkbox.className = 'form-checkbox h-5 w-5 text-[#3A6B48] rounded-md transition duration-200 ease-in-out peer check-item';
+                checkbox.value = key;
+
+                const span = document.createElement('span');
+                span.className = 'font-medium text-zinc-800 golden-text-sm';
+                span.textContent = barriersToShow[key];
+                
+                barrierLabel.appendChild(checkbox);
+                barrierLabel.appendChild(span);
+                barriersContainer.appendChild(barrierLabel);
+                
+                checkbox.addEventListener('change', () => {
+                    const selectedMindset = Object.keys(mindsetBarriersMap).filter(k => document.querySelector(`input[value="${k}"]`).checked);
+                    const selectedEnvironmental = Object.keys(environmentalBarriersMap).filter(k => document.querySelector(`input[value="${k}"]`).checked);
+                    userState = identifyAndRecordBarriers(userState, selectedMindset, selectedEnvironmental);
+                    
+                    if (checkbox.checked) {
+                        barrierLabel.classList.add('peer-checked-bg');
+                        if (navigator.vibrate) navigator.vibrate(10);
+                    } else {
+                        barrierLabel.classList.remove('peer-checked-bg');
+                        if (navigator.vibrate) navigator.vibrate(10);
+                    }
+                });
+            }
+        }
+        
+        function identifyAndRecordBarriers(userState, selectedMindset, selectedEnvironmental) {
+            userState.mindset_barriers = selectedMindset;
+            userState.environmental_barriers = selectedEnvironmental;
+            return userState;
+        }
+
+        document.addEventListener('DOMContentLoaded', () => {
+            dashboardSection.classList.add('hidden');
+            moodExample.textContent = getMoodExample(parseInt(moodSlider.value));
+            updateUI(calculateBurnoutScore(parseInt(moodSlider.value), getLastActivityDate()));
+        });
+    </script>
+</body>
+</html>
