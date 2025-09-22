@@ -93,7 +93,7 @@
         #bottom-app-bar .menu-button .material-symbols-outlined { transition: transform var(--anim-dur-slow) cubic-bezier(0.175, 0.885, 0.32, 1.275); font-size: calc(var(--font-size-l) * 0.9); }
         
         #retrospective-modal .modal-content { max-width: 800px; display: flex; flex-direction: column; height: 85vh; max-height: 700px; }
-        .retrospective-body { display: flex; flex-direction: column; flex-grow: 1; gap: var(--space-l); min-height: 0; }
+        .retrospective-body { display: flex; flex-grow: 1; gap: var(--space-l); min-height: 0; }
         .retrospective-sidebar { flex-basis: 38.2%; display: flex; flex-direction: column; gap: var(--space-m); }
         .retrospective-main { flex-basis: 61.8%; display: flex; flex-direction: column; min-width: 0; }
         #retro-list { flex-grow: 1; overflow-y: auto; display: flex; flex-direction: column; gap: var(--space-s); padding: var(--space-s); background-color: var(--c-bg-primary); border-radius: var(--radius-m); }
@@ -107,6 +107,13 @@
         .retrospective-list-item .date-indicator { font-weight: 700; font-size: var(--font-size-m); }
         .retrospective-list-item .text-content p:first-child { font-weight: 500; color: var(--c-text-primary); }
         .retrospective-list-item .text-content p:last-child { font-size: var(--font-size-s); color: var(--c-text-secondary); }
+
+        .completion-stats-container { width: 100%; margin-top: var(--space-l); display: flex; flex-direction: column; gap: var(--space-xs); }
+        .stat-bar-wrapper { display: flex; align-items: center; gap: var(--space-sm); position: relative; }
+        .stat-bar { height: 24px; border-radius: var(--radius-sm); background-color: var(--c-bg-tertiary); transition: width var(--anim-dur-slow) ease-in-out; }
+        .stat-bar-label { position: absolute; left: var(--space-sm); color: var(--c-text-primary); font-size: var(--font-sm); font-weight: 500; text-shadow: 0 1px 2px rgba(0,0,0,0.3); pointer-events: none; }
+        .stat-bar-tooltip { position: absolute; top: 100%; left: 50%; transform: translateX(-50%); background-color: var(--c-bg-primary); color: var(--c-text-primary); padding: var(--space-xs) var(--space-sm); border-radius: var(--radius-sm); font-size: var(--font-sm); opacity: 0; visibility: hidden; transition: all var(--anim-dur-fast); white-space: nowrap; z-index: 10; }
+        .stat-bar-wrapper:hover .stat-bar-tooltip { opacity: 1; visibility: visible; transform: translateX(-50%) translateY(var(--space-xs)); }
 
         .lottie-container { width: 80px; height: 80px; cursor: pointer; }
         .driver-popover { background-color: var(--c-bg-secondary); color: var(--c-text-primary); border-radius: var(--radius-l); }
@@ -125,6 +132,7 @@
                 padding: var(--space-m);
             }
             .retrospective-body {
+                flex-direction: column;
                 overflow-y: auto;
             }
             .retrospective-sidebar, .retrospective-main {
@@ -144,19 +152,6 @@
                 flex-direction: column;
                 flex: 0 0 auto;
                 width: 90px;
-            }
-        }
-
-        @media (min-width: 769px) and (min-height: 600px) {
-            .retrospective-body {
-                flex-direction: row;
-            }
-        }
-
-        @media (orientation: landscape) {
-            .modal-content {
-                max-height: 90vh;
-                overflow-y: auto;
             }
         }
 
@@ -278,6 +273,7 @@
                 activeFilter: 'all',
             },
             palettes: {
+                routine: ['#82B1FF', '#C792EA', '#FF5252', '#40C4FF', '#FFD740', '#9CCC65'],
                 eventShapes: ['star', 'diamond', 'favorite', 'verified', 'rocket_launch', 'emoji_events'],
                 eventColors: ['#FF8A80', '#FFD180', '#FFFF8D', '#A7FFEB', '#80D8FF', '#B388FF']
             },
@@ -525,19 +521,11 @@
         }
 
         function renderPlanView(container, date, workout) {
-            if (workout.type === 'rest') {
-                container.innerHTML = `
-                    <div style="width: 100%; height: 100%; display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center; flex-grow: 1; gap: var(--space-m);">
-                        <span class="material-symbols-outlined" style="font-size: calc(var(--font-size-xl) * 1.5); color: var(--c-text-secondary);">${workout.icon}</span>
-                        <h3 style="font-weight: 700; font-size: calc(var(--font-size-xl) * 1.5); color: var(--c-text-secondary);">${workout.title}</h3>
-                    </div>`;
-                return;
-            }
-
             const logData = Data.getWorkoutLog(date);
             const allExercises = workout.exercises || [];
             const completedExercises = logData.filter(log => log.endTime);
             const allDone = allExercises.length > 0 && completedExercises.length === allExercises.length;
+
 
             const exercisesHTML = allExercises.map(ex => {
                 const exerciseLog = logData.find(log => log.name === ex.name);
@@ -1041,4 +1029,3 @@
     </script>
 </body>
 </html>
-
