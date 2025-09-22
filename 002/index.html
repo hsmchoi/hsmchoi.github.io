@@ -70,8 +70,44 @@
         { name: 'rose', display: '#2B0B13', values: { '--bg-color': '#2B0B13', '--text-color': '#F5DCE3', '--text-secondary-color': '#E0BCC8', '--surface-color': '#421D2A', '--surface-strong-color': '#592F3D', '--surface-border-color': '#704251', '--surface-transparent-color': '#421d2a80' } },
         { name: 'forest', display: '#0B2B13', values: { '--bg-color': '#0B2B13', '--text-color': '#DCE3F5', '--text-secondary-color': '#A8B4D1', '--surface-color': '#1D422A', '--surface-strong-color': '#2F593D', '--surface-border-color': '#427051', '--surface-transparent-color': '#1d422a80' } }
     ];
+    const TUTORIAL_STORAGE_KEY = 'lyricFlowTutorialCompleted';
+    const CREATOR_TUTORIAL_STEPS = [
+        {
+            targetElementSelector: 'textarea[placeholder*="이곳에 가사를 작성하세요"]',
+            title: '1. 가사 입력',
+            content: '튜토리얼을 시작합니다. 먼저, 이곳에 노래 가사를 한 소절씩 입력하거나 붙여넣어 보세요. 사용자의 행동: 가사 입력',
+            action: 'input',
+            condition: (appState) => appState.lyrics.trim().length > 5,
+        },
+        {
+            targetElementSelector: '.page-content button.bg-primary-color',
+            title: '2. 타이밍 준비',
+            content: '잘하셨습니다! 가사 입력이 끝나면, 이 버튼을 눌러 다음 단계로 이동합니다. 사용자의 행동: 버튼 클릭',
+            action: 'click',
+            delayAfterTrigger: 100
+        },
+        {
+            targetElementSelector: '.page-content .fa-microphone-alt',
+            title: '3. "기록"의 의미',
+            content: '중요한 점입니다! 이 앱은 목소리를 녹음하지 않습니다. "기록"이란 노래를 들으며 가사가 끝나는 타이밍에 맞춰 버튼을 누르는 것을 의미합니다. 계속하려면 "기록 시작" 버튼을 누르세요. 사용자의 행동: 버튼 클릭',
+            action: 'click',
+            nextTriggerSelector: '.page-content button.bg-primary-color',
+            delayAfterTrigger: 100
+        },
+        {
+            targetElementSelector: 'button.bg-amber-500',
+            title: '4. 핵심 규칙!',
+            content: '바로 이 버튼이 핵심입니다. 노래에 맞춰 화면의 가사 한 줄이 끝나는 순간, 이 "다음 가사" 버튼을 눌러주세요. 이것이 타이밍을 기록하는 전부입니다. 사용자의 행동: 버튼 클릭',
+            action: 'click',
+        },
+        {
+            title: '튜토리얼 완료',
+            content: '이제 핵심 기능을 모두 배우셨습니다. 지금부터 자유롭게 앱을 사용해보세요! 이 튜토리얼은 다시 표시되지 않습니다.',
+            isModal: true
+        }
+    ];
 
-    const AppHeader = ({ title, children, onBack, isPlayerHeader }) => ( <header className={`flex-shrink-0 flex items-center justify-between p-4 z-10 h-16 ${isPlayerHeader ? 'absolute top-0 left-0 right-0' : ''}`}><div className="w-10">{onBack && <button onClick={onBack} className="text-secondary-color hover:text-text-color text-xl action-button w-10 h-10 flex items-center justify-center"><i className="fas fa-times"></i></button>}</div><h1 className="text-sm font-bold tracking-tight text-center truncate">{title}</h1><div className="w-10">{children}</div></header> );
+    const AppHeader = ({ title, children, headerLeft, isPlayerHeader }) => ( <header className={`flex-shrink-0 flex items-center justify-between p-4 z-10 h-16 ${isPlayerHeader ? 'absolute top-0 left-0 right-0' : ''}`}><div className="flex-shrink-0 flex items-center justify-start min-w-[40px]">{headerLeft}</div><h1 className="text-sm font-bold tracking-tight text-center truncate mx-2 flex-grow">{title}</h1><div className="flex-shrink-0 flex items-center justify-end min-w-[40px]">{children}</div></header> );
     const CardContent = ({ song, requestDelete, openColorPicker, onDownloadSong }) => ( <div className="card-common-content"><div className="flex justify-between items-start text-sm opacity-80"><h3 className="font-bold">Lyric Flow</h3><div className="flex items-center gap-2"><span className="flex items-center gap-1.5 bg-black/20 px-2 py-1 rounded-full text-xs"><i className="fas fa-headphones-alt"></i><span>{song.practiceCount || 0}</span></span><button onClick={(e) => { e.stopPropagation(); onDownloadSong(song); }} className="w-8 h-8 rounded-full bg-black/20 flex items-center justify-center text-blue-400 hover:bg-blue-500 hover:text-white action-button"><i className="fas fa-download"></i></button><button onClick={(e) => { e.stopPropagation(); requestDelete(song); }} className="w-8 h-8 rounded-full bg-black/20 flex items-center justify-center text-red-400 hover:bg-red-500 hover:text-white action-button"><i className="fas fa-trash-alt"></i></button></div></div><div className="text-center"><h2 className="font-bold text-2xl truncate" style={{fontSize: '1.618rem'}}>{song.title}</h2></div><div className="flex justify-between items-end text-sm opacity-80"><span>{song.timedLines.length} Lines</span><button onClick={(e) => { e.stopPropagation(); openColorPicker(song); }} className="w-8 h-8 rounded-full bg-black/20 flex items-center justify-center action-button"><i className="fas fa-palette"></i></button></div></div> );
     const ConfirmDeleteModal = ({ song, onConfirm, onCancel }) => ( <div className="bottom-sheet-backdrop"><div className="bottom-sheet max-h-fit"><h3 className="text-lg font-bold">카드 삭제</h3><p className="my-4 text-secondary-color">'{song.title}' 카드를 정말 삭제하시겠습니까?</p><div className="grid grid-cols-2 gap-4"><button onClick={onCancel} className="py-3 font-bold rounded-lg bg-surface-strong-color action-button">취소</button><button onClick={onConfirm} className="py-3 font-bold rounded-lg text-white" style={{backgroundColor: 'var(--red-color)'}}>삭제</button></div></div></div>);
     const ColorPicker = ({ onSelect, onClose }) => (<div className="bottom-sheet-backdrop" onClick={onClose}><div className="bottom-sheet" onClick={e => e.stopPropagation()}><h3 className="text-lg font-bold mb-4">카드 색상 변경</h3><div className="grid grid-cols-3 gap-4">{GRADIENTS.map(grad => (<div key={grad} onClick={() => onSelect(grad)} className="w-full aspect-square rounded-lg cursor-pointer" style={{ background: grad }}></div>))}</div></div></div>);
@@ -80,6 +116,90 @@
     const ConfirmResetModal = ({ onConfirm, onCancel }) => ( <div className="bottom-sheet-backdrop"><div className="bottom-sheet max-h-fit"><h3 className="text-lg font-bold">다시 시작</h3><p className="my-4 text-secondary-color">지금까지 기록한 모든 내용이 사라집니다. 정말 처음부터 다시 시작하시겠습니까?</p><div className="grid grid-cols-2 gap-4"><button onClick={onCancel} className="py-3 font-bold rounded-lg bg-surface-strong-color action-button">취소</button><button onClick={onConfirm} className="py-3 font-bold rounded-lg text-white" style={{backgroundColor: 'var(--red-color)'}}>다시 시작</button></div></div></div>);
     const VerticalListView = ({ songs, openSongMenu, isEditMode, onSongEdit, requestDelete, openColorPicker, onDownloadSong, selectedSongIds, onToggleSelection }) => ( <div className="p-4 space-y-4 overflow-y-auto h-full">{songs.map((song) => { const isSelected = selectedSongIds.has(song.id); return (<div key={song.id} onClick={() => isEditMode ? onToggleSelection(song.id) : openSongMenu(song)} className="song-card w-full" style={{ background: song.gradient, opacity: (isEditMode && !isSelected) ? 0.6 : 1, transform: (isEditMode && isSelected) ? 'scale(0.95)' : 'scale(1)' }}><div className={`selection-overlay ${isSelected ? 'selected' : ''}`}><div className="selection-checkbox">{isSelected && <i className="fas fa-check"></i>}</div></div><CardContent {...{song, requestDelete, openColorPicker, onDownloadSong}} /></div>);})}</div> );
     
+    const InteractiveTutorial = ({ steps, currentStep, onNext, onClose, appState }) => {
+        const step = steps[currentStep];
+        const highlightRef = useRef(null);
+        const [style, setStyle] = useState({});
+
+        const updateHighlight = useCallback(() => {
+            if (!step) return;
+            if (step.isModal) {
+                setStyle({
+                    position: 'fixed', top: '50%', left: '50%', transform: 'translate(-50%, -50%)',
+                    width: 'calc(100% - 2rem)', maxWidth: '320px',
+                });
+                return;
+            }
+            const target = step.targetElementSelector ? document.querySelector(step.targetElementSelector) : null;
+            if (target) {
+                target.style.zIndex = '1001';
+                target.style.position = 'relative';
+                const rect = target.getBoundingClientRect();
+                setStyle({
+                    position: 'absolute',
+                    top: `${rect.bottom + 10}px`,
+                    left: `${rect.left}px`,
+                    width: `${rect.width}px`,
+                    maxWidth: '320px',
+                });
+            }
+        }, [step]);
+        
+        useEffect(() => {
+            const observer = new MutationObserver(updateHighlight);
+            observer.observe(document.body, { childList: true, subtree: true });
+            updateHighlight();
+            
+            return () => {
+                const target = step?.targetElementSelector ? document.querySelector(step.targetElementSelector) : null;
+                if (target) {
+                    target.style.zIndex = '';
+                    target.style.position = '';
+                }
+                observer.disconnect();
+            }
+        }, [step, updateHighlight]);
+        
+        useEffect(() => {
+            if (!step) return;
+            const targetSelector = step.nextTriggerSelector || step.targetElementSelector;
+            if (step.action === 'click' && targetSelector) {
+                const target = document.querySelector(targetSelector);
+                
+                const handleClick = (e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    onNext();
+                };
+
+                if (target) {
+                    target.addEventListener('click', handleClick, { once: true });
+                    return () => target.removeEventListener('click', handleClick);
+                }
+            } else if (step.action === 'input' && step.condition) {
+                if (step.condition(appState)) {
+                    setTimeout(onNext, 200);
+                }
+            }
+        }, [step, appState, onNext]);
+
+        if (!step) return null;
+
+        return (
+            <div className="fixed inset-0 bg-black/70 backdrop-blur-sm z-[1000]" onClick={!step.isModal ? onClose : undefined}>
+                <div ref={highlightRef} className="p-4 rounded-lg bg-surface-strong-color text-white shadow-2xl transition-all duration-300" style={style}>
+                    <h4 className="font-bold text-lg mb-2 text-amber-300">{step.title}</h4>
+                    <p className="text-sm">{step.content}</p>
+                    {step.isModal && (
+                        <button onClick={onClose} className="w-full mt-4 py-2 font-bold rounded-lg bg-primary-color text-white action-button">
+                            시작하기
+                        </button>
+                    )}
+                </div>
+            </div>
+        );
+    };
+
     function LyricsPracticeApp({ songs, setPracticeSongs, onSongColorChange, onSongEdit, openSongMenu, onSongDelete }) {
         const [isEditMode, setIsEditMode] = useState(false);
         const [selectedSongIds, setSelectedSongIds] = useState(new Set());
@@ -207,8 +327,7 @@
         
         return (
             <div className="h-full flex flex-col">
-                <AppHeader title={title}>
-                   <button onClick={() => onDone(song)} className="font-bold text-primary-color action-button">저장</button>
+                <AppHeader title={title} headerLeft={<button onClick={() => onDone(song)} className="font-bold text-primary-color action-button">저장</button>}>
                 </AppHeader>
                 <div className="page-content overflow-y-auto pb-4">
                     <div className="p-4 space-y-2">
@@ -244,9 +363,8 @@
         );
     };
 
-    function TimingAnalyzerApp(props) {
-        const { onComplete, onBack, testHook } = props;
-        const hook = testHook || useLyricsTiming();
+    function TimingAnalyzerApp({ onComplete, onBack, isTutorialActive, onTutorialStep, currentTutorialAppState, onStartTutorial }) {
+        const hook = useLyricsTiming();
         const { 
             song, setSong, step, setStep, lyricsLines, elapsedTime, countdown, currentTimingLine, 
             handleReady, handleStartTiming, handleMarkLineEnd, isPlaying, isPaused, handlePause, handleResume,
@@ -255,6 +373,13 @@
         } = hook;
         const formatTime = (ms) => { const minutes = String(Math.floor(ms / 60000)).padStart(2, '0'); const seconds = String(Math.floor((ms % 60000) / 1000)).padStart(2, '0'); const milliseconds = String(Math.floor((ms % 1000) / 10)).padStart(2, '0'); return `${minutes}:${seconds}.${milliseconds}`; };
 
+        useEffect(() => {
+            if (isTutorialActive) {
+                currentTutorialAppState.current = { lyrics: song.lyrics, step: step };
+                onTutorialStep(); 
+            }
+        }, [song.lyrics, step, isTutorialActive, onTutorialStep]);
+        
         const renderContent = () => {
             switch(step) {
                 case 'input': return (<div className="flex-grow flex flex-col gap-4 p-4"><textarea value={song.lyrics} onChange={(e) => setLyrics(e.target.value)} placeholder="이곳에 가사를 작성하세요. 발음 표기는 (소괄호) 안에 작성해주세요." className="w-full flex-grow p-4 rounded-lg resize-none outline-none focus:ring-2 bg-surface-color border-surface-border-color ring-primary-color"></textarea><button onClick={handleReady} disabled={!song.lyrics.trim()} className="py-3 font-bold rounded-lg text-white disabled:opacity-50 action-button bg-primary-color"><i className="fas fa-arrow-right"></i></button></div>);
@@ -268,7 +393,17 @@
 
         return (
             <div className="h-full flex flex-col">
-                <AppHeader title="제작" onBack={onBack}>{step === 'result' && <button onClick={() => onComplete(song)} className="font-bold text-primary-color action-button">저장</button>}</AppHeader>
+                <AppHeader 
+                    title="제작" 
+                    headerLeft={
+                        <div className="flex items-center gap-2">
+                            <button onClick={onBack} className="text-secondary-color hover:text-text-color text-xl action-button w-10 h-10 flex items-center justify-center"><i className="fas fa-arrow-left"></i></button>
+                            <button onClick={onStartTutorial} className="text-secondary-color hover:text-text-color text-xl action-button w-10 h-10 flex items-center justify-center"><i className="fas fa-question-circle"></i></button>
+                        </div>
+                    }
+                >
+                    {step === 'result' && <button onClick={() => onComplete(song)} className="font-bold text-primary-color action-button">저장</button>}
+                </AppHeader>
                 <div className="page-content flex flex-col">{renderContent()}{showPhoneticConfirm && (<div className="bottom-sheet-backdrop"><div className="bottom-sheet max-h-fit"><h3 className="font-bold text-lg mb-2 text-center">가사 형식 감지</h3><p className="text-sm text-secondary-color mb-4 text-center">발음이 포함된 가사 형식인 것 같습니다.<br/>가사를 그룹으로 묶어 처리할까요?</p><div className="flex justify-around items-center mt-4"><button onClick={() => handlePhoneticConfirm(false)} className="text-sm action-button px-4 py-2 rounded-lg bg-surface-strong-color">아니오 (줄 단위)</button><button onClick={() => handlePhoneticConfirm(true)} className="text-sm font-bold action-button px-4 py-2 rounded-lg text-white bg-primary-color">예 (그룹 처리)</button></div></div></div>)}{showResetConfirm && <ConfirmResetModal onConfirm={handleConfirmReset} onCancel={() => setShowResetConfirm(false)} />}</div>
             </div>
         );
@@ -393,7 +528,7 @@
         
         return (
             <div className="player-background flex flex-col text-white">
-                <AppHeader title={song.title} onBack={onClose} isPlayerHeader={true} />
+                <AppHeader title={song.title} headerLeft={<button onClick={onClose} className="text-secondary-color hover:text-text-color text-xl action-button w-10 h-10 flex items-center justify-center"><i className="fas fa-times"></i></button>} isPlayerHeader={true} />
                 {status === 'finished' ? (
                     <main className="flex-grow flex flex-col items-center justify-center p-4 text-center">
                          <i className="fas fa-poll-h text-6xl text-primary-color"></i>
@@ -439,44 +574,36 @@
         const { isOpen, x, y } = menuData;
         const menuItemsRef = useRef([]);
         const centerButtonRef = useRef(null);
-
         const MENU_CONFIG = {
             radius: 90,
             startAngle: 0,
             itemSize: 48,
         };
-
         const navItems = [
             { id: 'library', icon: 'fa-book', screen: 'library' },
             { id: 'creator', icon: 'fa-pen-ruler', screen: 'creator' },
             { id: 'settings', icon: 'fa-cog', screen: 'settings' },
         ];
-
         const libraryItems = [
             { id: 'add_file', icon: 'fa-file-import', action: onFileAdd },
             { id: 'add_session', icon: 'fa-folder-plus', action: onSessionAdd },
         ];
-
         const itemsToShow = currentScreen === 'library' ? [...navItems, ...libraryItems] : navItems;
         const angleStep = itemsToShow.length > 1 ? 120 / (itemsToShow.length - 1) : 0;
-
         useEffect(() => {
             const targets = menuItemsRef.current.filter(el => el);
             const allTargets = centerButtonRef.current ? [centerButtonRef.current, ...targets] : targets;
-            gsap.set(allTargets, { scale: 0, opacity: 0 });
             if (isOpen) {
-                gsap.to(allTargets, {
+                gsap.from(allTargets, {
                     duration: 0.3,
-                    scale: 1,
-                    opacity: 1,
-                    stagger: 0.05,
+                    scale: 0,
+                    opacity: 0,
                     ease: 'back.out(1.7)',
                 });
             }
         }, [isOpen, itemsToShow.length]);
         
         if (!isOpen) return null;
-
         return (
              <>
                 <div className="fixed inset-0 z-20" onClick={onToggle}></div>
@@ -493,7 +620,6 @@
                             const angle = MENU_CONFIG.startAngle + (angleStep * index);
                             const itemX = MENU_CONFIG.radius * Math.cos(angle * Math.PI / 180);
                             const itemY = MENU_CONFIG.radius * Math.sin(angle * Math.PI / 180);
-
                             return (
                                 <button
                                     key={item.id}
@@ -556,7 +682,8 @@
         const [activeSongMenu, setActiveSongMenu] = useState(null);
         const [renamingSong, setRenamingSong] = useState(null);
         const [mainMenu, setMainMenu] = useState({ isOpen: false, x: 0, y: 0 });
-        
+        const [tutorialState, setTutorialState] = useState({ isActive: false, currentStep: 0 });
+        const currentTutorialAppState = useRef({}); 
         const singleFileRef = useRef(null);
         const sessionFileRef = useRef(null);
         const triggerFileAdd = () => singleFileRef.current.click();
@@ -566,16 +693,28 @@
             setMainMenu({ isOpen: true, x, y });
         });
 
-        const creatorHook = useLyricsTiming();
-
         const STORAGE_KEY = 'lyricFlowPracticeSongs';
-        useEffect(() => { try { const saved = localStorage.getItem(STORAGE_KEY); if(saved) setPracticeSongs(JSON.parse(saved)); } catch(e) {} const savedTheme = localStorage.getItem('lyricFlowThemeName') || 'dark'; const theme = THEMES.find(t=>t.name === savedTheme) || THEMES[0]; changeTheme(theme, false); }, []);
-        useEffect(() => { try { localStorage.setItem(STORAGE_KEY, JSON.stringify(practiceSongs)); } catch (e) {} }, [practiceSongs]);
+        useEffect(() => { 
+            try { 
+                const saved = localStorage.getItem(STORAGE_KEY); 
+                if(saved) setPracticeSongs(JSON.parse(saved)); 
+            } catch(e) { console.error("Failed to load songs:", e); }
+            
+            const savedTheme = localStorage.getItem('lyricFlowThemeName') || 'dark';
+            const theme = THEMES.find(t=>t.name === savedTheme) || THEMES[0]; 
+            changeTheme(theme, false);
+        }, []);
+
+        useEffect(() => { 
+            try { 
+                localStorage.setItem(STORAGE_KEY, JSON.stringify(practiceSongs)); 
+            } catch (e) { console.error("Failed to save songs:", e); }
+        }, [practiceSongs]);
 
         const handleFileAdd = (event) => { const file = event.target.files[0]; if (!file) return; const reader = new FileReader(); reader.onload = (e) => { try { const data = JSON.parse(e.target.result); if (data.lyrics && data.timedLines) { const newSong = { id: Date.now(), title: file.name.replace('.json', ''), lyrics: data.lyrics, timedLines: data.timedLines, gradient: GRADIENTS[practiceSongs.length % GRADIENTS.length], practiceCount: 0 }; setPracticeSongs(prev => [...prev, newSong]); } else { alert("잘못된 파일 형식입니다."); } } catch (error) { alert("파일을 읽는 중 오류가 발생했습니다."); } }; reader.readAsText(file); event.target.value = null; };
         const handleSessionAdd = (event) => { const file = event.target.files[0]; if (!file) return; const reader = new FileReader(); reader.onload = (e) => { try { const data = JSON.parse(e.target.result); if (Array.isArray(data)) { const sanitized = data.map(song => ({ ...song, practiceCount: song.practiceCount || 0 })); setPracticeSongs(sanitized); } else { alert("잘못된 세션 파일 형식입니다."); } } catch (error) { alert("파일을 읽는 중 오류가 발생했습니다."); } }; reader.readAsText(file); event.target.value = null; };
         const handleSessionExport = () => { if(practiceSongs.length === 0) { alert("내보낼 데이터가 없습니다."); return; } const jsonString = `data:text/json;charset=utf-8,${encodeURIComponent(JSON.stringify(practiceSongs, null, 2))}`; const link = document.createElement("a"); link.href = jsonString; link.download = `lyric-flow-session.json`; link.click(); };
-        const handleAddNewSong = (newSongData) => { const newSong = { id: Date.now(), ...newSongData, gradient: GRADIENTS[practiceSongs.length % GRADIENTS.length], practiceCount: 0 }; setPracticeSongs(prev => [...prev, newSong]); creatorHook.setSong({ title: "새로운 곡", lyrics: "", timedLines: [] }); creatorHook.setStep('input'); setCurrentScreen('library'); };
+        const handleAddNewSong = (newSongData) => { const newSong = { id: Date.now(), ...newSongData, gradient: GRADIENTS[practiceSongs.length % GRADIENTS.length], practiceCount: 0 }; setPracticeSongs(prev => [...prev, newSong]); setCurrentScreen('library'); };
         
         const handleStartPractice = (song) => { setActiveSongMenu(null); setPracticeSongs(prev => prev.map(s => s.id === song.id ? {...s, practiceCount: (s.practiceCount || 0) + 1} : s)); setActiveSong(song); };
         const handleEndPractice = () => setActiveSong(null);
@@ -591,6 +730,28 @@
         const handleRequestRename = (song) => { setActiveSongMenu(null); setRenamingSong(song); };
         const handleConfirmRename = (songId, newTitle) => { setPracticeSongs(prev => prev.map(s => s.id === songId ? {...s, title: newTitle} : s)); setRenamingSong(null); };
 
+        const handleStartTutorial = () => {
+            setTutorialState({ isActive: true, currentStep: 0 });
+        };
+
+        const handleTutorialClose = useCallback(() => {
+            setTutorialState({ isActive: false, currentStep: 0 });
+            localStorage.setItem(TUTORIAL_STORAGE_KEY, 'true');
+        }, []);
+
+        const handleTutorialNext = useCallback(() => {
+            if (tutorialState.currentStep >= CREATOR_TUTORIAL_STEPS.length) return;
+            const currentStepData = CREATOR_TUTORIAL_STEPS[tutorialState.currentStep];
+            const delay = currentStepData.delayAfterTrigger || 0;
+            setTimeout(() => {
+                const nextStep = tutorialState.currentStep + 1;
+                if (nextStep < CREATOR_TUTORIAL_STEPS.length) {
+                    setTutorialState(prev => ({ ...prev, currentStep: nextStep }));
+                } else {
+                    handleTutorialClose();
+                }
+            }, delay);
+        }, [tutorialState.currentStep, handleTutorialClose]);
 
         if (activeSong) return <FloatingLyricsPlayer activeSong={activeSong} onClose={handleEndPractice} />;
         if (challengeSong) return <ChallengeModePlayer song={challengeSong} onClose={handleEndChallenge} />;
@@ -603,7 +764,14 @@
                         <LyricsPracticeApp songs={practiceSongs} setPracticeSongs={setPracticeSongs} openSongMenu={setActiveSongMenu} onSongDelete={requestDelete} onSongColorChange={requestColorChange} onSongEdit={handleSongEdit} />
                     </div>
                     <div className="screen" style={{transform: currentScreen === 'creator' ? 'translateX(0)' : 'translateX(100%)', transition: 'transform 0.4s ease-in-out', zIndex: currentScreen === 'creator' ? 1 : 0}}>
-                        <TimingAnalyzerApp onComplete={handleAddNewSong} onBack={() => setCurrentScreen('library')} />
+                        <TimingAnalyzerApp 
+                            onComplete={handleAddNewSong} 
+                            onBack={() => setCurrentScreen('library')} 
+                            isTutorialActive={tutorialState.isActive}
+                            onTutorialStep={handleTutorialNext}
+                            currentTutorialAppState={currentTutorialAppState}
+                            onStartTutorial={handleStartTutorial}
+                        />
                     </div>
                      <div className="screen" style={{transform: currentScreen === 'settings' ? 'translateX(0)' : 'translateX(100%)', transition: 'transform 0.4s ease-in-out', zIndex: currentScreen === 'settings' ? 1 : 0}}>
                         <SettingsApp onOpenThemePicker={() => setIsThemePickerOpen(true)} onTriggerFileAdd={triggerFileAdd} onTriggerSessionAdd={triggerSessionAdd} onSessionExport={handleSessionExport} />
@@ -618,6 +786,16 @@
                     onFileAdd={triggerFileAdd}
                     onSessionAdd={triggerSessionAdd}
                 />
+                
+                {tutorialState.isActive && currentScreen === 'creator' && (
+                    <InteractiveTutorial 
+                        steps={CREATOR_TUTORIAL_STEPS}
+                        currentStep={tutorialState.currentStep}
+                        onNext={handleTutorialNext}
+                        onClose={handleTutorialClose}
+                        appState={currentTutorialAppState.current}
+                    />
+                )}
 
                 <input type="file" ref={singleFileRef} onChange={handleFileAdd} accept=".json" className="hidden" />
                 <input type="file" ref={sessionFileRef} onChange={handleSessionAdd} accept=".json" className="hidden" />
@@ -678,7 +856,7 @@
 
         return (
             <div className="player-background flex flex-col text-white">
-                <AppHeader title={activeSong.title} onBack={onClose} isPlayerHeader={true} />
+                <AppHeader title={activeSong.title} headerLeft={<button onClick={onClose} className="text-secondary-color hover:text-text-color text-xl action-button w-10 h-10 flex items-center justify-center"><i className="fas fa-times"></i></button>} isPlayerHeader={true} />
                 <main className="lyric-container-area">
                     {currentLine && ( <div key={`current-${currentLineIndex}`} className="lyric-line-wrapper current-lyric-wrapper visible"><KaraokeLine line={currentLine} elapsedTime={elapsedTime} /></div> )}
                     {nextLine && ( <div key={`next-${currentLineIndex}`} className="lyric-line-wrapper next-lyric-wrapper visible"><KaraokeLine line={nextLine} elapsedTime={elapsedTime} isPreview={true} /></div> )}
@@ -700,7 +878,7 @@
         const hook = useLyricsTiming(initialSongData);
         return (
             <div className="screen">
-                <AppHeader title="타이밍 수정" onBack={onCancel} />
+                <AppHeader title="타이밍 수정" headerLeft={<button onClick={onCancel} className="text-secondary-color hover:text-text-color text-xl action-button w-10 h-10 flex items-center justify-center"><i className="fas fa-times"></i></button>} />
                 <TimingEditScreen hook={hook} onDone={onSave} title="타이밍 수정" />
             </div>
         );
