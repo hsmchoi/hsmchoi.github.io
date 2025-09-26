@@ -1,0 +1,75 @@
+<svg width="340" height="720" viewBox="0 0 340 720" style="background-color: #fcfaff; border: 1px solid #e0e0f0; border-radius: 25px; font-family: 'Pretendard', sans-serif;">
+<defs>
+<style>
+.feedback-modal { visibility: hidden; opacity: 0; transition: opacity 0.3s ease, visibility 0.3s ease; }
+.feedback-modal.visible { visibility: visible; opacity: 1; }
+.feedback-icon { font-size: 20px; }
+</style>
+</defs>
+
+<rect x="0" y="0" width="340" height="180" fill="#E6E6FA" rx="25"/>
+<text x="170" y="60" font-size="20" fill="#4A4A6A" text-anchor="middle" font-weight="bold">✨ Day 3. 나의 콘텐츠 빛내기 ✨</text>
+<text x="170" y="95" font-size="16" fill="#6A6A8A" text-anchor="middle" opacity="0.9">Reading & Sharing My Voice</text>
+<circle cx="170" cy="145" r="35" fill="#FFF" stroke="#DADAFA" stroke-width="2"/>
+<path d="M155 145 L185 145 M170 130 L170 160" stroke="#6C63FF" stroke-width="2" stroke-linecap="round"/>
+
+<foreignObject x="20" y="190" width="300" height="520">
+    <div xmlns="[http://www.w3.org/1999/xhtml](http://www.w3.org/1999/xhtml)" style="color: #4A4A6A; font-size: 15px; line-height: 1.6;">
+        <p style="font-weight: bold; font-size: 18px; margin-bottom: 15px; color: #5A5A7A;">🚀 오늘의 미션: 내 생각 담아 공유하기!</p>
+        
+        <div style="background-color: #F8F8FF; border-radius: 15px; padding: 15px; margin-bottom: 20px; box-shadow: 0 4px 8px rgba(0,0,0,0.05);">
+             <p style="font-weight: bold; margin: 0 0 10px 0; font-size: 16px; color: #5A5A7A;">📰 Article Preview:</p>
+             <p style="font-size: 14px; color: #7A7AB0; line-height: 1.5; margin: 0;"> "Is Remote Work Here to Stay?..." (Forbes)</p>
+        </div>
+
+        <p style="font-weight: bold; font-size: 18px; margin-bottom: 10px; color: #5A5A7A;">📝 나의 포스팅 작성:</p>
+        <textarea id="myPost" placeholder="여기에 당신의 생각을 적어주세요." style="width: 290px; height: 120px; border: 2px dashed #DADAFA; border-radius: 12px; padding: 12px; font-size: 14px; resize: none; color: #5A5A7A; background-color: #FFFAFE;"></textarea>
+        
+        <button id="aiBtn" style="width: 300px; padding: 12px; margin-top: 15px; background-color: #ADA0FF; color: white; border: none; border-radius: 15px; font-size: 16px; font-weight: bold; cursor: pointer;">🤖 공유 전 AI 피드백 받기</button>
+        <button id="shareBtn" style="width: 300px; padding: 15px; margin-top: 10px; background-color: #6C63FF; color: white; border: none; border-radius: 15px; font-size: 17px; font-weight: bold; cursor: pointer;">💖 나의 생각 공유하기!</button>
+    </div>
+</foreignObject>
+
+<g id="feedbackModal" class="feedback-modal">
+    <rect x="0" y="0" width="340" height="720" fill="rgba(0,0,0,0.4)"/>
+    <rect x="30" y="150" width="280" height="420" rx="20" fill="white" stroke="#E0E0F0" stroke-width="1"/>
+    <text x="170" y="185" font-size="18" fill="#4A4A6A" text-anchor="middle" font-weight="bold">AI Feedback Assistant</text>
+    
+    <foreignObject x="50" y="210" width="240" height="340" style="font-size: 14px; color: #5A5A7A; line-height: 1.5;">
+        <div xmlns="[http://www.w3.org/1999/xhtml](http://www.w3.org/1999/xhtml)">
+            <p><strong><span class="feedback-icon">✔️</span> 오타 및 문법 교정:</strong><br/>
+            "think" → "thinks" (주어 불일치)<br/>
+            "a flexible hours" → "flexible hours" (관사 오류)</p>
+            <hr style="border: 0; border-top: 1px solid #eee;"/>
+            <p><strong><span class="feedback-icon">🧠</span> 논리 정합성 분석:</strong><br/>
+            "주장과 예시가 명확하게 연결되어 설득력이 높습니다. 좋습니다!"</p>
+            <hr style="border: 0; border-top: 1px solid #eee;"/>
+            <p><strong><span class="feedback-icon">🎨</span> 어조 및 뉘앙스 진단:</strong><br/>
+            "전반적으로 '자신감 있고(Confident)', '협력적인(Collaborative)' 톤이 느껴집니다. 공유하기에 아주 적절한 어조입니다."</p>
+        </div>
+    </foreignObject>
+    
+    <rect id="closeBtn" x="110" y="520" width="120" height="35" rx="17.5" fill="#6C63FF" style="cursor: pointer;"/>
+    <text x="170" y="542" font-size="14" fill="white" text-anchor="middle" font-weight="bold">닫기</text>
+</g>
+
+<script>
+    const aiBtn = document.getElementById('aiBtn');
+    const shareBtn = document.getElementById('shareBtn');
+    const myPost = document.getElementById('myPost');
+    const feedbackModal = document.getElementById('feedbackModal');
+    const closeBtn = document.getElementById('closeBtn');
+
+    aiBtn.addEventListener('click', () => {
+        if (myPost.value.trim() !== "") {
+            feedbackModal.classList.add('visible');
+        } else {
+            alert('먼저 당신의 생각을 적어주세요! 😊');
+        }
+    });
+    
+    closeBtn.addEventListener('click', () => {
+        feedbackModal.classList.remove('visible');
+    });
+</script>
+</svg>

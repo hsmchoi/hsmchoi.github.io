@@ -1,0 +1,43 @@
+<svg width="340" height="650" viewBox="0 0 340 650" style="background-color: #fcfaff; border: 1px solid #e0e0f0; border-radius: 25px; font-family: 'Pretendard', sans-serif;">
+<rect x="0" y="0" width="340" height="180" fill="#E6E6FA" rx="25"/>
+<text x="170" y="60" font-size="20" fill="#4A4A6A" text-anchor="middle" font-weight="bold">✨ Day 3. 나의 콘텐츠 빛내기 ✨</text>
+<text x="170" y="95" font-size="16" fill="#6A6A8A" text-anchor="middle" opacity="0.9">Reading & Sharing My Voice</text>
+<circle cx="170" cy="145" r="35" fill="#FFF" stroke="#DADAFA" stroke-width="2"/>
+<path d="M155 145 L185 145 M170 130 L170 160" stroke="#6C63FF" stroke-width="2" stroke-linecap="round"/>
+
+<foreignObject x="20" y="190" width="300" height="450">
+    <div xmlns="http://www.w3.org/1999/xhtml" style="color: #4A4A6A; font-size: 15px; line-height: 1.6;">
+        <p style="font-weight: bold; font-size: 18px; margin-bottom: 15px; color: #5A5A7A;">🚀 오늘의 미션: 내 생각 담아 공유하기!</p>
+        
+        <div style="background-color: #F8F8FF; border-radius: 15px; padding: 15px; margin-bottom: 20px; box-shadow: 0 4px 8px rgba(0,0,0,0.05);">
+            <p style="font-weight: bold; margin: 0 0 10px 0; font-size: 16px; color: #5A5A7A;">📰 Article Preview:</p>
+            <p style="font-size: 14px; color: #7A7AB0; line-height: 1.5; margin-bottom: 10px;">
+                "Is Remote Work Here to Stay? A Deep Dive into the Future of Work" (Forbes)<br/>
+                <span style="font-style: italic; font-size: 13px;">"...The shift to remote work has dramatically reshaped corporate culture, offering flexibility but also presenting new challenges for team cohesion and innovation..."</span>
+            </p>
+            <button style="background-color: #ADA0FF; color: white; border: none; padding: 8px 12px; border-radius: 10px; font-size: 13px; font-weight: bold; cursor: pointer;">✨ 전체 아티클 읽기</button>
+        </div>
+
+        <p style="font-weight: bold; font-size: 18px; margin-bottom: 10px; color: #5A5A7A;">📝 나의 포스팅 미리보기:</p>
+        <textarea id="myPost" placeholder="여기에 당신의 생각을 적어주세요. (예: What's your take on remote work?)" style="width: 290px; height: 100px; border: 2px dashed #DADAFA; border-radius: 12px; padding: 12px; font-size: 14px; resize: none; color: #5A5A7A; background-color: #FFFAFE;"></textarea>
+        <p style="font-size: 12px; color: #8A8AA0; margin-top: 5px;">* 완벽하지 않아도 괜찮아요! 당신의 이야기가 중요하니까요. 😊</p>
+        
+        <button id="shareBtn" style="width: 300px; padding: 15px; margin-top: 20px; background-color: #6C63FF; color: white; border: none; border-radius: 15px; font-size: 17px; font-weight: bold; cursor: pointer; box-shadow: 0 6px 12px rgba(108, 99, 255, 0.3);">💖 나의 생각 공유하기!</button>
+    </div>
+</foreignObject>
+
+<script>
+    const shareBtn = document.getElementById('shareBtn');
+    const myPost = document.getElementById('myPost');
+
+    shareBtn.addEventListener('click', () => {
+        if (myPost.value.trim() !== "") {
+            shareBtn.textContent = '✨ 공유 완료! 멋진 생각 감사합니다! ✨';
+            shareBtn.style.backgroundColor = '#8BC34A'; // Green for success
+            shareBtn.style.boxShadow = '0 6px 12px rgba(139, 195, 74, 0.4)';
+        } else {
+            alert('먼저 당신의 생각을 적어주세요! 😊');
+        }
+    });
+</script>
+</svg>

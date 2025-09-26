@@ -1,0 +1,63 @@
+<svg width="340" height="700" viewBox="0 0 340 700" style="background-color: #ffffff; border: 1px solid #e0e0f0; border-radius: 25px; font-family: 'Pretendard', sans-serif;">
+<defs>
+<style>
+.highlight-grammar { border-bottom: 2px solid #8BC34A; }
+.highlight-logic { background-color: rgba(255, 165, 0, 0.2); }
+.highlight-tone { border-bottom: 2px dashed #6C63FF; }
+.card {
+background-color: #F8F8FF; border-radius: 12px; padding: 12px; margin-bottom: 10px;
+box-shadow: 0 2px 5px rgba(0,0,0,0.05); font-size: 13px;
+}
+.card-header { font-weight: bold; color: #5A5A7A; margin-bottom: 5px; }
+.card-body { color: #4A4A6A; font-weight: 500; font-size: 14px;}
+.card-reason { color: #7A7AB0; font-size: 12px; margin-top: 6px; border-top: 1px solid #EAEAEA; padding-top: 6px;}
+.card-action {
+background-color: #6C63FF; color: white; border: none; padding: 5px 10px;
+border-radius: 7px; font-size: 12px; cursor: pointer; float: right;
+}
+</style>
+</defs>
+
+<rect x="0" y="0" width="340" height="60" fill="#F8F8FF" />
+<text x="170" y="38" font-size="16" fill="#4A4A6A" text-anchor="middle" font-weight="bold">AI 피드백 조수 (AI Assistant)</text>
+<line x1="0" y1="60" x2="340" y2="60" stroke="#EAEAEA"/>
+
+<foreignObject x="15" y="75" width="150" height="610">
+    <div xmlns="[http://www.w3.org/1999/xhtml](http://www.w3.org/1999/xhtml)" style="color: #4A4A6A; font-size: 15px; line-height: 1.8;">
+        <p style="font-weight: bold; font-size: 16px; margin-bottom: 15px; color: #5A5A7A;">나의 포스팅</p>
+        <p id="userText">
+            I <span class="highlight-grammar">thinks</span> remote work is a temporary trend. <span class="highlight-tone">Companies will force everyone back to the office</span> because managers can't trust employees. <span class="highlight-logic">This is the only way to maintain productivity.</span>
+        </p>
+    </div>
+</foreignObject>
+
+<line x1="170" y1="60" x2="170" y2="700" stroke="#EAEAEA"/>
+
+<foreignObject x="180" y="75" width="150" height="610">
+    <div xmlns="[http://www.w3.org/1999/xhtml](http://www.w3.org/1999/xhtml)">
+        <p style="font-weight: bold; font-size: 16px; margin-bottom: 15px; color: #5A5A7A;">수정 제안 (3)</p>
+        
+        <div class="card">
+            <div class="card-header" style="color:#4CAF50;">Grammar</div>
+            <div class="card-body">"thinks" → "think"</div>
+            <div class="card-reason">Reason: 주어 'I'는 1인칭 단수이므로 동사 원형을 사용합니다.</div>
+            <button class="card-action">적용</button>
+        </div>
+
+        <div class="card">
+            <div class="card-header" style="color:#6C63FF;">Tone &amp; Nuance</div>
+            <div class="card-body">"force everyone..." → "encourage teams..."</div>
+            <div class="card-reason">Reason: 'force'는 강압적인 느낌을 줍니다. 'encourage'는 협력적인 어조를 만들어냅니다.</div>
+            <button class="card-action">적용</button>
+        </div>
+
+        <div class="card">
+            <div class="card-header" style="color:#FF9800;">Logic</div>
+            <div class="card-body">"...only way..." → "...one effective way..."</div>
+             <div class="card-reason">Reason: 'only way'는 너무 단정적입니다. 'one effective way'로 수정하면 더 유연하고 설득력 있는 주장이 됩니다.</div>
+            <button class="card-action">적용</button>
+        </div>
+
+    </div>
+</foreignObject>
+</svg>
