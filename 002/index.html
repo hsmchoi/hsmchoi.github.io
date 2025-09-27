@@ -376,7 +376,7 @@
         return { song, setSong, step, setStep, lyricsLines, elapsedTime, setElapsedTime, currentTimingLine, handleReady, handleStartTiming, handleMarkLineEnd, isPlaying, isPaused, handlePause, handleResume, showPhoneticConfirm, handlePhoneticConfirm, handleAdjustTiming, handleDeleteLine, handleInsertInstrumental, setLyrics, setTitle, handleMarkInstrumental, handleMarkMistake, handleRequestReset, showResetConfirm, setShowResetConfirm, handleConfirmReset, firstLineStartTime };
     };
 
-    const TimingEditScreen = ({ hook, onDone, title }) => {
+    const TimingEditScreen = ({ hook, onDone, title, onRestartLyrics, isPlaying, isPaused }) => {
         const { song, handleAdjustTiming, handleDeleteLine, handleInsertInstrumental } = hook;
         const formatTime = (ms) => `${String(Math.floor(ms / 60000)).padStart(2, '0')}:${String(Math.floor((ms % 60000) / 1000)).padStart(2, '0')}.${String(Math.floor(ms % 1000)).padStart(3, '0')}`;
         
@@ -420,6 +420,17 @@
                         })}
                     </div>
                 </div>
+                
+                {onRestartLyrics && !isPlaying && isPaused && (
+                    <div className="flex-shrink-0 p-4 pt-0">
+                        <button 
+                            onClick={onRestartLyrics} 
+                            className="w-full py-2 font-bold text-base rounded-full action-button bg-surface-strong-color text-secondary-color"
+                        >
+                            <i className="fas fa-undo-alt mr-2"></i>가사 재작성 (초기 단계로 돌아가기)
+                        </button>
+                    </div>
+                )}
             </div>
         );
     };
@@ -501,8 +512,27 @@
                             </div>
                         </div>
                     </div>);
-                case 'result': return (<div className="flex-grow flex flex-col justify-center items-center text-center gap-6 p-4"><i className="fas fa-check-circle text-6xl text-primary-color"></i><h2 className="text-xl">타이밍 분석 완료!</h2><div className="w-full max-w-xs space-y-3"><input type="text" value={song.title} onChange={e => setTitle(e.target.value)} placeholder="파일 이름 입력..." className="w-full p-3 text-center rounded-md outline-none bg-surface-strong-color" /><button onClick={() => setStep('edit')} className="w-full py-3 font-bold text-lg rounded-full action-button bg-surface-strong-color"><i className="fas fa-edit mr-2"></i>세부 편집</button></div></div>);
-                case 'edit': return <TimingEditScreen hook={hook} onDone={() => setStep('result')} title="타이밍 편집"/>;
+                case 'result': return (<div className="flex-grow flex flex-col justify-center items-center text-center gap-6 p-4">
+                    <i className="fas fa-check-circle text-6xl text-primary-color"></i>
+                    <h2 className="text-xl">타이밍 분석 완료!</h2>
+                    <div className="w-full max-w-xs space-y-3">
+                        <input type="text" value={song.title} onChange={e => setTitle(e.target.value)} placeholder="파일 이름 입력..." className="w-full p-3 text-center rounded-md outline-none bg-surface-strong-color" />
+                        <button onClick={() => setStep('edit')} className="w-full py-3 font-bold text-lg rounded-full action-button bg-surface-strong-color"><i className="fas fa-edit mr-2"></i>세부 편집</button>
+                        <button onClick={handleFinalSave} className="w-full py-3 font-bold text-lg rounded-full text-white action-button bg-primary-color mt-3">
+                            <i className="fas fa-save mr-2"></i>저장하고 라이브러리로 이동
+                        </button>
+                    </div>
+                </div>);
+                case 'edit': return (
+                    <TimingEditScreen 
+                        hook={hook} 
+                        onDone={() => setStep('result')} 
+                        title="타이밍 세부 편집" 
+                        onRestartLyrics={() => setStep('input')}
+                        isPlaying={isPlaying}
+                        isPaused={isPaused} 
+                    />
+                );
                 default: return null;
             }
         };
@@ -518,7 +548,7 @@
                         </div>
                     }
                 >
-                    {step === 'result' && <button onClick={handleFinalSave} className="font-bold text-primary-color action-button">저장</button>}
+                    {step === 'result' && <></>}
                 </AppHeader>
                 <div className="page-content flex flex-col">{renderContent()}{showPhoneticConfirm && (<div className="bottom-sheet-backdrop"><div className="bottom-sheet max-h-fit"><h3 className="font-bold text-lg mb-2 text-center">가사 형식 감지</h3><p className="text-sm text-secondary-color mb-4 text-center">발음이 포함된 가사 형식인 것 같습니다.<br/>가사를 그룹으로 묶어 처리할까요?</p><div className="flex justify-around items-center mt-4"><button onClick={() => handlePhoneticConfirm(false)} className="text-sm action-button px-4 py-2 rounded-lg bg-surface-strong-color">아니오 (줄 단위)</button><button onClick={() => handlePhoneticConfirm(true)} className="text-sm font-bold action-button px-4 py-2 rounded-lg text-white bg-primary-color">예 (그룹 처리)</button></div></div></div>)}{showResetConfirm && <ConfirmResetModal onConfirm={handleConfirmReset} onCancel={() => setShowResetConfirm(false)} />}</div>
             </div>
@@ -995,7 +1025,7 @@
         return (
             <div className="screen">
                 <AppHeader title="타이밍 수정" headerLeft={<button onClick={onCancel} className="text-secondary-color hover:text-text-color text-xl action-button w-10 h-10 flex items-center justify-center"><i className="fas fa-times"></i></button>} />
-                <TimingEditScreen hook={hook} onDone={onSave} title="타이밍 수정" />
+                <TimingEditScreen hook={hook} onDone={onSave} title="타이밍 세부 편집" />
             </div>
         );
     };
