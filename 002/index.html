@@ -27,11 +27,10 @@
         .action-button { transition: all 0.2s ease-in-out; }
         .action-button:active { transform: scale(0.95); }
         
-        /* New style for enhanced timing tap feedback */
         .timing-tap-button:active {
             transform: scale(0.97); 
-            filter: brightness(1.1); /* Making it slightly brighter to show press */
-            box-shadow: 0 0 10px var(--amber-color); /* Subtle glow */
+            filter: brightness(1.1);
+            box-shadow: 0 0 10px var(--amber-color);
         }
 
         .song-card { border-radius: 1.25rem; padding: 1.5rem; display: flex; flex-direction: column; justify-content: space-between; aspect-ratio: 1.618 / 1; color: white; transition: transform 0.3s ease, box-shadow 0.3s ease, opacity 0.3s ease; cursor: pointer; box-shadow: 0 4px 15px rgba(0,0,0,0.3); position: relative; will-change: transform; }
@@ -55,7 +54,7 @@
         .card-common-content { width: 100%; height: 100%; display: flex; flex-direction: column; justify-content: space-between; color: white; }
         .selection-overlay { position: absolute; top: 0; left: 0; right: 0; bottom: 0; background-color: rgba(0,0,0,0.3); border-radius: 1.25rem; border: 3px solid var(--primary-color); display: flex; justify-content: flex-end; align-items: flex-start; padding: 1rem; opacity: 0; transition: opacity 0.2s ease; }
         .selection-overlay.selected { opacity: 1; }
-        .selection-checkbox { width: 1.5rem; height: 1.5rem; border-radius: 9999px; background-color: rgba(255,255,255,0.8); display: flex; items-center; justify-content: center; color: var(--primary-color); }
+        .selection-checkbox { width: 1.5rem; height: 1.5rem; border-radius: 9999px; background-color: rgba(255,255,255,0.8); display: flex; align-items:center; justify-content: center; color: var(--primary-color); }
         .judgement-effect { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -150%); font-size: 3rem; font-weight: 900; z-index: 10; pointer-events: none; animation: judgement-pop 0.5s forwards; }
         @keyframes judgement-pop { 0% { transform: translate(-50%, -150%) scale(0.8); opacity: 0; } 50% { transform: translate(-50%, -150%) scale(1.2); opacity: 1; } 100% { transform: translate(-50%, -50%) scale(1); opacity: 0; } }
         .rhythm-track-container { position: absolute; top: 50%; left: 0; right: 0; transform: translateY(-50%); display: flex; flex-direction: column; align-items: center; justify-content: center; }
@@ -412,37 +411,28 @@
         const setTitle = (title) => setSong(s => ({...s, title}));
 
         const handleInsertInterludeInReady = useCallback((index) => {
-            // 1. If currently phonetic, simplify to simple type for safe text manipulation
             if (lyricType === 'phonetic') {
                 setLyricType('simple');
             }
-
-            // 2. Get all non-empty lines from the raw text
-            // Filter out empty lines for accurate re-indexing
             let rawLines = song.lyrics.split('\n').filter(line => line.trim() !== '');
-
-            // 3. Remove existing interlude lines ('🎵') for a clean slate before insertion 
-            // This prevents duplicate interlude lines if user clicks repeatedly before saving
-            rawLines = rawLines.filter(line => line.trim() !== '🎵');
-
-            // 4. Insertion logic based on index (index is the index of the line *before* which the interlude button was clicked)
-            let insertionIndex = index + 1; // If index=-1, insertionIndex=0. If index=i, insertionIndex=i+1.
-            
-            // Ensure the insertion index is within bounds [0, rawLines.length]
+            let insertionIndex = index + 1;
             if (insertionIndex >= 0 && insertionIndex <= rawLines.length) {
                 rawLines.splice(insertionIndex, 0, "🎵"); 
             } else {
-                // Should not be reached with the current button design, but added for safety
                 rawLines.push("🎵"); 
             }
-
-            // 5. Update the raw lyric string
             setLyrics(rawLines.join('\n'));
-            
-        }, [song.lyrics, lyricType, setLyrics, setLyricType]);
+        }, [song.lyrics, lyricType, setLyrics]);
 
+        const handleDeleteLineInReady = useCallback((indexToDelete) => {
+            let rawLines = song.lyrics.split('\n').filter(line => line.trim() !== '');
+            if (indexToDelete >= 0 && indexToDelete < rawLines.length) {
+                rawLines.splice(indexToDelete, 1);
+                setLyrics(rawLines.join('\n'));
+            }
+        }, [song.lyrics, setLyrics]);
 
-        return { song, setSong, step, setStep, lyricsLines, elapsedTime, setElapsedTime, currentTimingLine, handleReady, handleStartTiming, handleMarkLineEnd, isPlaying, isPaused, handlePause, handleResume, showPhoneticConfirm, handlePhoneticConfirm, handleAdjustTiming, handleDeleteLine, handleInsertInstrumental, setLyrics, setTitle, handleMarkInstrumental, handleMarkMistake, handleRequestReset, showResetConfirm, setShowResetConfirm, handleConfirmReset, firstLineStartTime, handleInsertInterludeInReady };
+        return { song, setSong, step, setStep, lyricsLines, elapsedTime, setElapsedTime, currentTimingLine, handleReady, handleStartTiming, handleMarkLineEnd, isPlaying, isPaused, handlePause, handleResume, showPhoneticConfirm, handlePhoneticConfirm, handleAdjustTiming, handleDeleteLine, handleInsertInstrumental, setLyrics, setTitle, handleMarkInstrumental, handleMarkMistake, handleRequestReset, showResetConfirm, setShowResetConfirm, handleConfirmReset, firstLineStartTime, handleInsertInterludeInReady, handleDeleteLineInReady };
     };
 
     const TimingEditScreen = ({ hook, onDone, title, onRestartLyrics, isPlaying, isPaused }) => {
@@ -504,8 +494,6 @@
         );
     };
     
-    // LyricPreviewModal 컴포넌트 제거됨.
-
     function TimingAnalyzerApp({ onComplete, onBack, isTutorialActive, onTutorialStep, currentTutorialAppState, onStartTutorial }) {
         const hook = useLyricsTiming();
         const { 
@@ -513,7 +501,7 @@
             handleReady, handleStartTiming, handleMarkLineEnd, isPlaying, isPaused, handlePause, handleResume,
             showPhoneticConfirm, handlePhoneticConfirm, setLyrics, setTitle, 
             handleMarkInstrumental, handleMarkMistake, handleRequestReset, showResetConfirm, setShowResetConfirm, handleConfirmReset, 
-            firstLineStartTime, handleInsertInterludeInReady
+            firstLineStartTime, handleInsertInterludeInReady, handleDeleteLineInReady
         } = hook;
         const formatTime = (ms) => { const minutes = String(Math.floor(ms / 60000)).padStart(2, '0'); const seconds = String(Math.floor((ms % 60000) / 1000)).padStart(2, '0'); const milliseconds = String(Math.floor((ms % 1000) / 10)).padStart(2, '0'); return `${minutes}:${seconds}.${milliseconds}`; };
 
@@ -542,7 +530,6 @@
         
         const renderContent = () => {
             switch(step) {
-                // New: Initial State (The '+' button)
                 case 'initial': return (
                     <div className="flex-grow flex flex-col justify-center items-center p-4">
                         <button 
@@ -555,7 +542,6 @@
                     </div>
                 );
 
-                // Modified: Input State (The Textarea Screen)
                 case 'input': return (
                     <div className="flex-grow flex flex-col gap-4 p-4">
                         <textarea 
@@ -565,25 +551,21 @@
                             className="w-full h-64 p-4 rounded-lg resize-none outline-none focus:ring-2 bg-surface-color border-surface-border-color ring-primary-color"
                         ></textarea>
                         
-                        {/* Ready Button - Now moves to the full-screen preview/ready stage */}
                         <button onClick={handleReady} disabled={!song.lyrics.trim()} className="py-3 font-bold rounded-lg text-white disabled:opacity-50 action-button bg-primary-color">
                             <i className="fas fa-check mr-2"></i> 확인 (가사 미리보기)
                         </button>
                     </div>
                 );
                 
-                // Modified: Ready State (The Full Preview Screen)
                 case 'ready': 
-                    const MOCK_TIME = 0; // For full preview, no highlighting needed.
+                    const MOCK_TIME = 0;
                     return (
-                    <div className="flex-grow flex flex-col p-4 relative">
+                    <div className="flex-grow flex flex-col p-4 relative overflow-hidden">
                         <h2 className="text-xl font-bold mb-4 border-b border-surface-border-color pb-3 text-center">간주 확인하기</h2>
                         
-                        {/* Scrollable List Container */}
                         <div className="flex-grow overflow-y-auto space-y-3 px-4"> 
                             <p className="text-sm text-secondary-color font-bold text-center">가사 라인 사이에 간주(🎵)를 추가할 위치를 지정하세요.</p>
                             
-                            {/* INTRO INTERLUDE BUTTON: Before the first line (index = -1) */}
                             <div className="flex justify-center my-4 pt-2">
                                 <button 
                                     onClick={() => handleInsertInterludeInReady(-1)} 
@@ -595,14 +577,20 @@
 
                             {lyricsLines.map((line, index) => {
                                 const mockLine = { text: line, startTime: 0, endTime: 1000 };
+                                const isInterlude = typeof line === 'string' && line.trim() === '🎵';
                                 return (
                                     <React.Fragment key={index}>
-                                        {/* Lyric Card: Card-like structure for clear separation */}
-                                        <div className="p-4 bg-surface-color rounded-lg shadow-md border border-surface-border-color"> 
-                                            <p className="text-sm text-secondary-color mb-2 font-mono">{index + 1}.</p>
-                                            <KaraokeLine line={mockLine} elapsedTime={MOCK_TIME} isPreview={true} /> 
+                                        <div className={`p-4 bg-surface-color rounded-lg shadow-md border border-surface-border-color ${isInterlude ? 'flex items-center justify-between' : ''}`}> 
+                                            <div>
+                                                <p className="text-sm text-secondary-color mb-2 font-mono">{index + 1}.</p>
+                                                <KaraokeLine line={mockLine} elapsedTime={MOCK_TIME} isPreview={true} /> 
+                                            </div>
+                                            {isInterlude && (
+                                                <button onClick={() => handleDeleteLineInReady(index)} className="ml-4 text-red-color text-lg opacity-60 hover:opacity-100 transition-opacity action-button">
+                                                    <i className="fas fa-times-circle"></i>
+                                                </button>
+                                            )}
                                         </div>
-                                        {/* INTERLUDE BUTTON: After the line (between lines) */}
                                         <div className="flex justify-center my-4"> 
                                             <button 
                                                 onClick={() => handleInsertInterludeInReady(index)} 
@@ -614,11 +602,9 @@
                                     </React.Fragment>
                                 );
                             })}
-                            {/* Empty space at the bottom to ensure the last button is clickable */}
                             <div className="pb-4"></div>
                         </div>
                         
-                        {/* Confirmation Complete Button: Fixed position at the very bottom */}
                         <div className="flex-shrink-0 p-4 pt-0">
                              <button onClick={handleStartTiming} className="w-full py-4 font-bold text-xl rounded-full text-white action-button bg-primary-color">
                                 <i className="fas fa-check-circle mr-2"></i> 확인 완료 및 기록 시작
@@ -697,7 +683,6 @@
                     title="제작" 
                     headerLeft={
                         <div className="flex items-center gap-2">
-                            {/* 'initial' 상태가 아닐 때만 뒤로가기 버튼 표시. 'input'에서 'initial'로, 그 외 단계에서 'library'로 이동 */}
                             {step !== 'initial' && <button onClick={step === 'input' ? () => setStep('initial') : onBack} className="text-secondary-color hover:text-text-color text-xl action-button w-10 h-10 flex items-center justify-center"><i className="fas fa-arrow-left"></i></button>}
                             <button onClick={onStartTutorial} className="text-secondary-color hover:text-text-color text-xl action-button w-10 h-10 flex items-center justify-center"><i className="fas fa-question-circle"></i></button>
                         </div>
@@ -957,7 +942,7 @@
                 return;
             }
             const posX = event.touches ? event.touches[0].clientX : event.clientX;
-            const posY = event.touches ? event.touches[0].clientY : event.clientY; // Fix: use event.clientY for mouse events
+            const posY = event.touches ? event.touches[0].clientY : event.clientY;
             timerRef.current = setTimeout(() => {
                 callback({ x: posX, y: posY });
             }, ms);
