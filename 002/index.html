@@ -26,6 +26,14 @@
         .screen { position: absolute; top: 0; left: 0; right: 0; bottom: 0; display: flex; flex-direction: column; height: 100%; background-color: var(--bg-color); }
         .action-button { transition: all 0.2s ease-in-out; }
         .action-button:active { transform: scale(0.95); }
+        
+        /* New style for enhanced timing tap feedback */
+        .timing-tap-button:active {
+            transform: scale(0.97); 
+            filter: brightness(1.1); /* Making it slightly brighter to show press */
+            box-shadow: 0 0 10px var(--amber-color); /* Subtle glow */
+        }
+
         .song-card { border-radius: 1.25rem; padding: 1.5rem; display: flex; flex-direction: column; justify-content: space-between; aspect-ratio: 1.618 / 1; color: white; transition: transform 0.3s ease, box-shadow 0.3s ease, opacity 0.3s ease; cursor: pointer; box-shadow: 0 4px 15px rgba(0,0,0,0.3); position: relative; will-change: transform; }
         .bottom-sheet-backdrop { position: fixed; top: 0; left: 0; right: 0; bottom: 0; background-color: rgba(0,0,0,0.7); backdrop-filter: blur(5px); z-index: 40; animation: fadeIn 0.3s forwards; }
         @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
@@ -49,7 +57,7 @@
         .selection-overlay.selected { opacity: 1; }
         .selection-checkbox { width: 1.5rem; height: 1.5rem; border-radius: 9999px; background-color: rgba(255,255,255,0.8); display: flex; items-center; justify-content: center; color: var(--primary-color); }
         .judgement-effect { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -150%); font-size: 3rem; font-weight: 900; z-index: 10; pointer-events: none; animation: judgement-pop 0.5s forwards; }
-        @keyframes judgement-pop { 0% { transform: translate(-50%, -150%) scale(0.8); opacity: 0; } 50% { transform: translate(-50%, -150%) scale(1.2); opacity: 1; } 100% { transform: translate(-50%, -150%) scale(1); opacity: 0; } }
+        @keyframes judgement-pop { 0% { transform: translate(-50%, -150%) scale(0.8); opacity: 0; } 50% { transform: translate(-50%, -150%) scale(1.2); opacity: 1; } 100% { transform: translate(-50%, -50%) scale(1); opacity: 0; } }
         .rhythm-track-container { position: absolute; top: 50%; left: 0; right: 0; transform: translateY(-50%); display: flex; flex-direction: column; align-items: center; justify-content: center; }
         .rhythm-track { width: 80%; max-width: 400px; height: 4px; background-color: rgba(255,255,255,0.2); border-radius: 2px; position: relative; margin-bottom: 1.5rem; }
         .rhythm-note { position: absolute; top: 50%; transform: translate(-50%, -50%); width: 16px; height: 16px; background-color: var(--amber-color); border-radius: 9999px; box-shadow: 0 0 10px var(--amber-color); }
@@ -77,7 +85,7 @@
             title: '1. 가사 입력',
             content: '튜토리얼을 시작합니다. 먼저, 이곳에 노래 가사를 한 소절씩 입력하거나 붙여넣어 보세요. 사용자의 행동: 가사 입력',
             action: 'input',
-            condition: (appState) => appState.lyrics.trim().length > 5,
+            condition: (appState) => (appState?.lyrics || '').trim().length > 5,
         },
         {
             targetElementSelector: '.page-content button.bg-primary-color',
@@ -251,16 +259,45 @@
                             </button>
                         </div>
                    )}
-                   {songs.length === 0 ? ( <div className="text-center text-secondary-color p-4"><i className="fas fa-folder-open text-5xl mb-4"></i><p>라이브러리가 비어있습니다.</p><p className="text-xs mt-2">'제작' 탭에서 새 파일을 만들어 보세요.</p></div> ) : ( <VerticalListView songs={songs} openSongMenu={openSongMenu} requestDelete={onSongDelete} openColorPicker={onSongColorChange} isEditMode={isEditMode} onSongEdit={onSongEdit} onDownloadSong={handleDownloadSong} selectedSongIds={selectedSongIds} onToggleSelection={handleToggleSelection} /> )}
+                   {songs.length === 0 ? ( 
+                    <div className="text-center text-secondary-color p-4">
+                        <i className="fas fa-folder-open text-5xl mb-4"></i>
+                        <p>라이브러리가 비어있습니다.</p>
+                        <p className="text-sm mt-3 leading-6">
+                            화면의 아무 곳이나 <span className="font-bold text-amber-400">길게 눌러서</span> 메인 메뉴를 여세요.
+                        </p>
+                        <div className="mt-4 text-center text-secondary-color text-xs space-y-1">
+                            <p>메인 메뉴에서는 다음 기능을 이용할 수 있습니다:</p>
+                            <p>
+                                <span className="font-bold text-primary-color"><i className="fas fa-pen-ruler mr-1"></i>제작:</span> 새 타이밍 파일을 만듭니다.
+                            </p>
+                            <p>
+                                <span className="font-bold text-blue-400"><i className="fas fa-file-import mr-1"></i>파일 추가:</span> 외부 JSON 파일을 가져옵니다.
+                            </p>
+                            <p>
+                                <span className="font-bold text-secondary-color"><i className="fas fa-cog mr-1"></i>설정:</span> 테마 변경 및 데이터 관리 (내보내기/불러오기)를 합니다.
+                            </p>
+                        </div>
+                    </div> 
+                   ) : ( 
+                    <VerticalListView songs={songs} openSongMenu={openSongMenu} requestDelete={onSongDelete} openColorPicker={onSongColorChange} isEditMode={isEditMode} onSongEdit={onSongEdit} onDownloadSong={handleDownloadSong} selectedSongIds={selectedSongIds} onToggleSelection={handleToggleSelection} /> 
+                   )}
                 </div>
             </div>
         );
     }
     
-    function SettingsApp({ onOpenThemePicker, onTriggerFileAdd, onTriggerSessionAdd, onSessionExport }) {
+    function SettingsApp({ onOpenThemePicker, onTriggerFileAdd, onTriggerSessionAdd, onSessionExport, onBack }) {
         return (
             <div className="h-full flex flex-col">
-                <AppHeader title="설정" />
+                <AppHeader 
+                    title="설정"
+                    headerLeft={
+                        <button onClick={onBack} className="text-secondary-color hover:text-text-color text-xl action-button w-10 h-10 flex items-center justify-center">
+                            <i className="fas fa-arrow-left"></i>
+                        </button>
+                    }
+                />
                 <div className="page-content p-4 space-y-4">
                     <h3 className="font-bold text-secondary-color text-sm px-2">데이터 관리</h3>
                     <div className="bg-surface-color rounded-lg">
@@ -279,7 +316,7 @@
     
     const useLyricsTiming = (initialSongData = null) => {
         const [song, setSong] = useState(() => initialSongData || { title: "새로운 곡", lyrics: "", timedLines: [] });
-        const [step, setStep] = useState(initialSongData ? 'edit' : 'input');
+        const [step, setStep] = useState(initialSongData ? 'edit' : 'initial');
         const [isPlaying, setIsPlaying] = useState(false);
         const [elapsedTime, setElapsedTime] = useState(0);
         const [currentTimingLine, setCurrentTimingLine] = useState(0);
@@ -288,6 +325,7 @@
         const [showPhoneticConfirm, setShowPhoneticConfirm] = useState(false);
         const [showResetConfirm, setShowResetConfirm] = useState(false);
         const [firstLineStartTime, setFirstLineStartTime] = useState(null);
+        
         const timerRef = useRef(null);
         const startTimeRef = useRef(null);
 
@@ -373,7 +411,38 @@
         const setLyrics = (lyrics) => setSong(s => ({...s, lyrics}));
         const setTitle = (title) => setSong(s => ({...s, title}));
 
-        return { song, setSong, step, setStep, lyricsLines, elapsedTime, setElapsedTime, currentTimingLine, handleReady, handleStartTiming, handleMarkLineEnd, isPlaying, isPaused, handlePause, handleResume, showPhoneticConfirm, handlePhoneticConfirm, handleAdjustTiming, handleDeleteLine, handleInsertInstrumental, setLyrics, setTitle, handleMarkInstrumental, handleMarkMistake, handleRequestReset, showResetConfirm, setShowResetConfirm, handleConfirmReset, firstLineStartTime };
+        const handleInsertInterludeInReady = useCallback((index) => {
+            // 1. If currently phonetic, simplify to simple type for safe text manipulation
+            if (lyricType === 'phonetic') {
+                setLyricType('simple');
+            }
+
+            // 2. Get all non-empty lines from the raw text
+            // Filter out empty lines for accurate re-indexing
+            let rawLines = song.lyrics.split('\n').filter(line => line.trim() !== '');
+
+            // 3. Remove existing interlude lines ('🎵') for a clean slate before insertion 
+            // This prevents duplicate interlude lines if user clicks repeatedly before saving
+            rawLines = rawLines.filter(line => line.trim() !== '🎵');
+
+            // 4. Insertion logic based on index (index is the index of the line *before* which the interlude button was clicked)
+            let insertionIndex = index + 1; // If index=-1, insertionIndex=0. If index=i, insertionIndex=i+1.
+            
+            // Ensure the insertion index is within bounds [0, rawLines.length]
+            if (insertionIndex >= 0 && insertionIndex <= rawLines.length) {
+                rawLines.splice(insertionIndex, 0, "🎵"); 
+            } else {
+                // Should not be reached with the current button design, but added for safety
+                rawLines.push("🎵"); 
+            }
+
+            // 5. Update the raw lyric string
+            setLyrics(rawLines.join('\n'));
+            
+        }, [song.lyrics, lyricType, setLyrics, setLyricType]);
+
+
+        return { song, setSong, step, setStep, lyricsLines, elapsedTime, setElapsedTime, currentTimingLine, handleReady, handleStartTiming, handleMarkLineEnd, isPlaying, isPaused, handlePause, handleResume, showPhoneticConfirm, handlePhoneticConfirm, handleAdjustTiming, handleDeleteLine, handleInsertInstrumental, setLyrics, setTitle, handleMarkInstrumental, handleMarkMistake, handleRequestReset, showResetConfirm, setShowResetConfirm, handleConfirmReset, firstLineStartTime, handleInsertInterludeInReady };
     };
 
     const TimingEditScreen = ({ hook, onDone, title, onRestartLyrics, isPlaying, isPaused }) => {
@@ -434,6 +503,8 @@
             </div>
         );
     };
+    
+    // LyricPreviewModal 컴포넌트 제거됨.
 
     function TimingAnalyzerApp({ onComplete, onBack, isTutorialActive, onTutorialStep, currentTutorialAppState, onStartTutorial }) {
         const hook = useLyricsTiming();
@@ -442,7 +513,7 @@
             handleReady, handleStartTiming, handleMarkLineEnd, isPlaying, isPaused, handlePause, handleResume,
             showPhoneticConfirm, handlePhoneticConfirm, setLyrics, setTitle, 
             handleMarkInstrumental, handleMarkMistake, handleRequestReset, showResetConfirm, setShowResetConfirm, handleConfirmReset, 
-            firstLineStartTime
+            firstLineStartTime, handleInsertInterludeInReady
         } = hook;
         const formatTime = (ms) => { const minutes = String(Math.floor(ms / 60000)).padStart(2, '0'); const seconds = String(Math.floor((ms % 60000) / 1000)).padStart(2, '0'); const milliseconds = String(Math.floor((ms % 1000) / 10)).padStart(2, '0'); return `${minutes}:${seconds}.${milliseconds}`; };
 
@@ -471,8 +542,91 @@
         
         const renderContent = () => {
             switch(step) {
-                case 'input': return (<div className="flex-grow flex flex-col gap-4 p-4"><textarea value={song.lyrics} onChange={(e) => setLyrics(e.target.value)} placeholder="이곳에 가사를 작성하세요. 발음 표기는 (소괄호) 안에 작성해주세요." className="w-full flex-grow p-4 rounded-lg resize-none outline-none focus:ring-2 bg-surface-color border-surface-border-color ring-primary-color"></textarea><button onClick={handleReady} disabled={!song.lyrics.trim()} className="py-3 font-bold rounded-lg text-white disabled:opacity-50 action-button bg-primary-color"><i className="fas fa-arrow-right"></i></button></div>);
-                case 'ready': return (<div className="flex-grow flex flex-col justify-center items-center text-center gap-8 p-4"><i className="fas fa-microphone-alt text-6xl text-primary-color"></i><h2 className="text-xl">준비가 되셨나요?</h2><button onClick={handleStartTiming} className="w-full max-w-xs py-4 font-bold text-xl rounded-full text-white action-button bg-primary-color"><i className="fas fa-play mr-2"></i>기록 시작</button></div>);
+                // New: Initial State (The '+' button)
+                case 'initial': return (
+                    <div className="flex-grow flex flex-col justify-center items-center p-4">
+                        <button 
+                            onClick={() => setStep('input')} 
+                            className="w-32 h-32 rounded-full bg-primary-color text-white text-5xl flex items-center justify-center action-button shadow-xl transition duration-300 transform hover:scale-105"
+                        >
+                            <i className="fas fa-plus"></i>
+                        </button>
+                        <p className="mt-4 text-secondary-color text-sm">가사 작성을 시작하려면 <span className="font-bold">'+'</span> 버튼을 누르세요.</p>
+                    </div>
+                );
+
+                // Modified: Input State (The Textarea Screen)
+                case 'input': return (
+                    <div className="flex-grow flex flex-col gap-4 p-4">
+                        <textarea 
+                            value={song.lyrics} 
+                            onChange={(e) => { setLyrics(e.target.value); }} 
+                            placeholder="이곳에 가사를 작성하세요. 발음 표기는 (소괄호) 안에 작성해주세요." 
+                            className="w-full h-64 p-4 rounded-lg resize-none outline-none focus:ring-2 bg-surface-color border-surface-border-color ring-primary-color"
+                        ></textarea>
+                        
+                        {/* Ready Button - Now moves to the full-screen preview/ready stage */}
+                        <button onClick={handleReady} disabled={!song.lyrics.trim()} className="py-3 font-bold rounded-lg text-white disabled:opacity-50 action-button bg-primary-color">
+                            <i className="fas fa-check mr-2"></i> 확인 (가사 미리보기)
+                        </button>
+                    </div>
+                );
+                
+                // Modified: Ready State (The Full Preview Screen)
+                case 'ready': 
+                    const MOCK_TIME = 0; // For full preview, no highlighting needed.
+                    return (
+                    <div className="flex-grow flex flex-col p-4 relative">
+                        <h2 className="text-xl font-bold mb-4 border-b border-surface-border-color pb-3 text-center">간주 확인하기</h2>
+                        
+                        {/* Scrollable List Container */}
+                        <div className="flex-grow overflow-y-auto space-y-3 px-4"> 
+                            <p className="text-sm text-secondary-color font-bold text-center">가사 라인 사이에 간주(🎵)를 추가할 위치를 지정하세요.</p>
+                            
+                            {/* INTRO INTERLUDE BUTTON: Before the first line (index = -1) */}
+                            <div className="flex justify-center my-4 pt-2">
+                                <button 
+                                    onClick={() => handleInsertInterludeInReady(-1)} 
+                                    className="px-4 py-1 text-sm font-bold rounded-full action-button bg-surface-strong-color text-blue-400"
+                                >
+                                    <i className="fas fa-music mr-1"></i> 전주 추가
+                                </button>
+                            </div>
+
+                            {lyricsLines.map((line, index) => {
+                                const mockLine = { text: line, startTime: 0, endTime: 1000 };
+                                return (
+                                    <React.Fragment key={index}>
+                                        {/* Lyric Card: Card-like structure for clear separation */}
+                                        <div className="p-4 bg-surface-color rounded-lg shadow-md border border-surface-border-color"> 
+                                            <p className="text-sm text-secondary-color mb-2 font-mono">{index + 1}.</p>
+                                            <KaraokeLine line={mockLine} elapsedTime={MOCK_TIME} isPreview={true} /> 
+                                        </div>
+                                        {/* INTERLUDE BUTTON: After the line (between lines) */}
+                                        <div className="flex justify-center my-4"> 
+                                            <button 
+                                                onClick={() => handleInsertInterludeInReady(index)} 
+                                                className="px-4 py-1 text-sm font-bold rounded-full action-button bg-surface-strong-color text-blue-400"
+                                            >
+                                                <i className="fas fa-music mr-1"></i> 간주 추가
+                                            </button>
+                                        </div>
+                                    </React.Fragment>
+                                );
+                            })}
+                            {/* Empty space at the bottom to ensure the last button is clickable */}
+                            <div className="pb-4"></div>
+                        </div>
+                        
+                        {/* Confirmation Complete Button: Fixed position at the very bottom */}
+                        <div className="flex-shrink-0 p-4 pt-0">
+                             <button onClick={handleStartTiming} className="w-full py-4 font-bold text-xl rounded-full text-white action-button bg-primary-color">
+                                <i className="fas fa-check-circle mr-2"></i> 확인 완료 및 기록 시작
+                            </button>
+                        </div>
+                    </div>
+                );
+
                 case 'timing': 
                     const currentLine = lyricsLines[currentTimingLine]; 
                     const isMultiLine = typeof currentLine === 'object' && currentLine !== null;
@@ -502,7 +656,7 @@
                                 {instructionText && <p className="text-lg font-bold text-amber-400 mt-4">{instructionText}</p>}
                             </div>
                             <div className="flex-shrink-0 mt-4">
-                                <button onClick={handleMarkLineEnd} disabled={isPaused} className="w-full h-20 font-bold text-xl rounded-full text-white disabled:opacity-50 action-button bg-amber-500 flex items-center justify-center gap-2">{buttonIcon}<span>{buttonText}</span></button>
+                                <button onClick={handleMarkLineEnd} disabled={isPaused} className="w-full h-20 font-bold text-xl rounded-full text-white disabled:opacity-50 action-button bg-amber-500 timing-tap-button flex items-center justify-center gap-2">{buttonIcon}<span>{buttonText}</span></button>
                                 <div className="flex justify-center gap-2 mt-2">
                                     <button onClick={handleMarkInstrumental} disabled={!isPlaying || song.timedLines.length === 0} className="h-12 rounded-full text-sm action-button bg-surface-strong-color disabled:opacity-50 flex-1">간주 기록</button>
                                     <button onClick={handleMarkMistake} disabled={song.timedLines.length === 0} className="w-16 h-12 rounded-full text-lg action-button bg-surface-strong-color disabled:opacity-50 text-yellow-400"><i className="fas fa-flag"></i></button>
@@ -543,14 +697,20 @@
                     title="제작" 
                     headerLeft={
                         <div className="flex items-center gap-2">
-                            <button onClick={onBack} className="text-secondary-color hover:text-text-color text-xl action-button w-10 h-10 flex items-center justify-center"><i className="fas fa-arrow-left"></i></button>
+                            {/* 'initial' 상태가 아닐 때만 뒤로가기 버튼 표시. 'input'에서 'initial'로, 그 외 단계에서 'library'로 이동 */}
+                            {step !== 'initial' && <button onClick={step === 'input' ? () => setStep('initial') : onBack} className="text-secondary-color hover:text-text-color text-xl action-button w-10 h-10 flex items-center justify-center"><i className="fas fa-arrow-left"></i></button>}
                             <button onClick={onStartTutorial} className="text-secondary-color hover:text-text-color text-xl action-button w-10 h-10 flex items-center justify-center"><i className="fas fa-question-circle"></i></button>
                         </div>
                     }
                 >
                     {step === 'result' && <></>}
                 </AppHeader>
-                <div className="page-content flex flex-col">{renderContent()}{showPhoneticConfirm && (<div className="bottom-sheet-backdrop"><div className="bottom-sheet max-h-fit"><h3 className="font-bold text-lg mb-2 text-center">가사 형식 감지</h3><p className="text-sm text-secondary-color mb-4 text-center">발음이 포함된 가사 형식인 것 같습니다.<br/>가사를 그룹으로 묶어 처리할까요?</p><div className="flex justify-around items-center mt-4"><button onClick={() => handlePhoneticConfirm(false)} className="text-sm action-button px-4 py-2 rounded-lg bg-surface-strong-color">아니오 (줄 단위)</button><button onClick={() => handlePhoneticConfirm(true)} className="text-sm font-bold action-button px-4 py-2 rounded-lg text-white bg-primary-color">예 (그룹 처리)</button></div></div></div>)}{showResetConfirm && <ConfirmResetModal onConfirm={handleConfirmReset} onCancel={() => setShowResetConfirm(false)} />}</div>
+                <div className="page-content flex flex-col">
+                    {renderContent()}
+                    {showPhoneticConfirm && (<div className="bottom-sheet-backdrop"><div className="bottom-sheet max-h-fit"><h3 className="font-bold text-lg mb-2 text-center">가사 형식 감지</h3><p className="text-sm text-secondary-color mb-4 text-center">발음이 포함된 가사 형식인 것 같습니다.<br/>가사를 그룹으로 묶어 처리할까요?</p><div className="flex justify-around items-center mt-4"><button onClick={() => handlePhoneticConfirm(false)} className="text-sm action-button px-4 py-2 rounded-lg bg-surface-strong-color">아니오 (줄 단위)</button><button onClick={() => handlePhoneticConfirm(true)} className="text-sm font-bold action-button px-4 py-2 rounded-lg text-white bg-primary-color">예 (그룹 처리)</button></div></div></div>)}
+                    {showResetConfirm && <ConfirmResetModal onConfirm={handleConfirmReset} onCancel={() => setShowResetConfirm(false)} />}
+                    
+                </div>
             </div>
         );
     }
@@ -618,7 +778,7 @@
             }
 
             setTotalScore(prev => prev + judgement.score);
-            setJudgements(prev => ({...prev, [judgement.text.toUpperCase()]: prev[judgement.text.toUpperCase()] + 1 }));
+            setJudgements(prev => ({...prev, [judgement.text.toUpperCase()]: prev[judgements.text.toUpperCase()] + 1 }));
             setCombo(prev => {
                 const newCombo = prev + 1;
                 if (newCombo > maxCombo) setMaxCombo(newCombo);
@@ -706,7 +866,7 @@
                             )}
                         </main>
                         <footer className="player-controls-overlay">
-                            <button onClick={handleTap} disabled={status !== 'playing'} className="w-full h-24 rounded-full bg-amber-500 text-white text-2xl font-bold action-button flex items-center justify-center gap-2 disabled:opacity-50">
+                            <button onClick={handleTap} disabled={status !== 'playing'} className="w-full h-24 rounded-full bg-amber-500 text-white text-2xl font-bold action-button timing-tap-button flex items-center justify-center gap-2 disabled:opacity-50">
                                 <i className="fas fa-stopwatch"></i><span>TAP</span>
                             </button>
                         </footer>
@@ -715,7 +875,7 @@
             </div>
         );
     }
-
+    
     const MainMenu = ({ menuData, onToggle, onNavigate, currentScreen, onFileAdd, onSessionAdd }) => {
         const { isOpen, x, y } = menuData;
         const menuItemsRef = useRef([]);
@@ -797,7 +957,7 @@
                 return;
             }
             const posX = event.touches ? event.touches[0].clientX : event.clientX;
-            const posY = event.touches ? event.touches[0].clientY : event.clientY;
+            const posY = event.touches ? event.touches[0].clientY : event.clientY; // Fix: use event.clientY for mouse events
             timerRef.current = setTimeout(() => {
                 callback({ x: posX, y: posY });
             }, ms);
@@ -838,6 +998,8 @@
         const longPressEvents = useLongPress(({x, y}) => {
             setMainMenu({ isOpen: true, x, y });
         });
+        
+        const [songToColorChange, setSongToColorChange] = useState(null);
 
         const STORAGE_KEY = 'lyricFlowPracticeSongs';
         useEffect(() => { 
@@ -868,8 +1030,16 @@
         const handleEndChallenge = () => setChallengeSong(null);
         const requestDelete = (song) => setSongToDelete(song);
         const confirmDelete = () => { setPracticeSongs(prev => prev.filter(s => s.id !== songToDelete.id)); setSongToDelete(null); setActiveSongMenu(null); };
-        const requestColorChange = (song) => { setEditingSong(song); setIsColorPickerOpen(true); };
-        const confirmColorChange = (newGradient) => { setPracticeSongs(prev => prev.map(s => s.id === editingSong.id ? {...s, gradient: newGradient} : s)); setIsColorPickerOpen(false); setEditingSong(null); };
+        
+        const requestColorChange = (song) => { setSongToColorChange(song); setIsColorPickerOpen(true); };
+        
+        const confirmColorChange = (newGradient) => { 
+            if (!songToColorChange) return;
+            setPracticeSongs(prev => prev.map(s => s.id === songToColorChange.id ? {...s, gradient: newGradient} : s)); 
+            setIsColorPickerOpen(false); 
+            setSongToColorChange(null);
+        };
+        
         const changeTheme = (theme, shouldClose=true) => { Object.entries(theme.values).forEach(([key, value]) => { document.documentElement.style.setProperty(key, value); }); localStorage.setItem('lyricFlowThemeName', theme.name); if(shouldClose) setIsThemePickerOpen(false); };
         const handleSongEdit = (song) => { setActiveSongMenu(null); setEditingSong(song); };
         const handleSaveSong = (updatedSong) => { setPracticeSongs(prev => prev.map(s => s.id === updatedSong.id ? updatedSong : s)); setEditingSong(null); };
@@ -920,7 +1090,13 @@
                         />
                     </div>
                      <div className="screen" style={{transform: currentScreen === 'settings' ? 'translateX(0)' : 'translateX(100%)', transition: 'transform 0.4s ease-in-out', zIndex: currentScreen === 'settings' ? 1 : 0}}>
-                        <SettingsApp onOpenThemePicker={() => setIsThemePickerOpen(true)} onTriggerFileAdd={triggerFileAdd} onTriggerSessionAdd={triggerSessionAdd} onSessionExport={handleSessionExport} />
+                        <SettingsApp 
+                            onOpenThemePicker={() => setIsThemePickerOpen(true)} 
+                            onTriggerFileAdd={triggerFileAdd} 
+                            onTriggerSessionAdd={triggerSessionAdd} 
+                            onSessionExport={handleSessionExport} 
+                            onBack={() => setCurrentScreen('library')}
+                        />
                      </div>
                 </div>
 
