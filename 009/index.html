@@ -1,123 +1,390 @@
-<svg width="800" height="450" viewBox="0 0 800 450" xmlns="http://www.w3.org/2000/svg" style="font-family: 'Noto Sans KR', sans-serif; background-color: #f3f4f6;">
-
-  <!-- Definitions for reusable elements -->
-  <defs>
-    <rect id="panel-bg" width="240" height="380" rx="12" fill="#ffffff" stroke="#e5e7eb" stroke-width="1"/>
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Daily Loop</title>
+    <script src="https://cdn.tailwindcss.com"></script>
     <style>
-      .title { font-size: 18px; font-weight: bold; fill: #11182c; }
-      .subtitle { font-size: 12px; fill: #6b7280; }
-      .task-text { font-size: 14px; fill: #374151; }
-      .strikethrough { text-decoration: line-through; fill: #9ca3af; }
-      .narration { font-size: 20px; font-weight: bold; fill: #1f293d; text-anchor: middle; }
-      .note { font-size: 12px; fill: #374151; }
+        @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;700&display=swap');
+        body { font-family: 'Noto Sans KR', sans-serif; }
+        .panel { transition: all 0.3s ease-in-out; flex-grow: 1; flex-basis: 0; display: flex; flex-direction: column; min-width: 0; }
+        .panel.collapsed { flex-grow: 0; min-width: 80px; }
+        .panel.collapsed .panel-content, .panel.collapsed .panel-footer, .panel.collapsed .header-text { display: none; }
+        .sticky-note-board { position: relative; min-height: 400px; }
+        .sticky-note { position: absolute; width: 180px; height: 180px; padding: 20px 12px 12px 12px; background-color: #fffde7; box-shadow: 0 4px 6px rgba(0,0,0,0.1); transition: transform 0.1s ease-in-out, box-shadow 0.1s ease-in-out; }
+        .sticky-note.draggable { cursor: grab; }
+        .sticky-note.draggable:active { cursor: grabbing; transform: scale(1.05); box-shadow: 0 10px 15px rgba(0,0,0,0.15); z-index: 10; }
+        .pin { position: absolute; top: 5px; left: 50%; transform: translateX(-50%); width: 24px; height: 24px; }
+        .modal-overlay { transition: opacity 0.2s ease-in-out; }
+        .note-textarea { background: transparent; border: none; resize: none; width: 100%; height: 100%; font-family: inherit; font-size: inherit; }
+        .note-textarea:focus { outline: none; }
+        .item-actions { visibility: hidden; opacity: 0; transition: opacity 0.2s ease-in-out; }
+        .task-item:hover .item-actions { visibility: visible; opacity: 1; }
+        .sticky-note .delete-note-btn { visibility: hidden; opacity: 0; transition: opacity 0.2s ease-in-out; position: absolute; top: -8px; right: -8px; }
+        .sticky-note:hover .delete-note-btn { visibility: visible; opacity: 1; }
     </style>
-  </defs>
+</head>
+<body class="bg-gray-100 text-gray-800 p-4 md:p-8">
 
-  <!-- Panels Layout -->
-  <g id="panels">
-    <!-- Yesterday Panel -->
-    <g transform="translate(20, 50)">
-      <use href="#panel-bg"/>
-      <text x="120" y="30" text-anchor="middle" class="title">어제 한 일</text>
-      <g id="yesterday-tasks">
-        <text x="20" y="70" class="task-text strikethrough">✓ 앱 프로토타입 완성</text>
-        <text x="20" y="95" class="task-text strikethrough">✓ UI 디자인 구상</text>
-      </g>
-    </g>
-    <!-- Today Panel -->
-    <g transform="translate(280, 50)">
-      <use href="#panel-bg"/>
-      <text x="120" y="30" text-anchor="middle" class="title">오늘 할 일</text>
-      <g id="today-tasks">
-        <text x="20" y="70" class="task-text">□ SVG 시각화 구상</text>
-        <text x="20" y="95" class="task-text">□ 최종 기능 통합</text>
-      </g>
-    </g>
-    <!-- Distractions Panel -->
-    <g transform="translate(540, 50)">
-      <use href="#panel-bg"/>
-      <text x="120" y="30" text-anchor="middle" class="title">딴 생각 & 영감</text>
-      <g id="distractions-notes"/>
-    </g>
-  </g>
+    <div id="app" class="max-w-7xl mx-auto">
+        <header class="mb-8 flex justify-between items-start">
+            <div>
+                <h1 class="text-4xl font-bold text-gray-900">Daily Loop</h1>
+                <p class="text-lg text-gray-600" id="current-date"></p>
+            </div>
+            <div class="flex gap-2">
+                <button id="import-btn" class="bg-gray-200 hover:bg-gray-300 text-gray-800 font-bold py-2 px-4 rounded-lg">불러오기</button>
+                <button id="export-btn" class="bg-red-500 hover:bg-red-600 text-white font-bold py-2 px-4 rounded-lg">내보내기 & 초기화</button>
+                <input type="file" id="import-file" class="hidden" accept="application/json">
+            </div>
+        </header>
+        
+        <main id="main-container" class="flex flex-col md:flex-row gap-6"></main>
+    </div>
 
-  <!-- Narration Text -->
-  <text id="narration-text" x="400" y="25" class="narration" opacity="0">
-    <animate id="anim_start" attributeName="opacity" from="0" to="1" dur="1s" begin="0s" fill="freeze"/>
-    아침: 어제의 성취를 확인하고 오늘을 시작합니다
-  </text>
-  
-  <!-- === ANIMATION SEQUENCE === -->
+    <div id="input-modal" class="modal-overlay fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 hidden">
+        <div class="modal-content bg-white rounded-lg shadow-xl p-6 w-full max-w-md">
+            <h3 id="modal-title" class="text-2xl font-bold mb-4"></h3>
+            <textarea id="modal-textarea" class="w-full h-32 p-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:outline-none" placeholder="내용을 입력하세요..."></textarea>
+            <div class="mt-4 flex justify-end gap-2">
+                <button id="modal-cancel-btn" class="bg-gray-200 hover:bg-gray-300 text-gray-800 font-bold py-2 px-4 rounded-lg">취소</button>
+                <button id="modal-save-btn" class="bg-blue-500 hover:bg-blue-600 text-white font-bold py-2 px-4 rounded-lg">저장</button>
+            </div>
+        </div>
+    </div>
 
-  <!-- 1. Add new task -->
-  <g id="new-task-group" opacity="0">
-    <rect x="300" y="155" width="200" height="25" fill="#e0f2fe"/>
-    <text x="310" y="172" class="task-text">□ 버그 수정하기</text>
-    <animate attributeName="opacity" from="0" to="1" dur="1s" begin="anim_start.end+1s" fill="freeze"/>
-  </g>
-  <animateTransform attributeName="transform" type="translate" from="0 0" to="0 25" dur="0.5s" begin="anim_start.end+1s" fill="freeze" target="#today-tasks > text:nth-child(2)"/>
-  <set attributeName="textContent" to="오후: 계획한 일들을 실행합니다" begin="anim_start.end+2.5s" target="#narration-text"/>
+    <script>
+    document.addEventListener('DOMContentLoaded', () => {
 
-  <!-- 2. Complete tasks -->
-  <animate id="anim_check1" attributeName="class" to="task-text strikethrough" begin="anim_start.end+3.5s" fill="freeze" target="#today-tasks > text:nth-child(1)"/>
-  <set attributeName="textContent" to="✓ SVG 시각화 구상" begin="anim_start.end+3.5s" target="#today-tasks > text:nth-child(1)"/>
-  
-  <animate id="anim_check2" attributeName="class" to="task-text strikethrough" begin="anim_check1.end+1s" fill="freeze" target="#today-tasks > text:nth-child(2)"/>
-  <set attributeName="textContent" to="✓ 최종 기능 통합" begin="anim_check1.end+1s" target="#today-tasks > text:nth-child(2)"/>
+        const UIManager = {
+            mainContainer: document.getElementById('main-container'),
+            currentDateEl: document.getElementById('current-date'),
 
-  <!-- 3. Distraction appears -->
-  <g id="new-distraction" opacity="0" transform="translate(560, 100)">
-    <rect width="100" height="60" rx="5" fill="#fffde7" stroke="#fef08a"/>
-    <text x="10" y="25" class="note">다음 프로젝트</text>
-    <text x="10" y="45" class="note">아이디어 구상</text>
-    <animate id="anim_distraction_fadein" attributeName="opacity" from="0" to="1" dur="1s" begin="anim_check1.end+0.5s" fill="freeze"/>
-  </g>
-  <set attributeName="textContent" to="실행 중 떠오른 영감은 바로 기록합니다" begin="anim_distraction_fadein.begin" target="#narration-text"/>
+            init() {
+                this.mainContainer.innerHTML = `
+                    <section id="yesterday-panel" class="panel bg-white rounded-lg shadow-md"><header class="p-4 border-b border-gray-200 flex justify-between items-center cursor-pointer toggle-header"><div class="flex items-center gap-3 overflow-hidden"><svg class="w-8 h-8 text-gray-600 flex-shrink-0" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M6.75 3v2.25M17.25 3v2.25M3 18.75V7.5a2.25 2.25 0 012.25-2.25h13.5A2.25 2.25 0 0121 7.5v11.25m-18 0A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75m-18 0h18M12 14.25h.008v.008H12v-.008z" /><path stroke-linecap="round" stroke-linejoin="round" d="M10.125 18.75l1.125-1.125L15 21l3.75-3.75-1.125-1.125" stroke="green" stroke-width="2"/></svg><div class="header-text"><h2 class="text-xl font-semibold">어제 한 일</h2><span class="text-sm text-gray-500" id="yesterday-counter"></span></div></div></header><div id="yesterday-content" class="panel-content p-4 space-y-3 overflow-y-auto flex-grow"></div></section>
+                    <section id="today-panel" class="panel bg-white rounded-lg shadow-md"><header class="p-4 border-b border-gray-200 flex justify-between items-center cursor-pointer toggle-header"><div class="flex items-center gap-3 overflow-hidden"><svg class="w-8 h-8 text-gray-600 flex-shrink-0" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M10.125 2.25h-4.5c-.621 0-1.125.504-1.125 1.125v17.25c0 .621.504 1.125 1.125 1.125h12.75c.621 0 1.125-.504 1.125-1.125v-9M10.125 2.25h.375a9 9 0 019 9v.375M10.125 2.25A3.375 3.375 0 0113.5 5.625v1.5c0 .621.504 1.125 1.125 1.125h1.5a3.375 3.375 0 013.375 3.375M9 15l2.25 2.25L15 12" /></svg><div class="header-text"><h2 class="text-xl font-semibold">오늘 할 일</h2><span class="text-sm text-gray-500" id="today-counter"></span></div></div></header><div id="today-content" class="panel-content p-4 space-y-3 overflow-y-auto flex-grow"></div><footer class="panel-footer p-4 border-t border-gray-200"><button id="add-task-btn" class="w-full bg-blue-500 hover:bg-blue-600 text-white font-bold py-2 px-4 rounded-lg flex items-center justify-center"><svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-2" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M10 3a1 1 0 011 1v5h5a1 1 0 110 2h-5v5a1 1 0 11-2 0v-5H4a1 1 0 110-2h5V4a1 1 0 011-1z" clip-rule="evenodd" /></svg>오늘 할 일 추가</button></footer></section>
+                    <section id="distractions-panel" class="panel bg-white rounded-lg shadow-md"><header class="p-4 border-b border-gray-200 flex justify-between items-center cursor-pointer toggle-header"><div class="flex items-center gap-3 overflow-hidden"><svg class="w-8 h-8 text-gray-600 flex-shrink-0" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M12 18v-5.25m0 0a6.01 6.01 0 001.5-.189m-1.5.189a6.01 6.01 0 01-1.5-.189m3.75 7.478a12.06 12.06 0 01-4.5 0m3.75 2.311a7.5 7.5 0 01-7.5 0c-1.255 0-2.42.232-3.523.654C2.025 16.532 1.5 17.618 1.5 18.749v1.138c0 1.13.525 2.216 1.408 2.923(2.321-1.006 3.032-2.209 3.032-3.483V18.75m2.13-1.604A3.375 3.375 0 0116.5 15h.252m-2.386-2.386a3.375 3.375 0 01-4.243 4.242M21.75 12a9.75 9.75 0 01-9.75 9.75c-3.53 0-6.72-1.89-8.497-4.727" /></svg><div class="header-text"><h2 class="text-xl font-semibold">딴 생각 & 영감</h2><span class="text-sm text-gray-500" id="distractions-counter"></span></div></div></header><div id="distractions-content" class="panel-content p-4 overflow-hidden flex-grow sticky-note-board"></div><footer class="panel-footer p-4 border-t border-gray-200"><button id="add-distraction-btn" class="w-full bg-yellow-500 hover:bg-yellow-600 text-white font-bold py-2 px-4 rounded-lg flex items-center justify-center"><svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-2" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M10 3a1 1 0 011 1v5h5a1 1 0 110 2h-5v5a1 1 0 11-2 0v-5H4a1 1 0 110-2h5V4a1 1 0 011-1z" clip-rule="evenodd" /></svg>딴 생각 추가</button></footer></section>
+                `;
+            },
+            render(currentLog, yesterdaysLog) {
+                if (!currentLog || !yesterdaysLog) {
+                    this.mainContainer.innerHTML = `<div class="text-red-500">데이터를 불러올 수 없습니다. 데이터를 불러오거나 앱을 초기화하세요.</div>`; return;
+                }
+                this.currentDateEl.textContent = new Date(currentLog.date).toLocaleDateString('ko-KR', { year: 'numeric', month: 'long', day: 'numeric' });
+                this.renderPanel('yesterday', yesterdaysLog.executionLog.completedTasks);
+                this.renderPanel('today', currentLog.morningPlan.tasks);
+                this.renderPanel('distractions', currentLog.executionLog.distractions);
+            },
+            renderPanel(type, items) {
+                const contentEl = document.getElementById(`${type}-content`);
+                const counterEl = document.getElementById(`${type}-counter`);
+                contentEl.innerHTML = '';
+                if (type === 'yesterday') {
+                    items.forEach(item => contentEl.innerHTML += `<div class="flex items-center"><input type="checkbox" checked disabled class="h-5 w-5 text-green-500 rounded border-gray-300"><label class="ml-3 text-gray-500 line-through">${item.content}</label></div>`);
+                    counterEl.textContent = `달성 ${items.length}`;
+                } else if (type === 'today') {
+                    const completedCount = items.filter(task => task.isCompleted).length;
+                    items.forEach(item => {
+                        contentEl.innerHTML += `
+                        <div class="task-item flex items-center justify-between p-1 hover:bg-gray-50 rounded-md">
+                            <div class="flex items-center flex-grow">
+                                <input type="checkbox" id="${item.id}" data-task-id="${item.id}" class="task-checkbox h-5 w-5 text-blue-600 rounded border-gray-300 focus:ring-blue-500" ${item.isCompleted ? 'checked' : ''}>
+                                <label for="${item.id}" class="ml-3 ${item.isCompleted ? 'line-through text-gray-500' : ''}">${item.content}</label>
+                            </div>
+                            <div class="item-actions flex-shrink-0 flex gap-2">
+                                <button data-task-id="${item.id}" class="edit-task-btn text-gray-400 hover:text-blue-600"><svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.5L14.732 3.732z"></path></svg></button>
+                                <button data-task-id="${item.id}" class="delete-task-btn text-gray-400 hover:text-red-600"><svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg></button>
+                            </div>
+                        </div>`;
+                    });
+                    counterEl.textContent = `달성 ${completedCount} / 목표 ${items.length}`;
+                } else { // distractions
+                    items.forEach(item => {
+                        const note = document.createElement('div');
+                        note.className = 'sticky-note';
+                        note.dataset.id = item.id;
+                        note.style.cssText = `top:${item.y}%; left:${item.x}%; transform:rotate(${item.rotation}deg);`;
+                        
+                        const content = item.content 
+                            ? `<p class="note-content text-gray-700 p-2 h-full w-full overflow-y-auto">${item.content}</p>`
+                            : `<textarea class="note-textarea p-2" placeholder="클릭해서 입력..."></textarea>`;
+                        
+                        note.innerHTML = `<div class="pin"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><path fill="#ff4b5a" d="M352 256c0-53-43-96-96-96s-96 43-96 96 43 96 96 96 96-43 96-96zm64 0c0 88.38-71.62 160-160 160S96 344.38 96 256 167.62 96 256 96s160 71.62 160 160z"/><path fill="#ff707e" d="M256 416c-88.38 0-160-71.62-160-160S167.62 96 256 96"/><path fill="#ffd15c" d="M256 0C181.71 0 128 53.71 128 128s64 96 64 96h128s64-24.29 64-96S330.29 0 256 0z"/><path fill="#f9b11e" d="M256 0v224h64s64-24.29 64-96S330.29 0 256 0z"/></svg></div>
+                                        <button class="delete-note-btn bg-red-500 text-white rounded-full w-6 h-6 flex items-center justify-center font-bold text-sm">
+                                            <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="3">
+                                                <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" />
+                                            </svg>
+                                        </button>
+                                        ${content}`;
+                        
+                        if (item.content) {
+                            note.classList.add('draggable');
+                            this.makeDraggable(note);
+                        }
+                        
+                        contentEl.appendChild(note);
+                    });
+                    counterEl.textContent = `기록 ${items.length}`;
+                }
+            },
+            makeDraggable(element) {
+                if (!element.classList.contains('draggable')) return;
+                let pos1 = 0, pos2 = 0, pos3 = 0, pos4 = 0;
+                element.onmousedown = (e) => {
+                    if (e.target.tagName === 'P' || e.target.tagName === 'TEXTAREA' || e.target.closest('button')) return;
+                    e.preventDefault();
+                    pos3 = e.clientX; pos4 = e.clientY;
+                    document.onmouseup = () => { document.onmouseup = null; document.onmousemove = null; };
+                    document.onmousemove = (ev) => {
+                        ev.preventDefault();
+                        pos1 = pos3 - ev.clientX;
+                        pos2 = pos4 - ev.clientY;
+                        pos3 = ev.clientX;
+                        pos4 = ev.clientY;
+                        
+                        const board = element.parentElement;
+                        const newTop = Math.max(0, Math.min(board.clientHeight - element.clientHeight, element.offsetTop - pos2));
+                        const newLeft = Math.max(0, Math.min(board.clientWidth - element.clientWidth, element.offsetLeft - pos1));
 
-  <!-- 4. Complete last task -->
-  <animate id="anim_check3" attributeName="class" to="task-text strikethrough" begin="anim_check2.end+1s" fill="freeze" target="#new-task-group > text"/>
-  <set attributeName="textContent" to="✓ 버그 수정하기" begin="anim_check2.end+1s" target="#new-task-group > text"/>
-  <set attributeName="textContent" to="저녁: 오늘을 마무리하고 내일을 준비합니다" begin="anim_check3.end+1s" target="#narration-text"/>
-  
-  <!-- 5. Evening plan -->
-  <g id="evening-plan" opacity="0">
-      <rect x="280" y="50" width="240" height="380" fill="#4c51bf" rx="12"/>
-      <text x="400" y="80" text-anchor="middle" class="title" fill="white">내일 계획</text>
-      <text x="300" y="120" fill="white" class="task-text">새로운 하루를 위한 이야기...</text>
-      <text x="300" y="160" fill="white" class="task-text">□ 사용자 피드백 반영</text>
-      <text x="300" y="185" fill="white" class="task-text">□ 코드 리팩토링</text>
-      <animate id="anim_evening" attributeName="opacity" from="0" to="1" dur="1s" begin="anim_check3.end+2s" fill="freeze"/>
-  </g>
+                        element.style.top = newTop + "px";
+                        element.style.left = newLeft + "px";
+                    };
+                };
+            }
+        };
 
-  <!-- 6. Loop / Transition to next day -->
-  <rect x="0" y="0" width="800" height="450" fill="#f3f4f6" opacity="0">
-      <animate id="anim_fadeout" attributeName="opacity" from="0" to="1" dur="1.5s" begin="anim_evening.end+2s" fill="freeze"/>
-  </rect>
-  <set attributeName="textContent" to="그리고 다음 날, 어제의 성취가 오늘의 기반이 됩니다" begin="anim_fadeout.begin" target="#narration-text"/>
+        const ModalManager = {
+            modal: document.getElementById('input-modal'),
+            title: document.getElementById('modal-title'),
+            textarea: document.getElementById('modal-textarea'),
+            saveBtn: document.getElementById('modal-save-btn'),
+            cancelBtn: document.getElementById('modal-cancel-btn'),
+            resolve: null,
 
-  <!-- 7. Show next day's state -->
-  <g opacity="0">
-    <!-- New Yesterday Panel -->
-    <g transform="translate(20, 50)">
-      <use href="#panel-bg"/>
-      <text x="120" y="30" text-anchor="middle" class="title">어제 한 일</text>
-        <text x="20" y="70" class="task-text strikethrough">✓ SVG 시각화 구상</text>
-        <text x="20" y="95" class="task-text strikethrough">✓ 최종 기능 통합</text>
-        <text x="20" y="120" class="task-text strikethrough">✓ 버그 수정하기</text>
-    </g>
-    <!-- New Today Panel -->
-    <g transform="translate(280, 50)">
-      <use href="#panel-bg"/>
-      <text x="120" y="30" text-anchor="middle" class="title">오늘 할 일</text>
-      <text x="20" y="70" class="task-text">□ 사용자 피드백 반영</text>
-      <text x="20" y="95" class="task-text">□ 코드 리팩토링</text>
-    </g>
-    <!-- New Distractions Panel (empty) -->
-    <g transform="translate(540, 50)">
-      <use href="#panel-bg"/>
-      <text x="120" y="30" text-anchor="middle" class="title">딴 생각 & 영감</text>
-    </g>
-    <animate attributeName="opacity" from="0" to="1" dur="1s" begin="anim_fadeout.end" fill="freeze"/>
-  </g>
+            init() {
+                this.cancelBtn.addEventListener('click', () => this.hide());
+                this.modal.addEventListener('click', (e) => {
+                    if (e.target === this.modal) this.hide();
+                });
+            },
 
-</svg>
+            show(title, initialValue = '', placeholder = '내용을 입력하세요...') {
+                return new Promise((resolve) => {
+                    this.resolve = resolve;
+                    this.title.textContent = title;
+                    this.textarea.value = initialValue;
+                    this.textarea.placeholder = placeholder;
+                    this.modal.classList.remove('hidden');
+                    this.textarea.focus();
+
+                    this.saveBtn.onclick = () => {
+                        const value = this.textarea.value.trim();
+                        if (value) {
+                            this.hide(value);
+                        } else {
+                            this.hide(initialValue); // If empty, return original value on edit
+                        }
+                    };
+                });
+            },
+
+            hide(value = null) {
+                this.modal.classList.add('hidden');
+                if (this.resolve) this.resolve(value);
+                this.resolve = null;
+            }
+        };
+        
+        const StorageManager = {
+            KEY: 'DAILY_LOOP_DATA',
+            save(data) { try { localStorage.setItem(this.KEY, JSON.stringify(data)); } catch (e) { console.error("Error saving to localStorage", e); } },
+            load() { try { const data = localStorage.getItem(this.KEY); return data ? JSON.parse(data) : null; } catch (e) { console.error("Error loading from localStorage", e); return null; } },
+            clear() { localStorage.removeItem(this.KEY); }
+        };
+
+        const DailyLoopManager = {
+            createLog(dateString) { return { date: dateString, morningPlan: { storyFromYesterday: "", tasks: [] }, executionLog: { completedTasks: [], distractions: [] }, eveningPlan: { storyForTomorrow: "", tasksForTomorrow: [] } }; },
+            addTask(log, content) { const newTask = { id: crypto.randomUUID(), content, isCompleted: false, priority: log.morningPlan.tasks.length }; return { ...log, morningPlan: { ...log.morningPlan, tasks: [...log.morningPlan.tasks, newTask] } }; },
+            toggleTask(log, taskId) { const updatedTasks = log.morningPlan.tasks.map(task => task.id === taskId ? { ...task, isCompleted: !task.isCompleted } : task); return { ...log, morningPlan: { ...log.morningPlan, tasks: updatedTasks } }; },
+            editTask(log, taskId, newContent) { const updatedTasks = log.morningPlan.tasks.map(task => task.id === taskId ? { ...task, content: newContent } : task); return { ...log, morningPlan: { ...log.morningPlan, tasks: updatedTasks } }; },
+            deleteTask(log, taskId) { const updatedTasks = log.morningPlan.tasks.filter(task => task.id !== taskId); return { ...log, morningPlan: { ...log.morningPlan, tasks: updatedTasks } }; },
+            addDistraction(log) { const newDistraction = { id: crypto.randomUUID(), content: "", timestamp: new Date(), x: 10, y: 10, rotation: Math.random() * 4 - 2 }; return { ...log, executionLog: { ...log.executionLog, distractions: [...log.executionLog.distractions, newDistraction] } }; },
+            updateDistraction(log, id, content) { const updatedDistractions = log.executionLog.distractions.map(d => d.id === id ? { ...d, content } : d); return { ...log, executionLog: { ...log.executionLog, distractions: updatedDistractions } }; },
+            deleteDistraction(log, id) { const updatedDistractions = log.executionLog.distractions.filter(d => d.id !== id); return { ...log, executionLog: { ...log.executionLog, distractions: updatedDistractions } }; }
+        };
+        
+        const App = {
+            state: { allLogs: {}, today: new Date() },
+            
+            init() {
+                UIManager.init();
+                ModalManager.init();
+                this.loadState();
+                this.addEventListeners();
+                this.render();
+            },
+            
+            loadState() {
+                this.state.allLogs = StorageManager.load() || {};
+                const todayStr = this.getDateString(this.state.today);
+                if (!this.state.allLogs[todayStr]) this.createInitialData();
+            },
+
+            createInitialData() {
+                const todayStr = this.getDateString(this.state.today);
+                const yesterdayStr = this.getDateString(new Date(this.state.today.getTime() - 86400000));
+                
+                const mockYesterday = DailyLoopManager.createLog(yesterdayStr);
+                mockYesterday.executionLog.completedTasks.push({ id: 'mock-y-1', content: '앱을 처음 시작했습니다', isCompleted: true, priority: 0 });
+                mockYesterday.eveningPlan.storyForTomorrow = "새로운 시작을 위한 준비";
+                mockYesterday.eveningPlan.tasksForTomorrow.push({ id: 'mock-t-1', content: '오늘의 첫 할 일을 등록해보세요', isCompleted: false, priority: 0 });
+                
+                this.state.allLogs[yesterdayStr] = mockYesterday;
+                const newTodayLog = DailyLoopManager.createLog(todayStr);
+                newTodayLog.morningPlan = { storyFromYesterday: mockYesterday.eveningPlan.storyForTomorrow, tasks: mockYesterday.eveningPlan.tasksForTomorrow };
+                this.state.allLogs[todayStr] = newTodayLog;
+                StorageManager.save(this.state.allLogs);
+            },
+
+            saveAndRender() { StorageManager.save(this.state.allLogs); this.render(); },
+            getDateString(date) { return date.toISOString().split('T')[0]; },
+            render() {
+                const todayStr = this.getDateString(this.state.today);
+                const yesterdayStr = this.getDateString(new Date(this.state.today.getTime() - 86400000));
+                UIManager.render(this.state.allLogs[todayStr], this.state.allLogs[yesterdayStr]);
+            },
+
+            addEventListeners() {
+                document.getElementById('add-task-btn').addEventListener('click', async () => {
+                    const content = await ModalManager.show('오늘 할 일 추가');
+                    if (content) {
+                        const todayStr = this.getDateString(this.state.today);
+                        this.state.allLogs[todayStr] = DailyLoopManager.addTask(this.state.allLogs[todayStr], content);
+                        this.saveAndRender();
+                    }
+                });
+
+                document.getElementById('add-distraction-btn').addEventListener('click', () => {
+                    const todayStr = this.getDateString(this.state.today);
+                    this.state.allLogs[todayStr] = DailyLoopManager.addDistraction(this.state.allLogs[todayStr]);
+                    this.saveAndRender();
+                });
+
+                document.getElementById('distractions-content').addEventListener('focusout', (e) => {
+                    if (e.target.matches('.note-textarea')) {
+                        const noteEl = e.target.closest('.sticky-note');
+                        const id = noteEl.dataset.id;
+                        const content = e.target.value.trim();
+                        const todayStr = this.getDateString(this.state.today);
+
+                        if (content) {
+                           this.state.allLogs[todayStr] = DailyLoopManager.updateDistraction(this.state.allLogs[todayStr], id, content);
+                        } else {
+                           this.state.allLogs[todayStr] = DailyLoopManager.deleteDistraction(this.state.allLogs[todayStr], id);
+                        }
+                        this.saveAndRender();
+                    }
+                });
+
+                document.getElementById('distractions-content').addEventListener('dblclick', (e) => {
+                    if(e.target.matches('.note-content')) {
+                        const noteEl = e.target.closest('.sticky-note');
+                        const id = noteEl.dataset.id;
+                        const todayStr = this.getDateString(this.state.today);
+                        const distraction = this.state.allLogs[todayStr].executionLog.distractions.find(d => d.id === id);
+                        e.target.outerHTML = `<textarea class="note-textarea p-2">${distraction.content}</textarea>`;
+                        const textarea = noteEl.querySelector('textarea');
+                        textarea.focus();
+                        textarea.select();
+                    }
+                });
+                
+                document.getElementById('main-container').addEventListener('click', async (e) => {
+                    const todayStr = this.getDateString(this.state.today);
+                    let stateChanged = false;
+
+                    const taskCheckbox = e.target.closest('.task-checkbox');
+                    const editTaskBtn = e.target.closest('.edit-task-btn');
+                    const deleteTaskBtn = e.target.closest('.delete-task-btn');
+                    const toggleHeader = e.target.closest('.toggle-header');
+                    const deleteNoteBtn = e.target.closest('.delete-note-btn');
+
+                    if (taskCheckbox) {
+                        const taskId = taskCheckbox.dataset.taskId;
+                        this.state.allLogs[todayStr] = DailyLoopManager.toggleTask(this.state.allLogs[todayStr], taskId);
+                        stateChanged = true;
+                    } else if (toggleHeader) {
+                        toggleHeader.closest('.panel').classList.toggle('collapsed');
+                    } else if (editTaskBtn) {
+                        const taskId = editTaskBtn.dataset.taskId;
+                        const task = this.state.allLogs[todayStr].morningPlan.tasks.find(t => t.id === taskId);
+                        const newContent = await ModalManager.show('할 일 수정', task.content);
+                        if (newContent && newContent !== task.content) {
+                            this.state.allLogs[todayStr] = DailyLoopManager.editTask(this.state.allLogs[todayStr], taskId, newContent);
+                            stateChanged = true;
+                        }
+                    } else if (deleteTaskBtn) {
+                        const taskId = deleteTaskBtn.dataset.taskId;
+                        if (confirm('이 할 일을 정말 삭제하시겠습니까?')) {
+                            this.state.allLogs[todayStr] = DailyLoopManager.deleteTask(this.state.allLogs[todayStr], taskId);
+                            stateChanged = true;
+                        }
+                    } else if (deleteNoteBtn) {
+                        const noteId = deleteNoteBtn.closest('.sticky-note').dataset.id;
+                        if (confirm('이 메모를 정말 삭제하시겠습니까?')) {
+                             this.state.allLogs[todayStr] = DailyLoopManager.deleteDistraction(this.state.allLogs[todayStr], noteId);
+                             stateChanged = true;
+                        }
+                    }
+                    if(stateChanged) this.saveAndRender();
+                });
+
+                document.getElementById('export-btn').addEventListener('click', () => {
+                    const data = StorageManager.load();
+                    if (!data) { alert('내보낼 데이터가 없습니다.'); return; }
+                    if (confirm('데이터를 파일로 내보내고 브라우저의 모든 기록을 삭제하시겠습니까? 이 작업은 되돌릴 수 없습니다.')) {
+                        const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+                        const a = document.createElement('a');
+                        a.href = URL.createObjectURL(blob);
+                        a.download = `daily_loop_backup_${this.getDateString(new Date())}.json`;
+                        a.click();
+                        URL.revokeObjectURL(a.href);
+                        
+                        StorageManager.clear();
+                        alert('데이터를 내보내고 모든 기록을 삭제했습니다.');
+                        location.reload();
+                    }
+                });
+                
+                const importFileEl = document.getElementById('import-file');
+                document.getElementById('import-btn').addEventListener('click', () => importFileEl.click());
+                importFileEl.addEventListener('change', (event) => {
+                    const file = event.target.files[0];
+                    if (!file) return;
+                    const reader = new FileReader();
+                    reader.onload = (e) => {
+                        try {
+                            const data = JSON.parse(e.target.result);
+                            if (typeof data !== 'object' || data === null) throw new Error('Invalid data format');
+                            if (confirm('기존 데이터를 덮어쓰고 불러오시겠습니까?')) {
+                                StorageManager.save(data);
+                                alert('데이터를 성공적으로 불러왔습니다.');
+                                location.reload();
+                            }
+                        } catch (err) {
+                            alert('파일을 읽는 데 실패했습니다. 유효한 JSON 파일인지 확인하세요.');
+                        }
+                    };
+                    reader.readAsText(file);
+                });
+            },
+        };
+
+        App.init();
+    });
+    </script>
+</body>
+</html>
+
