@@ -26,13 +26,11 @@
         .screen { position: absolute; top: 0; left: 0; right: 0; bottom: 0; display: flex; flex-direction: column; height: 100%; background-color: var(--bg-color); }
         .action-button { transition: all 0.2s ease-in-out; }
         .action-button:active { transform: scale(0.95); }
-        
         .timing-tap-button:active {
             transform: scale(0.97); 
             filter: brightness(1.1);
             box-shadow: 0 0 10px var(--amber-color);
         }
-
         .song-card { border-radius: 1.25rem; padding: 1.5rem; display: flex; flex-direction: column; justify-content: space-between; aspect-ratio: 1.618 / 1; color: white; transition: transform 0.3s ease, box-shadow 0.3s ease, opacity 0.3s ease; cursor: pointer; box-shadow: 0 4px 15px rgba(0,0,0,0.3); position: relative; will-change: transform; }
         .bottom-sheet-backdrop { position: fixed; top: 0; left: 0; right: 0; bottom: 0; background-color: rgba(0,0,0,0.7); backdrop-filter: blur(5px); z-index: 40; animation: fadeIn 0.3s forwards; }
         @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
@@ -54,7 +52,7 @@
         .card-common-content { width: 100%; height: 100%; display: flex; flex-direction: column; justify-content: space-between; color: white; }
         .selection-overlay { position: absolute; top: 0; left: 0; right: 0; bottom: 0; background-color: rgba(0,0,0,0.3); border-radius: 1.25rem; border: 3px solid var(--primary-color); display: flex; justify-content: flex-end; align-items: flex-start; padding: 1rem; opacity: 0; transition: opacity 0.2s ease; }
         .selection-overlay.selected { opacity: 1; }
-        .selection-checkbox { width: 1.5rem; height: 1.5rem; border-radius: 9999px; background-color: rgba(255,255,255,0.8); display: flex; align-items:center; justify-content: center; color: var(--primary-color); }
+        .selection-checkbox { width: 1.5rem; height: 1.5rem; border-radius: 9999px; background-color: rgba(255,255,255,0.8); display: flex; items-center; justify-content: center; color: var(--primary-color); }
         .judgement-effect { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -150%); font-size: 3rem; font-weight: 900; z-index: 10; pointer-events: none; animation: judgement-pop 0.5s forwards; }
         @keyframes judgement-pop { 0% { transform: translate(-50%, -150%) scale(0.8); opacity: 0; } 50% { transform: translate(-50%, -150%) scale(1.2); opacity: 1; } 100% { transform: translate(-50%, -50%) scale(1); opacity: 0; } }
         .rhythm-track-container { position: absolute; top: 50%; left: 0; right: 0; transform: translateY(-50%); display: flex; flex-direction: column; align-items: center; justify-content: center; }
@@ -115,14 +113,27 @@
     ];
 
     const AppHeader = ({ title, children, headerLeft, isPlayerHeader }) => ( <header className={`flex-shrink-0 flex items-center justify-between p-4 z-10 h-16 ${isPlayerHeader ? 'absolute top-0 left-0 right-0' : ''}`}><div className="flex-shrink-0 flex items-center justify-start min-w-[40px]">{headerLeft}</div><h1 className="text-sm font-bold tracking-tight text-center truncate mx-2 flex-grow">{title}</h1><div className="flex-shrink-0 flex items-center justify-end min-w-[40px]">{children}</div></header> );
-    const CardContent = ({ song, requestDelete, openColorPicker, onDownloadSong }) => ( <div className="card-common-content"><div className="flex justify-between items-start text-sm opacity-80"><h3 className="font-bold">Lyric Flow</h3><div className="flex items-center gap-2"><span className="flex items-center gap-1.5 bg-black/20 px-2 py-1 rounded-full text-xs"><i className="fas fa-headphones-alt"></i><span>{song.practiceCount || 0}</span></span><button onClick={(e) => { e.stopPropagation(); onDownloadSong(song); }} className="w-8 h-8 rounded-full bg-black/20 flex items-center justify-center text-blue-400 hover:bg-blue-500 hover:text-white action-button"><i className="fas fa-download"></i></button><button onClick={(e) => { e.stopPropagation(); requestDelete(song); }} className="w-8 h-8 rounded-full bg-black/20 flex items-center justify-center text-red-400 hover:bg-red-500 hover:text-white action-button"><i className="fas fa-trash-alt"></i></button></div></div><div className="text-center"><h2 className="font-bold text-2xl truncate" style={{fontSize: '1.618rem'}}>{song.title}</h2></div><div className="flex justify-between items-end text-sm opacity-80"><span>{song.timedLines.length} Lines</span><button onClick={(e) => { e.stopPropagation(); openColorPicker(song); }} className="w-8 h-8 rounded-full bg-black/20 flex items-center justify-center action-button"><i className="fas fa-palette"></i></button></div></div> );
     const ConfirmDeleteModal = ({ song, onConfirm, onCancel }) => ( <div className="bottom-sheet-backdrop"><div className="bottom-sheet max-h-fit"><h3 className="text-lg font-bold">카드 삭제</h3><p className="my-4 text-secondary-color">'{song.title}' 카드를 정말 삭제하시겠습니까?</p><div className="grid grid-cols-2 gap-4"><button onClick={onCancel} className="py-3 font-bold rounded-lg bg-surface-strong-color action-button">취소</button><button onClick={onConfirm} className="py-3 font-bold rounded-lg text-white" style={{backgroundColor: 'var(--red-color)'}}>삭제</button></div></div></div>);
     const ColorPicker = ({ onSelect, onClose }) => (<div className="bottom-sheet-backdrop" onClick={onClose}><div className="bottom-sheet" onClick={e => e.stopPropagation()}><h3 className="text-lg font-bold mb-4">카드 색상 변경</h3><div className="grid grid-cols-3 gap-4">{GRADIENTS.map(grad => (<div key={grad} onClick={() => onSelect(grad)} className="w-full aspect-square rounded-lg cursor-pointer" style={{ background: grad }}></div>))}</div></div></div>);
     const ThemePicker = ({ onSelect, onClose }) => ( <div className="bottom-sheet-backdrop" onClick={onClose}><div className="bottom-sheet" onClick={e => e.stopPropagation()}><h3 className="text-lg font-bold mb-4">테마 변경</h3><div className="flex justify-around">{THEMES.map(theme => (<div key={theme.name} onClick={() => onSelect(theme)} className="flex flex-col items-center gap-2 cursor-pointer"><div className="w-12 h-12 rounded-full" style={{backgroundColor: theme.display}}></div><span className="text-xs capitalize text-secondary-color">{theme.name}</span></div>))}</div></div></div>);
     const RenameSongModal = ({ song, onConfirm, onCancel }) => { const [newTitle, setNewTitle] = useState(song.title); const handleSave = () => { if (newTitle.trim()) { onConfirm(song.id, newTitle.trim()); } }; return (<div className="bottom-sheet-backdrop"><div className="bottom-sheet max-h-fit"><h3 className="text-lg font-bold">이름 변경</h3><input type="text" value={newTitle} onChange={(e) => setNewTitle(e.target.value)} className="w-full p-3 my-4 rounded-md outline-none bg-surface-strong-color text-center" autoFocus /><div className="grid grid-cols-2 gap-4"><button onClick={onCancel} className="py-3 font-bold rounded-lg bg-surface-strong-color action-button">취소</button><button onClick={handleSave} className="py-3 font-bold rounded-lg text-white bg-primary-color action-button">저장</button></div></div></div>); };
     const ConfirmResetModal = ({ onConfirm, onCancel }) => ( <div className="bottom-sheet-backdrop"><div className="bottom-sheet max-h-fit"><h3 className="text-lg font-bold">다시 시작</h3><p className="my-4 text-secondary-color">지금까지 기록한 모든 내용이 사라집니다. 정말 처음부터 다시 시작하시겠습니까?</p><div className="grid grid-cols-2 gap-4"><button onClick={onCancel} className="py-3 font-bold rounded-lg bg-surface-strong-color action-button">취소</button><button onClick={onConfirm} className="py-3 font-bold rounded-lg text-white" style={{backgroundColor: 'var(--red-color)'}}>다시 시작</button></div></div></div>);
-    const VerticalListView = ({ songs, openSongMenu, isEditMode, onSongEdit, requestDelete, openColorPicker, onDownloadSong, selectedSongIds, onToggleSelection }) => ( <div className="p-4 space-y-4 overflow-y-auto h-full">{songs.map((song) => { const isSelected = selectedSongIds.has(song.id); return (<div key={song.id} onClick={() => isEditMode ? onToggleSelection(song.id) : openSongMenu(song)} className="song-card w-full" style={{ background: song.gradient, opacity: (isEditMode && !isSelected) ? 0.6 : 1, transform: (isEditMode && isSelected) ? 'scale(0.95)' : 'scale(1)' }}><div className={`selection-overlay ${isSelected ? 'selected' : ''}`}><div className="selection-checkbox">{isSelected && <i className="fas fa-check"></i>}</div></div><CardContent {...{song, requestDelete, openColorPicker, onDownloadSong}} /></div>);})}</div> );
-    
+    const RefineGuidanceModal = ({ song, onConfirm, onCancel }) => (
+        <div className="bottom-sheet-backdrop">
+            <div className="bottom-sheet max-h-fit">
+                <h3 className="text-lg font-bold text-center">정밀 타이밍 필요</h3>
+                <p className="my-4 text-secondary-color text-center leading-relaxed">
+                    '도전 모드'는 단어 단위로 플레이하는 정밀한 리듬 게임입니다.<br/>
+                    이 곡의 단어 타이밍을 먼저 만들어 주세요.
+                </p>
+                <div className="grid grid-cols-2 gap-4">
+                    <button onClick={onCancel} className="py-3 font-bold rounded-lg bg-surface-strong-color action-button">취소</button>
+                    <button onClick={onConfirm} className="py-3 font-bold rounded-lg text-white bg-blue-color action-button">만들러 가기</button>
+                </div>
+            </div>
+        </div>
+    );
+
     const InteractiveTutorial = ({ steps, currentStep, onNext, onClose, appState }) => {
         const step = steps[currentStep];
         const highlightRef = useRef(null);
@@ -207,112 +218,79 @@
         );
     };
 
-    function LyricsPracticeApp({ songs, setPracticeSongs, onSongColorChange, onSongEdit, openSongMenu, onSongDelete }) {
-        const [isEditMode, setIsEditMode] = useState(false);
-        const [selectedSongIds, setSelectedSongIds] = useState(new Set());
+    const KaraokeLine = React.memo(({ line, elapsedTime, isPreview }) => {
+        const hasWordTiming = line.words && Array.isArray(line.words) && line.words.length > 0;
+        const originalText = hasWordTiming ? line.line : (line.text || '');
+        const isPhonetic = typeof line.text === 'object' && line.text !== null && !hasWordTiming;
 
-        const handleDownloadSong = (songToDownload) => {
-            const jsonString = `data:text/json;charset=utf-8,${encodeURIComponent(JSON.stringify(songToDownload, null, 2))}`;
-            const link = document.createElement("a");
-            link.href = jsonString;
-            link.download = `${songToDownload.title}.json`;
-            link.click();
-        };
-
-        const toggleEditMode = () => {
-            setIsEditMode(prev => !prev);
-            setSelectedSongIds(new Set());
-        };
-        
-        const handleToggleSelection = (songId) => {
-            setSelectedSongIds(prevSelectedIds => {
-                const newSelectedIds = new Set(prevSelectedIds);
-                if (newSelectedIds.has(songId)) {
-                    newSelectedIds.delete(songId);
-                } else {
-                    newSelectedIds.add(songId);
+        const renderWordTiming = () => {
+            let wordSpans = [];
+            line.words.forEach((word, index) => {
+                let wordContent = word.text;
+                if (index < line.words.length - 1) {
+                    wordContent += " ";
                 }
-                return newSelectedIds;
+
+                if (isPreview || elapsedTime < word.startTime) {
+                    wordSpans.push(<span key={index}>{wordContent}</span>);
+                } else if (elapsedTime >= word.endTime) {
+                    wordSpans.push(<span key={index} className="highlight-char">{wordContent}</span>);
+                } else {
+                    const wordDuration = word.endTime - word.startTime;
+                    const progressInWord = wordDuration > 0 ? (elapsedTime - word.startTime) / wordDuration : 1;
+                    const highlightLength = Math.floor(progressInWord * word.text.length);
+                    wordSpans.push(
+                        <span key={index}>
+                            <span className="highlight-char">{word.text.substring(0, highlightLength)}</span>
+                            <span>{word.text.substring(highlightLength)}</span>
+                            {index < line.words.length - 1 ? " " : ""}
+                        </span>
+                    );
+                }
             });
+            return <p className="original-lyric">{wordSpans}</p>;
         };
 
-        const handleDeleteSelected = () => {
-            if (selectedSongIds.size === 0) return;
-            setPracticeSongs(prevSongs => prevSongs.filter(song => !selectedSongIds.has(song.id)));
-            setSelectedSongIds(new Set());
-            setIsEditMode(false);
+        const renderLineTiming = () => {
+            const textToRender = isPhonetic ? line.text.original : originalText;
+            const lineStartTime = line.startTime || 0;
+            const lineDuration = line.endTime - lineStartTime;
+            let progress = 0;
+            if (!isPreview && lineDuration > 0) {
+                progress = Math.max(0, Math.min(1, (elapsedTime - lineStartTime) / lineDuration));
+            } else if (!isPreview && elapsedTime >= line.endTime) {
+                progress = 1;
+            }
+            const highlightUpTo = Math.floor(progress * textToRender.length);
+            return <p className="original-lyric"><span className="highlight-char">{textToRender.substring(0, highlightUpTo)}</span><span>{textToRender.substring(highlightUpTo)}</span></p>;
         };
 
         return (
-            <div className="h-full flex flex-col">
-                <AppHeader title="라이브러리">
-                    <button onClick={toggleEditMode} className={`action-button font-bold ${isEditMode ? 'text-primary-color' : 'text-secondary-color'}`}>
-                        {isEditMode ? '완료' : '편집'}
-                    </button>
-                </AppHeader>
-                <div className="page-content flex flex-col justify-center relative">
-                   {isEditMode && selectedSongIds.size > 0 && (
-                        <div className="absolute bottom-4 left-1/2 -translate-x-1/2 z-10 w-full max-w-sm px-4">
-                             <button onClick={handleDeleteSelected} className="w-full py-3 font-bold rounded-lg text-white action-button" style={{backgroundColor: 'var(--red-color)'}}>
-                                {selectedSongIds.size}개 항목 삭제
-                            </button>
-                        </div>
-                   )}
-                   {songs.length === 0 ? ( 
-                    <div className="text-center text-secondary-color p-4">
-                        <i className="fas fa-folder-open text-5xl mb-4"></i>
-                        <p>라이브러리가 비어있습니다.</p>
-                        <p className="text-sm mt-3 leading-6">
-                            화면의 아무 곳이나 <span className="font-bold text-amber-400">길게 눌러서</span> 메인 메뉴를 여세요.
-                        </p>
-                        <div className="mt-4 text-center text-secondary-color text-xs space-y-1">
-                            <p>메인 메뉴에서는 다음 기능을 이용할 수 있습니다:</p>
-                            <p>
-                                <span className="font-bold text-primary-color"><i className="fas fa-pen-ruler mr-1"></i>제작:</span> 새 타이밍 파일을 만듭니다.
-                            </p>
-                            <p>
-                                <span className="font-bold text-blue-400"><i className="fas fa-file-import mr-1"></i>파일 추가:</span> 외부 JSON 파일을 가져옵니다.
-                            </p>
-                            <p>
-                                <span className="font-bold text-secondary-color"><i className="fas fa-cog mr-1"></i>설정:</span> 테마 변경 및 데이터 관리 (내보내기/불러오기)를 합니다.
-                            </p>
-                        </div>
-                    </div> 
-                   ) : ( 
-                    <VerticalListView songs={songs} openSongMenu={openSongMenu} requestDelete={onSongDelete} openColorPicker={onSongColorChange} isEditMode={isEditMode} onSongEdit={onSongEdit} onDownloadSong={handleDownloadSong} selectedSongIds={selectedSongIds} onToggleSelection={handleToggleSelection} /> 
-                   )}
-                </div>
+            <div>
+                {hasWordTiming ? renderWordTiming() : renderLineTiming()}
+                {isPhonetic && (
+                    <>
+                        <p className="translation-lyric">{line.text.translation}</p>
+                        <p className="pronunciation-lyric">({line.text.pronunciation})</p>
+                    </>
+                )}
             </div>
         );
-    }
-    
-    function SettingsApp({ onOpenThemePicker, onTriggerFileAdd, onTriggerSessionAdd, onSessionExport, onBack }) {
+    });
+
+    const RhythmTrack = React.memo(({ startTime, endTime, elapsedTime }) => {
+        const lineDuration = endTime - startTime;
+        const timeInLine = elapsedTime - startTime;
+        const progress = lineDuration > 0 ? Math.max(0, Math.min(1, timeInLine / lineDuration)) : 0;
+        
         return (
-            <div className="h-full flex flex-col">
-                <AppHeader 
-                    title="설정"
-                    headerLeft={
-                        <button onClick={onBack} className="text-secondary-color hover:text-text-color text-xl action-button w-10 h-10 flex items-center justify-center">
-                            <i className="fas fa-arrow-left"></i>
-                        </button>
-                    }
-                />
-                <div className="page-content p-4 space-y-4">
-                    <h3 className="font-bold text-secondary-color text-sm px-2">데이터 관리</h3>
-                    <div className="bg-surface-color rounded-lg">
-                        <button onClick={onTriggerFileAdd} className="w-full flex items-center justify-between p-4 action-button border-b border-surface-border-color"><span>단일 파일 추가</span><i className="fas fa-chevron-right text-secondary-color"></i></button>
-                        <button onClick={onTriggerSessionAdd} className="w-full flex items-center justify-between p-4 action-button border-b border-surface-border-color"><span>세션 불러오기</span><i className="fas fa-chevron-right text-secondary-color"></i></button>
-                        <button onClick={onSessionExport} className="w-full flex items-center justify-between p-4 action-button"><span>세션 내보내기</span><i className="fas fa-chevron-right text-secondary-color"></i></button>
-                    </div>
-                    <h3 className="font-bold text-secondary-color text-sm px-2 pt-4">앱 설정</h3>
-                    <div className="bg-surface-color rounded-lg">
-                        <button onClick={onOpenThemePicker} className="w-full flex items-center justify-between p-4 action-button"><span>테마 변경</span><i className="fas fa-chevron-right text-secondary-color"></i></button>
-                    </div>
-                </div>
+            <div className="rhythm-track">
+                <div className="judgement-line"></div>
+                <div className="rhythm-note" style={{ left: `${progress * 100}%` }}></div>
             </div>
         );
-    }
-    
+    });
+
     const useLyricsTiming = (initialSongData = null) => {
         const [song, setSong] = useState(() => initialSongData || { title: "새로운 곡", lyrics: "", timedLines: [] });
         const [step, setStep] = useState(initialSongData ? 'edit' : 'initial');
@@ -328,8 +306,38 @@
         const timerRef = useRef(null);
         const startTimeRef = useRef(null);
 
-        const parsePhoneticLyrics = (rawText) => { const lines = rawText.split('\n').map(l => l.trim()); const result = []; let i = 0; while (i < lines.length) { if (lines[i].trim() === '') { i++; continue; } const original = lines[i]; const translation = lines[i + 1] || ''; const thirdLine = lines[i + 2] || ''; if (thirdLine.startsWith('(') && thirdLine.endsWith(')')) { result.push({ original, translation, pronunciation: thirdLine.substring(1, thirdLine.length - 1) }); i += 3; } else { result.push(original); i++; } } return result; };
-        const lyricsLines = useMemo(() => { if (lyricType === 'phonetic') { return parsePhoneticLyrics(song.lyrics); } return song.lyrics.split('\n').filter(line => line.trim() !== ''); }, [song.lyrics, lyricType]);
+        const parsePhoneticLyrics = useMemo(() => {
+            const rawLines = song.lyrics.split('\n');
+            const groupedUnits = [];
+            let i = 0;
+            while (i < rawLines.length) {
+                const currentLine = rawLines[i].trim();
+                if (currentLine === '') { i++; continue; }
+                const nextLine = (i + 1 < rawLines.length) ? rawLines[i + 1].trim() : null;
+                const thirdLine = (i + 2 < rawLines.length) ? rawLines[i + 2].trim() : null;
+
+                if (thirdLine && thirdLine.startsWith('(') && thirdLine.endsWith(')')) {
+                    groupedUnits.push({ 
+                        original: currentLine, 
+                        translation: nextLine, 
+                        pronunciation: thirdLine.substring(1, thirdLine.length - 1) 
+                    });
+                    i += 3;
+                } else {
+                    groupedUnits.push(currentLine);
+                    i++;
+                }
+            }
+            return groupedUnits;
+        }, [song.lyrics]);
+
+        const lyricsLines = useMemo(() => {
+            if (lyricType === 'phonetic') {
+                return parsePhoneticLyrics;
+            }
+            return song.lyrics.split('\n').filter(line => line.trim() !== '');
+        }, [song.lyrics, lyricType, parsePhoneticLyrics]);
+
         const animate = useCallback(() => { setElapsedTime(Date.now() - startTimeRef.current); timerRef.current = requestAnimationFrame(animate); }, []);
 
         useEffect(() => { if (isPlaying) { startTimeRef.current = Date.now() - elapsedTime; timerRef.current = requestAnimationFrame(animate); } else { cancelAnimationFrame(timerRef.current); } return () => cancelAnimationFrame(timerRef.current); }, [isPlaying, elapsedTime, animate]);
@@ -358,7 +366,7 @@
                 const firstLineEndTime = Date.now();
                 const firstLineDuration = firstLineEndTime - firstLineStartTime;
                 
-                const newTimedLine = { text: lyricsLines[0], endTime: firstLineDuration, startTime: firstLineDuration };
+                const newTimedLine = { text: lyricsLines[0], endTime: firstLineDuration };
 
                 setSong(s => ({ ...s, timedLines: [newTimedLine] }));
 
@@ -411,25 +419,60 @@
         const setTitle = (title) => setSong(s => ({...s, title}));
 
         const handleInsertInterludeInReady = useCallback((index) => {
-            if (lyricType === 'phonetic') {
-                setLyricType('simple');
+            const rawLines = song.lyrics.split('\n');
+            const groupedUnits = [];
+            let i = 0;
+            while (i < rawLines.length) {
+                const currentLine = rawLines[i].trim();
+                if (currentLine === '') { i++; continue; }
+                const nextLine = (i + 1 < rawLines.length) ? rawLines[i + 1].trim() : null;
+                const thirdLine = (i + 2 < rawLines.length) ? rawLines[i + 2].trim() : null;
+
+                if (thirdLine && thirdLine.startsWith('(') && thirdLine.endsWith(')')) {
+                    groupedUnits.push([rawLines[i], rawLines[i+1], rawLines[i+2]]);
+                    i += 3;
+                } else {
+                    groupedUnits.push(rawLines[i]);
+                    i++;
+                }
             }
-            let rawLines = song.lyrics.split('\n').filter(line => line.trim() !== '');
-            let insertionIndex = index + 1;
-            if (insertionIndex >= 0 && insertionIndex <= rawLines.length) {
-                rawLines.splice(insertionIndex, 0, "🎵"); 
+
+            const insertionIndex = index + 1;
+            if (insertionIndex >= 0 && insertionIndex <= groupedUnits.length) {
+                groupedUnits.splice(insertionIndex, 0, "🎵");
             } else {
-                rawLines.push("🎵"); 
+                groupedUnits.push("🎵");
             }
-            setLyrics(rawLines.join('\n'));
-        }, [song.lyrics, lyricType, setLyrics]);
+
+            const newRawLines = groupedUnits.flatMap(unit => Array.isArray(unit) ? unit : unit);
+            setLyrics(newRawLines.join('\n'));
+        }, [song.lyrics, setLyrics]);
 
         const handleDeleteLineInReady = useCallback((indexToDelete) => {
-            let rawLines = song.lyrics.split('\n').filter(line => line.trim() !== '');
-            if (indexToDelete >= 0 && indexToDelete < rawLines.length) {
-                rawLines.splice(indexToDelete, 1);
-                setLyrics(rawLines.join('\n'));
+            const rawLines = song.lyrics.split('\n');
+            const groupedUnits = [];
+            let i = 0;
+            while (i < rawLines.length) {
+                const currentLine = rawLines[i].trim();
+                if (currentLine === '') { i++; continue; }
+                const nextLine = (i + 1 < rawLines.length) ? rawLines[i + 1].trim() : null;
+                const thirdLine = (i + 2 < rawLines.length) ? rawLines[i + 2].trim() : null;
+
+                if (thirdLine && thirdLine.startsWith('(') && thirdLine.endsWith(')')) {
+                    groupedUnits.push([rawLines[i], rawLines[i+1], rawLines[i+2]]);
+                    i += 3;
+                } else {
+                    groupedUnits.push(rawLines[i]);
+                    i++;
+                }
             }
+            
+            if (indexToDelete >= 0 && indexToDelete < groupedUnits.length) {
+                groupedUnits.splice(indexToDelete, 1);
+            }
+            
+            const newRawLines = groupedUnits.flatMap(unit => Array.isArray(unit) ? unit : unit);
+            setLyrics(newRawLines.join('\n'));
         }, [song.lyrics, setLyrics]);
 
         return { song, setSong, step, setStep, lyricsLines, elapsedTime, setElapsedTime, currentTimingLine, handleReady, handleStartTiming, handleMarkLineEnd, isPlaying, isPaused, handlePause, handleResume, showPhoneticConfirm, handlePhoneticConfirm, handleAdjustTiming, handleDeleteLine, handleInsertInstrumental, setLyrics, setTitle, handleMarkInstrumental, handleMarkMistake, handleRequestReset, showResetConfirm, setShowResetConfirm, handleConfirmReset, firstLineStartTime, handleInsertInterludeInReady, handleDeleteLineInReady };
@@ -494,8 +537,271 @@
         );
     };
     
-    function TimingAnalyzerApp({ onComplete, onBack, isTutorialActive, onTutorialStep, currentTutorialAppState, onStartTutorial }) {
-        const hook = useLyricsTiming();
+    const useWordTiming = (lineData, onComplete) => {
+        const [status, setStatus] = useState('ready');
+        const [progress, setProgress] = useState(0);
+        const [recordedWords, setRecordedWords] = useState([]);
+        const [currentWordIndex, setCurrentWordIndex] = useState(0);
+        const animationFrameRef = useRef();
+
+        const words = useMemo(() => lineData.line.split(' ').filter(w => w), [lineData]);
+
+        const startRecording = () => {
+            setStatus('recording');
+            setCurrentWordIndex(0);
+            setRecordedWords([]);
+            const animationStartTime = Date.now();
+            const lineDuration = lineData.endTime - lineData.startTime;
+
+            const animate = () => {
+                const elapsed = Date.now() - animationStartTime;
+                const currentProgress = Math.min(1, elapsed / lineDuration);
+                setProgress(currentProgress);
+
+                if (currentProgress < 1) {
+                    animationFrameRef.current = requestAnimationFrame(animate);
+                } else {
+                    handleFinish();
+                }
+            };
+            animationFrameRef.current = requestAnimationFrame(animate);
+        };
+
+        const handleTap = () => {
+            if (status !== 'recording' || currentWordIndex >= words.length) return;
+
+            const lineDuration = lineData.endTime - lineData.startTime;
+            const tapTime = lineData.startTime + (progress * lineDuration);
+            
+            const lastEndTime = recordedWords.length > 0 ? recordedWords[recordedWords.length - 1].endTime : lineData.startTime;
+
+            setRecordedWords(prev => [...prev, {
+                text: words[currentWordIndex],
+                startTime: lastEndTime,
+                endTime: tapTime,
+            }]);
+            
+            if (currentWordIndex + 1 >= words.length) {
+                handleFinish();
+            } else {
+                setCurrentWordIndex(prev => prev + 1);
+            }
+        };
+        
+        const handleFinish = () => {
+            cancelAnimationFrame(animationFrameRef.current);
+            setStatus('finished');
+            
+            let finalWords = [...recordedWords];
+            if (currentWordIndex < words.length && recordedWords.length > 0) {
+                 const lastWord = finalWords[finalWords.length - 1];
+                 lastWord.endTime = lineData.endTime;
+            }
+
+            setTimeout(() => onComplete(finalWords), 500);
+        }
+
+        return { status, progress, words, currentWordIndex, startRecording, handleTap };
+    };
+
+    const RefineTimingScreen = ({ song, onDone }) => {
+        const [wordTimedLines, setWordTimedLines] = useState([]);
+        const [currentStep, setCurrentStep] = useState('lineSelection');
+        const [selectedLineIndex, setSelectedLineIndex] = useState(null);
+
+        useEffect(() => {
+            const initializeData = (lineTimedData) => {
+                let lastEndTime = 0;
+                return lineTimedData.map(line => {
+                    const startTime = lastEndTime;
+                    const endTime = line.endTime;
+                    lastEndTime = endTime;
+                    
+                    if (line.words) {
+                        return { ...line, startTime, endTime };
+                    }
+
+                    const text = (typeof line.text === 'string') ? line.text : line.text.original;
+                    return {
+                        line: text,
+                        startTime,
+                        endTime,
+                        words: null,
+                    };
+                });
+            };
+            
+            if (song && song.timedLines) {
+                const initialData = initializeData(song.timedLines);
+                setWordTimedLines(initialData);
+            }
+        }, [song]);
+        
+        const handleLineSelect = (index) => {
+            setSelectedLineIndex(index);
+            setCurrentStep('wordTiming');
+        };
+        
+        const handleWordTimingComplete = (lineIndex, wordsData) => {
+            setWordTimedLines(currentLines => {
+                const newLines = [...currentLines];
+                newLines[lineIndex].words = wordsData;
+                return newLines;
+            });
+            setCurrentStep('lineSelection');
+        };
+
+        const handleSave = () => {
+            const updatedSong = { ...song, timingMode: 'word', timedLines: wordTimedLines };
+            onDone(updatedSong);
+        };
+
+        const LineSelectionStep = () => (
+            <div className="page-content flex flex-col p-4">
+                <div className="text-center mb-4">
+                    <h2 className="text-2xl mt-1">{song.title}</h2>
+                    <p className="text-sm text-secondary-color mt-2">단어 타이밍을 기록할 라인을 선택하세요.</p>
+                </div>
+                <div className="flex-grow overflow-y-auto space-y-2">
+                    {wordTimedLines.map((line, index) => (
+                        <div key={index} onClick={() => handleLineSelect(index)} className="w-full flex items-center p-4 rounded-lg bg-surface-color action-button">
+                            <span className="text-xl mr-4">{line.words ? '🟢' : '⚪️'}</span>
+                            <div className="flex-grow">
+                                <p className="truncate">{index + 1}. {line.line}</p>
+                                <p className="text-xs text-secondary-color font-mono mt-1">
+                                    {`${(line.startTime / 1000).toFixed(2)}s ~ ${(line.endTime / 1000).toFixed(2)}s`}
+                                    <span className={`ml-2 font-bold ${line.words ? 'text-primary-color' : ''}`}>{line.words ? '완료' : '(미지정)'}</span>
+                                </p>
+                            </div>
+                            <i className="fas fa-chevron-right text-secondary-color"></i>
+                        </div>
+                    ))}
+                </div>
+            </div>
+        );
+        
+        const WordTimingStep = () => {
+            const lineData = wordTimedLines[selectedLineIndex];
+            const { status, progress, words, currentWordIndex, startRecording, handleTap } = useWordTiming(lineData, (completedWords) => {
+                handleWordTimingComplete(selectedLineIndex, completedWords);
+            });
+
+            const progressPercent = progress * 100;
+            
+            return (
+                 <div className="page-content flex flex-col p-4 text-center">
+                    <div className="flex-grow flex flex-col justify-center">
+                        <div className="flex flex-wrap justify-center items-center text-3xl font-bold leading-loose">
+                            {words.map((word, index) => (
+                                <span key={index} className={`mx-1 transition-colors duration-200 ${
+                                    status === 'recording' && index === currentWordIndex ? 'text-amber-400 scale-110' : 
+                                    status === 'recording' && index < currentWordIndex ? 'text-primary-color' : 'text-secondary-color'
+                                }`}>{word}</span>
+                            ))}
+                        </div>
+                    </div>
+
+                    <div className="flex-shrink-0 w-full">
+                         <div className="relative w-full h-2 bg-surface-strong-color rounded-full my-4">
+                            <div style={{ width: `${progressPercent}%` }} className="h-full bg-primary-color rounded-full"></div>
+                         </div>
+                         <div className="flex justify-between text-xs text-secondary-color font-mono">
+                             <span>{(lineData.startTime / 1000).toFixed(2)}s</span>
+                             <span>{(lineData.endTime / 1000).toFixed(2)}s</span>
+                         </div>
+                         
+                         <div className="mt-8 h-24 flex items-center justify-center">
+                             {status === 'ready' && (
+                                 <button onClick={startRecording} className="w-48 h-20 font-bold text-xl rounded-full text-white action-button bg-blue-500">기록 시작</button>
+                             )}
+                             {status === 'recording' && (
+                                 <button onClick={handleTap} className="w-full h-24 rounded-full bg-amber-500 text-white text-2xl font-bold action-button timing-tap-button">TAP</button>
+                             )}
+                             {status === 'finished' && (
+                                 <div className="text-xl font-bold text-primary-color flex items-center gap-2">
+                                    <i className="fas fa-check-circle"></i>
+                                    <span>완료!</span>
+                                 </div>
+                             )}
+                         </div>
+                    </div>
+                 </div>
+            );
+        };
+
+        return (
+            <div className="screen">
+                <AppHeader title="정밀 타이밍 제작" headerLeft={
+                    <button onClick={() => currentStep === 'lineSelection' ? onDone(null) : setCurrentStep('lineSelection')} 
+                            className="text-secondary-color text-xl w-10 h-10 action-button">
+                        <i className="fas fa-arrow-left"></i>
+                    </button>
+                }>
+                    <button onClick={handleSave} className="font-bold text-primary-color action-button">저장</button>
+                </AppHeader>
+                {currentStep === 'lineSelection' ? <LineSelectionStep /> : <WordTimingStep />}
+            </div>
+        );
+    };
+
+    const NoteViewerScreen = ({ note, onClose, onStartTiming }) => {
+        const parsedLyrics = useMemo(() => {
+            const rawLines = note.lyrics.split('\n');
+            const groupedUnits = [];
+            let i = 0;
+            while (i < rawLines.length) {
+                const currentLine = rawLines[i].trim();
+                if (currentLine === '') { i++; continue; }
+                const nextLine = (i + 1 < rawLines.length) ? rawLines[i + 1].trim() : null;
+                const thirdLine = (i + 2 < rawLines.length) ? rawLines[i + 2].trim() : null;
+
+                if (thirdLine && thirdLine.startsWith('(') && thirdLine.endsWith(')')) {
+                    groupedUnits.push({ 
+                        original: currentLine, 
+                        translation: nextLine, 
+                        pronunciation: thirdLine.substring(1, thirdLine.length - 1) 
+                    });
+                    i += 3;
+                } else {
+                    groupedUnits.push(currentLine);
+                    i++;
+                }
+            }
+            return groupedUnits;
+        }, [note.lyrics]);
+
+        return (
+            <div className="screen">
+                <AppHeader title={note.title} headerLeft={<button onClick={onClose} className="text-secondary-color text-xl w-10 h-10 action-button"><i className="fas fa-arrow-left"></i></button>} />
+                <div className="page-content overflow-y-auto p-4 space-y-3">
+                    {parsedLyrics.map((line, index) => {
+                        const isPhonetic = typeof line === 'object' && line !== null;
+                        return (
+                            <div key={index} className="p-4 bg-surface-color rounded-lg shadow-md border border-surface-border-color">
+                                <p className="text-sm text-secondary-color mb-2 font-mono">{index + 1}.</p>
+                                {isPhonetic ? (
+                                    <div>
+                                        <p className="text-xl font-bold">{line.original}</p>
+                                        <p className="text-base text-secondary-color mt-1">{line.translation}</p>
+                                        <p className="text-sm text-secondary-color mt-1 opacity-80">{line.pronunciation}</p>
+                                    </div>
+                                ) : (
+                                    <p className="text-xl">{line}</p>
+                                )}
+                            </div>
+                        );
+                    })}
+                </div>
+                <div className="flex-shrink-0 p-4 grid grid-cols-2 gap-4 border-t border-surface-border-color">
+                    <button onClick={() => onStartTiming(note, 'line')} className="py-3 font-bold rounded-lg bg-surface-strong-color action-button">라인 타이밍 제작</button>
+                    <button onClick={() => onStartTiming(note, 'word')} className="py-3 font-bold rounded-lg text-white bg-blue-color action-button">정밀 타이밍 제작</button>
+                </div>
+            </div>
+        );
+    };
+
+    function TimingAnalyzerApp({ initialData, onComplete, onBack, isTutorialActive, onTutorialStep, currentTutorialAppState, onStartTutorial }) {
+        const hook = useLyricsTiming(initialData);
         const { 
             song, setSong, step, setStep, lyricsLines, elapsedTime, currentTimingLine, 
             handleReady, handleStartTiming, handleMarkLineEnd, isPlaying, isPaused, handlePause, handleResume,
@@ -503,6 +809,14 @@
             handleMarkInstrumental, handleMarkMistake, handleRequestReset, showResetConfirm, setShowResetConfirm, handleConfirmReset, 
             firstLineStartTime, handleInsertInterludeInReady, handleDeleteLineInReady
         } = hook;
+
+        useEffect(() => {
+            if (initialData) {
+                setSong(initialData);
+                setStep('ready');
+            }
+        }, [initialData, setSong, setStep]);
+
         const formatTime = (ms) => { const minutes = String(Math.floor(ms / 60000)).padStart(2, '0'); const seconds = String(Math.floor((ms % 60000) / 1000)).padStart(2, '0'); const milliseconds = String(Math.floor((ms % 1000) / 10)).padStart(2, '0'); return `${minutes}:${seconds}.${milliseconds}`; };
 
         useEffect(() => {
@@ -512,19 +826,19 @@
             }
         }, [song.lyrics, step, isTutorialActive, onTutorialStep]);
         
-        const handleFinalSave = () => {
-            if (firstLineStartTime === null || song.timedLines.length === 0) {
-                onComplete(song);
-                return;
+        const handleFinalSave = (saveType) => {
+            let finalSong = { ...song };
+
+            if (saveType === 'line' && firstLineStartTime !== null && song.timedLines.length > 0) {
+                const offset = song.timedLines[0].endTime - (song.timedLines[0].startTime || song.timedLines[0].endTime);
+                const finalTimedLines = song.timedLines.map(line => ({
+                    ...line,
+                    endTime: line.endTime - offset
+                }));
+                finalSong = { ...finalSong, type: 'line', timedLines: finalTimedLines };
+            } else {
+                finalSong = { ...finalSong, type: 'note', timedLines: [] };
             }
-
-            const offset = song.timedLines[0].startTime;
-            const finalTimedLines = song.timedLines.map(line => ({
-                ...line,
-                endTime: line.endTime - offset
-            }));
-
-            const finalSong = { ...song, timedLines: finalTimedLines };
             onComplete(finalSong);
         };
         
@@ -558,10 +872,14 @@
                 );
                 
                 case 'ready': 
-                    const MOCK_TIME = 0;
                     return (
                     <div className="flex-grow flex flex-col p-4 relative overflow-hidden">
-                        <h2 className="text-xl font-bold mb-4 border-b border-surface-border-color pb-3 text-center">간주 확인하기</h2>
+                        <div className="flex-shrink-0 flex items-center justify-between mb-4 pb-3 border-b border-surface-border-color relative">
+                            <h2 className="text-xl font-bold text-center flex-grow">간주 확인하기</h2>
+                            <button onClick={() => setStep('input')} className="absolute right-0 px-3 py-1 text-xs font-bold rounded-md action-button bg-surface-strong-color">
+                                가사 재작성
+                            </button>
+                        </div>
                         
                         <div className="flex-grow overflow-y-auto space-y-3 px-4"> 
                             <p className="text-sm text-secondary-color font-bold text-center">가사 라인 사이에 간주(🎵)를 추가할 위치를 지정하세요.</p>
@@ -576,14 +894,26 @@
                             </div>
 
                             {lyricsLines.map((line, index) => {
-                                const mockLine = { text: line, startTime: 0, endTime: 1000 };
                                 const isInterlude = typeof line === 'string' && line.trim() === '🎵';
+                                let displayContent;
+                                if (typeof line === 'object' && line !== null) {
+                                    displayContent = (
+                                        <div>
+                                            <p className="font-semibold">{line.original}</p>
+                                            <p className="text-sm opacity-90">{line.translation}</p>
+                                            <p className="text-xs text-secondary-color">{line.pronunciation}</p>
+                                        </div>
+                                    );
+                                } else {
+                                    displayContent = <KaraokeLine line={{text: line}} elapsedTime={0} isPreview={true} />;
+                                }
+
                                 return (
                                     <React.Fragment key={index}>
                                         <div className={`p-4 bg-surface-color rounded-lg shadow-md border border-surface-border-color ${isInterlude ? 'flex items-center justify-between' : ''}`}> 
                                             <div>
                                                 <p className="text-sm text-secondary-color mb-2 font-mono">{index + 1}.</p>
-                                                <KaraokeLine line={mockLine} elapsedTime={MOCK_TIME} isPreview={true} /> 
+                                                {displayContent}
                                             </div>
                                             {isInterlude && (
                                                 <button onClick={() => handleDeleteLineInReady(index)} className="ml-4 text-red-color text-lg opacity-60 hover:opacity-100 transition-opacity action-button">
@@ -652,17 +982,25 @@
                             </div>
                         </div>
                     </div>);
-                case 'result': return (<div className="flex-grow flex flex-col justify-center items-center text-center gap-6 p-4">
-                    <i className="fas fa-check-circle text-6xl text-primary-color"></i>
-                    <h2 className="text-xl">타이밍 분석 완료!</h2>
-                    <div className="w-full max-w-xs space-y-3">
-                        <input type="text" value={song.title} onChange={e => setTitle(e.target.value)} placeholder="파일 이름 입력..." className="w-full p-3 text-center rounded-md outline-none bg-surface-strong-color" />
-                        <button onClick={() => setStep('edit')} className="w-full py-3 font-bold text-lg rounded-full action-button bg-surface-strong-color"><i className="fas fa-edit mr-2"></i>세부 편집</button>
-                        <button onClick={handleFinalSave} className="w-full py-3 font-bold text-lg rounded-full text-white action-button bg-primary-color mt-3">
-                            <i className="fas fa-save mr-2"></i>저장하고 라이브러리로 이동
-                        </button>
+                case 'result': return (
+                    <div className="flex-grow flex flex-col justify-center items-center text-center gap-6 p-4">
+                        <i className="fas fa-check-circle text-6xl text-primary-color"></i>
+                        <h2 className="text-xl">타이밍 분석 완료!</h2>
+                        <div className="w-full max-w-xs space-y-3">
+                            <input type="text" value={song.title} onChange={e => setTitle(e.target.value)} placeholder="파일 이름 입력..." className="w-full p-3 text-center rounded-md outline-none bg-surface-strong-color" />
+                            
+                            <button onClick={() => handleFinalSave('line')} className="w-full py-3 font-bold text-lg rounded-full text-white action-button bg-primary-color">
+                                <i className="fas fa-stopwatch mr-2"></i>타이밍과 함께 저장
+                            </button>
+                            <button onClick={() => handleFinalSave('note')} className="w-full py-3 font-bold text-lg rounded-full action-button bg-surface-strong-color">
+                                <i className="fas fa-file-alt mr-2"></i>가사만 저장 (노트)
+                            </button>
+                            <button onClick={() => setStep('edit')} className="w-full py-2 text-sm rounded-full action-button text-secondary-color mt-2">
+                                세부 편집으로 돌아가기
+                            </button>
+                        </div>
                     </div>
-                </div>);
+                );
                 case 'edit': return (
                     <TimingEditScreen 
                         hook={hook} 
@@ -700,18 +1038,233 @@
         );
     }
 
-    const RhythmTrack = React.memo(({ startTime, endTime, elapsedTime }) => {
-        const lineDuration = endTime - startTime;
-        const timeInLine = elapsedTime - startTime;
-        const progress = lineDuration > 0 ? Math.max(0, Math.min(1, timeInLine / lineDuration)) : 0;
+    function LyricsPracticeApp({ songs, setPracticeSongs, onSongColorChange, onSongEdit, openSongMenu, onSongDelete, onViewNote }) {
+        const [isEditMode, setIsEditMode] = useState(false);
+        const [selectedSongIds, setSelectedSongIds] = useState(new Set());
+
+        const handleDownloadSong = (songToDownload) => {
+            const jsonString = `data:text/json;charset=utf-8,${encodeURIComponent(JSON.stringify(songToDownload, null, 2))}`;
+            const link = document.createElement("a");
+            link.href = jsonString;
+            link.download = `${songToDownload.title}.json`;
+            link.click();
+        };
+
+        const toggleEditMode = () => {
+            setIsEditMode(prev => !prev);
+            setSelectedSongIds(new Set());
+        };
         
-        return (
-            <div className="rhythm-track">
-                <div className="judgement-line"></div>
-                <div className="rhythm-note" style={{ left: `${progress * 100}%` }}></div>
+        const handleToggleSelection = (songId) => {
+            setSelectedSongIds(prevSelectedIds => {
+                const newSelectedIds = new Set(prevSelectedIds);
+                if (newSelectedIds.has(songId)) {
+                    newSelectedIds.delete(songId);
+                } else {
+                    newSelectedIds.add(songId);
+                }
+                return newSelectedIds;
+            });
+        };
+
+        const handleDeleteSelected = () => {
+            if (selectedSongIds.size === 0) return;
+            setPracticeSongs(prevSongs => prevSongs.filter(song => !selectedSongIds.has(song.id)));
+            setSelectedSongIds(new Set());
+            setIsEditMode(false);
+        };
+
+        const TimedCardContent = ({ song, requestDelete, openColorPicker, onDownloadSong }) => (
+            <div className="card-common-content">
+                <div className="flex justify-between items-start text-sm opacity-80">
+                    <h3 className="font-bold">Lyric Flow</h3>
+                    <div className="flex items-center gap-2">
+                        <span className="flex items-center gap-1.5 bg-black/20 px-2 py-1 rounded-full text-xs"><i className="fas fa-headphones-alt"></i><span>{song.practiceCount || 0}</span></span>
+                        <button onClick={(e) => { e.stopPropagation(); onDownloadSong(song); }} className="w-8 h-8 rounded-full bg-black/20 flex items-center justify-center text-blue-400 hover:bg-blue-500 hover:text-white action-button"><i className="fas fa-download"></i></button>
+                        <button onClick={(e) => { e.stopPropagation(); requestDelete(song); }} className="w-8 h-8 rounded-full bg-black/20 flex items-center justify-center text-red-400 hover:bg-red-500 hover:text-white action-button"><i className="fas fa-trash-alt"></i></button>
+                    </div>
+                </div>
+                <div className="text-center">
+                    <h2 className="font-bold text-2xl truncate" style={{fontSize: '1.618rem'}}>{song.title}</h2>
+                </div>
+                <div className="flex justify-between items-end text-sm opacity-80">
+                    <span>{song.timedLines.length} Lines</span>
+                    <button onClick={(e) => { e.stopPropagation(); openColorPicker(song); }} className="w-8 h-8 rounded-full bg-black/20 flex items-center justify-center action-button"><i className="fas fa-palette"></i></button>
+                </div>
             </div>
         );
-    });
+
+        const NoteCardContent = ({ song }) => (
+            <div className="card-common-content text-left p-4 bg-surface-color rounded-3xl">
+                <div className="flex justify-between items-start text-sm opacity-80">
+                    <h3 className="font-bold">Lyric Flow</h3>
+                    <span className="text-primary-color font-bold text-xs flex items-center gap-1"><i className="fas fa-file-alt"></i> NOTE</span>
+                </div>
+                <div>
+                    <h2 className="font-bold text-xl truncate mb-2">{song.title}</h2>
+                    <p className="text-xs text-secondary-color leading-relaxed h-24 overflow-hidden relative">
+                        {song.lyrics.replace(/\n/g, ' ')}
+                        <div className="absolute bottom-0 left-0 right-0 h-12 bg-gradient-to-t from-surface-color to-transparent"></div>
+                    </p>
+                </div>
+                <div className="text-right text-xs text-secondary-color opacity-80">
+                    <span>{song.lyrics.split('\n').length} Lines</span>
+                </div>
+            </div>
+        );
+
+        const VerticalListView = ({ songs, openSongMenu, onViewNote, isEditMode, onSongEdit, requestDelete, openColorPicker, onDownloadSong, selectedSongIds, onToggleSelection }) => (
+            <div className="p-4 space-y-4 overflow-y-auto h-full">
+                {songs.map((song) => {
+                    const isSelected = selectedSongIds.has(song.id);
+                    const isNote = song.type === 'note';
+
+                    const handleClick = () => {
+                        if (isEditMode) {
+                            onToggleSelection(song.id);
+                        } else if (isNote) {
+                            onViewNote(song);
+                        } else {
+                            openSongMenu(song);
+                        }
+                    };
+
+                    return (
+                        <div key={song.id} onClick={handleClick} 
+                             className={`song-card w-full ${isNote ? '' : 'p-0'}`}
+                             style={{ 
+                                 background: isNote ? 'var(--surface-color)' : song.gradient,
+                                 opacity: (isEditMode && !isSelected) ? 0.6 : 1,
+                                 transform: (isEditMode && isSelected) ? 'scale(0.95)' : 'scale(1)' 
+                             }}>
+                            <div className={`selection-overlay ${isSelected ? 'selected' : ''}`}>
+                                <div className="selection-checkbox">{isSelected && <i className="fas fa-check"></i>}</div>
+                            </div>
+                            {isNote ? <NoteCardContent song={song} /> : <TimedCardContent {...{song, requestDelete, openColorPicker, onDownloadSong}} />}
+                        </div>
+                    );
+                })}
+            </div>
+        );
+
+        return (
+            <div className="h-full flex flex-col">
+                <AppHeader title="라이브러리">
+                    <button onClick={toggleEditMode} className={`action-button font-bold ${isEditMode ? 'text-primary-color' : 'text-secondary-color'}`}>
+                        {isEditMode ? '완료' : '편집'}
+                    </button>
+                </AppHeader>
+                <div className="page-content flex flex-col justify-center relative">
+                   {isEditMode && selectedSongIds.size > 0 && (
+                        <div className="absolute bottom-4 left-1/2 -translate-x-1/2 z-10 w-full max-w-sm px-4">
+                             <button onClick={handleDeleteSelected} className="w-full py-3 font-bold rounded-lg text-white action-button" style={{backgroundColor: 'var(--red-color)'}}>
+                                {selectedSongIds.size}개 항목 삭제
+                            </button>
+                        </div>
+                   )}
+                   {songs.length === 0 ? ( 
+                    <div className="text-center text-secondary-color p-4">
+                        <i className="fas fa-folder-open text-5xl mb-4"></i>
+                        <p>라이브러리가 비어있습니다.</p>
+                        <p className="text-sm mt-3 leading-6">
+                            화면의 아무 곳이나 <span className="font-bold text-amber-400">길게 눌러서</span> 메인 메뉴를 여세요.
+                        </p>
+                        <div className="mt-4 text-center text-secondary-color text-xs space-y-1">
+                            <p>메인 메뉴에서는 다음 기능을 이용할 수 있습니다:</p>
+                            <p>
+                                <span className="font-bold text-primary-color"><i className="fas fa-pen-ruler mr-1"></i>제작:</span> 새 타이밍 파일을 만듭니다.
+                            </p>
+                            <p>
+                                <span className="font-bold text-blue-400"><i className="fas fa-file-import mr-1"></i>파일 추가:</span> 외부 JSON 파일을 가져옵니다.
+                            </p>
+                            <p>
+                                <span className="font-bold text-secondary-color"><i className="fas fa-cog mr-1"></i>설정:</span> 테마 변경 및 데이터 관리 (내보내기/불러오기)를 합니다.
+                            </p>
+                        </div>
+                    </div> 
+                   ) : ( 
+                    <VerticalListView songs={songs} openSongMenu={openSongMenu} onViewNote={onViewNote} requestDelete={onSongDelete} openColorPicker={onSongColorChange} isEditMode={isEditMode} onSongEdit={onSongEdit} onDownloadSong={handleDownloadSong} selectedSongIds={selectedSongIds} onToggleSelection={handleToggleSelection} /> 
+                   )}
+                </div>
+            </div>
+        );
+    }
+    
+    function SettingsApp({ onOpenThemePicker, onTriggerFileAdd, onTriggerSessionAdd, onSessionExport, onBack }) {
+        return (
+            <div className="h-full flex flex-col">
+                <AppHeader 
+                    title="설정"
+                    headerLeft={
+                        <button onClick={onBack} className="text-secondary-color hover:text-text-color text-xl action-button w-10 h-10 flex items-center justify-center">
+                            <i className="fas fa-arrow-left"></i>
+                        </button>
+                    }
+                />
+                <div className="page-content p-4 space-y-4">
+                    <h3 className="font-bold text-secondary-color text-sm px-2">데이터 관리</h3>
+                    <div className="bg-surface-color rounded-lg">
+                        <button onClick={onTriggerFileAdd} className="w-full flex items-center justify-between p-4 action-button border-b border-surface-border-color"><span>단일 파일 추가</span><i className="fas fa-chevron-right text-secondary-color"></i></button>
+                        <button onClick={onTriggerSessionAdd} className="w-full flex items-center justify-between p-4 action-button border-b border-surface-border-color"><span>세션 불러오기</span><i className="fas fa-chevron-right text-secondary-color"></i></button>
+                        <button onClick={onSessionExport} className="w-full flex items-center justify-between p-4 action-button"><span>세션 내보내기</span><i className="fas fa-chevron-right text-secondary-color"></i></button>
+                    </div>
+                    <h3 className="font-bold text-secondary-color text-sm px-2 pt-4">앱 설정</h3>
+                    <div className="bg-surface-color rounded-lg">
+                        <button onClick={onOpenThemePicker} className="w-full flex items-center justify-between p-4 action-button"><span>테마 변경</span><i className="fas fa-chevron-right text-secondary-color"></i></button>
+                    </div>
+                </div>
+            </div>
+        );
+    }
+
+    function FloatingLyricsPlayer({ activeSong, onClose }) {
+        const [isPlaying, setIsPlaying] = useState(false);
+        const [elapsedTime, setElapsedTime] = useState(0);
+        const timerRef = useRef(null);
+        const startTimeRef = useRef(null);
+        
+        const timedLinesWithStartTime = useMemo(() => {
+            if (activeSong.timingMode === 'word') {
+                return activeSong.timedLines;
+            }
+            return activeSong.timedLines.map((line, index, arr) => ({
+                ...line, 
+                startTime: index === 0 ? 0 : arr[index - 1].endTime, 
+                endTime: line.endTime
+            }));
+        }, [activeSong]);
+        
+        const totalDuration = useMemo(() => timedLinesWithStartTime.length > 0 ? timedLinesWithStartTime[timedLinesWithStartTime.length - 1].endTime : 0, [timedLinesWithStartTime]);
+        const currentLineIndex = useMemo(() => { if (!timedLinesWithStartTime || timedLinesWithStartTime.length === 0) return -1; const index = timedLinesWithStartTime.findIndex(line => elapsedTime < line.endTime); if (index === -1 && elapsedTime >= totalDuration && totalDuration > 0) return timedLinesWithStartTime.length; return index; }, [elapsedTime, timedLinesWithStartTime, totalDuration]);
+
+        const animate = useCallback(() => { const newElapsedTime = Date.now() - startTimeRef.current; if (newElapsedTime >= totalDuration) { setElapsedTime(totalDuration); setIsPlaying(false); } else { setElapsedTime(newElapsedTime); timerRef.current = requestAnimationFrame(animate); } }, [totalDuration]);
+        useEffect(() => { if (isPlaying) { startTimeRef.current = Date.now() - elapsedTime; timerRef.current = requestAnimationFrame(animate); } else { cancelAnimationFrame(timerRef.current); } return () => cancelAnimationFrame(timerRef.current); }, [isPlaying, elapsedTime, animate]);
+
+        const handleSeek = (e) => { const rect = e.currentTarget.getBoundingClientRect(); const clickX = e.clientX - rect.left; const newTime = (clickX / rect.width) * totalDuration; setElapsedTime(newTime); };
+        const formatTime = (ms) => { const minutes = String(Math.floor(ms / 60000)).padStart(2, '0'); const seconds = String(Math.floor((ms % 60000) / 1000)).padStart(2, '0'); return `${minutes}:${seconds}`; };
+
+        const currentLine = currentLineIndex >= 0 && currentLineIndex < timedLinesWithStartTime.length ? timedLinesWithStartTime[currentLineIndex] : null;
+        const nextLine = currentLineIndex >= -1 && currentLineIndex + 1 < timedLinesWithStartTime.length ? timedLinesWithStartTime[currentLineIndex + 1] : null;
+
+        return (
+            <div className="player-background flex flex-col text-white">
+                <AppHeader title={activeSong.title} headerLeft={<button onClick={onClose} className="text-secondary-color hover:text-text-color text-xl action-button w-10 h-10 flex items-center justify-center"><i className="fas fa-times"></i></button>} isPlayerHeader={true} />
+                <main className="lyric-container-area">
+                    {currentLine && ( <div key={`current-${currentLineIndex}`} className="lyric-line-wrapper current-lyric-wrapper visible"><KaraokeLine line={currentLine} elapsedTime={elapsedTime} /></div> )}
+                    {nextLine && ( <div key={`next-${currentLineIndex}`} className="lyric-line-wrapper next-lyric-wrapper visible"><KaraokeLine line={nextLine} elapsedTime={elapsedTime} isPreview={true} /></div> )}
+                </main>
+                <div className="player-controls-overlay">
+                    <div className="flex items-center gap-4">
+                        <button onClick={() => setIsPlaying(!isPlaying)} className="w-12 h-12 flex-shrink-0 text-xl rounded-full action-button bg-white/20"><i className={`fas ${isPlaying ? 'fa-pause' : 'fa-play'}`}></i></button>
+                        <div className="w-full flex flex-col gap-1">
+                            <div onClick={handleSeek} className="w-full h-2 rounded-full cursor-pointer bg-white/30"><div style={{backgroundColor: 'var(--amber-color)', width: `${(elapsedTime / totalDuration) * 100}%`}} className="h-full rounded-full"></div></div>
+                            <div className="flex justify-between text-xs font-mono text-white/70"><span>{formatTime(elapsedTime)}</span><span>{formatTime(totalDuration)}</span></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        );
+    }
     
     function ChallengeModePlayer({ song, onClose }) {
         const JUDGEMENT_CONFIG = { PERFECT: { text: 'Perfect', color: 'var(--primary-color)', score: 100, window: 100 }, GREAT: { text: 'Great', color: 'var(--blue-color)', score: 70, window: 250 }, GOOD: { text: 'Good', color: 'var(--yellow-color)', score: 40, window: 400 }, MISS: { text: 'Miss', color: 'var(--red-color)', score: 0, window: Infinity }};
@@ -727,7 +1280,32 @@
         const startTimeRef = useRef(null);
         const missTimerRef = useRef(null);
 
-        const timedLinesWithStartTime = useMemo(() => song.timedLines.filter(line => line.text !== '🎵').map((line, index, arr) => ({...line, startTime: index === 0 ? 0 : arr[index - 1].endTime, endTime: line.endTime})), [song.timedLines]);
+        const gameNotes = useMemo(() => {
+            const lines = song.timedLines.filter(line => (line.text || line.line) !== '🎵');
+            
+            if (song.timingMode === 'word') {
+                return lines.flatMap(line => 
+                    (line.words && line.words.length > 0)
+                        ? line.words.map(word => ({
+                            ...word,
+                            parentLine: line.line
+                        }))
+                        : []
+                );
+            } else {
+                let lastEndTime = 0;
+                return lines.map(line => {
+                    const startTime = lastEndTime;
+                    lastEndTime = line.endTime;
+                    return {
+                        text: line.text,
+                        startTime: startTime,
+                        endTime: line.endTime,
+                        parentLine: line.text
+                    };
+                });
+            }
+        }, [song]);
 
         const animate = useCallback(() => { setElapsedTime(Date.now() - startTimeRef.current); timerRef.current = requestAnimationFrame(animate); }, []);
         
@@ -758,6 +1336,7 @@
             setLastJudgement({ ...judgement, key: Date.now() });
 
             if (judgement.text === 'Miss') {
+                setCombo(0);
                 restartGame();
                 return;
             }
@@ -770,7 +1349,7 @@
                 return newCombo;
             });
 
-            if (currentLineIndex + 1 >= timedLinesWithStartTime.length) {
+            if (currentLineIndex + 1 >= gameNotes.length) {
                 setStatus('finished');
             } else {
                 setCurrentLineIndex(prev => prev + 1);
@@ -778,11 +1357,11 @@
         };
 
         const handleTap = () => {
-            if (status !== 'playing' || currentLineIndex >= timedLinesWithStartTime.length) return;
+            if (status !== 'playing' || currentLineIndex >= gameNotes.length) return;
             
             clearTimeout(missTimerRef.current);
-            const currentLine = timedLinesWithStartTime[currentLineIndex];
-            const correctTime = currentLine.endTime;
+            const currentNote = gameNotes[currentLineIndex];
+            const correctTime = currentNote.endTime;
             const error = elapsedTime - correctTime;
             const judgement = getJudgement(error);
             processJudgement(judgement);
@@ -799,9 +1378,9 @@
         }, [status, animate]);
         
         useEffect(() => {
-            if (status !== 'playing' || currentLineIndex >= timedLinesWithStartTime.length) return;
-            const currentLine = timedLinesWithStartTime[currentLineIndex];
-            const missTime = currentLine.endTime + JUDGEMENT_CONFIG.GOOD.window;
+            if (status !== 'playing' || currentLineIndex >= gameNotes.length) return;
+            const currentNote = gameNotes[currentLineIndex];
+            const missTime = currentNote.endTime + JUDGEMENT_CONFIG.GOOD.window;
             
             const scheduleMiss = () => {
                 const delay = missTime - elapsedTime;
@@ -813,9 +1392,9 @@
             };
             scheduleMiss();
             return () => clearTimeout(missTimerRef.current);
-        }, [currentLineIndex, status, elapsedTime]);
+        }, [currentLineIndex, status, elapsedTime, gameNotes]);
 
-        const currentLine = timedLinesWithStartTime[currentLineIndex];
+        const currentNote = gameNotes[currentLineIndex];
         
         return (
             <div className="player-background flex flex-col text-white">
@@ -836,16 +1415,18 @@
                         <div className="flex-shrink-0 p-4 pt-16 text-center space-y-2">
                             <div className="flex justify-around items-center w-full max-w-md mx-auto">
                                 <div className="flex-1 text-left"><span className="text-sm text-secondary-color">SCORE</span><br/><span className="font-bold text-2xl">{totalScore.toLocaleString()}</span></div>
-                                <div className="flex-1 text-right"><span className="text-sm text-secondary-color">PROGRESS</span><br/><span className="font-bold text-2xl">{currentLineIndex} / {timedLinesWithStartTime.length}</span></div>
+                                <div className="flex-1 text-right"><span className="text-sm text-secondary-color">PROGRESS</span><br/><span className="font-bold text-2xl">{currentLineIndex} / {gameNotes.length}</span></div>
                             </div>
                         </div>
-                        <main className="flex-1 flex items-center justify-center relative -mt-16">
+                        <main className="flex-1 flex flex-col items-center justify-center relative -mt-16">
                             {status === 'failed' && <div className="failed-overlay"><div className="text-5xl font-black text-white">MISS</div></div>}
                             {lastJudgement && <div key={lastJudgement.key} className="judgement-effect" style={{ color: lastJudgement.color }}>{lastJudgement.text}</div>}
-                            {currentLine && (
-                                <div className="rhythm-track-container w-full">
-                                    <RhythmTrack startTime={currentLine.startTime} endTime={currentLine.endTime} elapsedTime={elapsedTime} />
-                                    <KaraokeLine line={currentLine} elapsedTime={elapsedTime} isPreview={true} />
+                            
+                            {currentNote && (
+                                <div className="rhythm-track-container w-full text-center">
+                                    <RhythmTrack startTime={currentNote.startTime} endTime={currentNote.endTime} elapsedTime={elapsedTime} />
+                                    <p className="text-lg text-secondary-color opacity-50 mt-8 truncate">{currentNote.parentLine}</p>
+                                    <p className="text-4xl font-bold mt-2">{currentNote.text}</p>
                                     <div className="mt-8 font-bold text-4xl">{combo}<span className="text-xl text-secondary-color ml-2">COMBO</span></div>
                                 </div>
                             )}
@@ -861,6 +1442,16 @@
         );
     }
     
+    const LibraryTimingEditScreen = ({ initialSongData, onSave, onCancel }) => {
+        const hook = useLyricsTiming(initialSongData);
+        return (
+            <div className="screen">
+                <AppHeader title="타이밍 수정" headerLeft={<button onClick={onCancel} className="text-secondary-color hover:text-text-color text-xl action-button w-10 h-10 flex items-center justify-center"><i className="fas fa-times"></i></button>} />
+                <TimingEditScreen hook={hook} onDone={onSave} title="타이밍 세부 편집" />
+            </div>
+        );
+    };
+
     const MainMenu = ({ menuData, onToggle, onNavigate, currentScreen, onFileAdd, onSessionAdd }) => {
         const { isOpen, x, y } = menuData;
         const menuItemsRef = useRef([]);
@@ -969,11 +1560,15 @@
         const [isThemePickerOpen, setIsThemePickerOpen] = useState(false);
         const [songToDelete, setSongToDelete] = useState(null);
         const [editingSong, setEditingSong] = useState(null);
+        const [refiningSong, setRefiningSong] = useState(null);
         const [isColorPickerOpen, setIsColorPickerOpen] = useState(false);
         const [activeSongMenu, setActiveSongMenu] = useState(null);
         const [renamingSong, setRenamingSong] = useState(null);
         const [mainMenu, setMainMenu] = useState({ isOpen: false, x: 0, y: 0 });
         const [tutorialState, setTutorialState] = useState({ isActive: false, currentStep: 0 });
+        const [showRefineGuidanceForSong, setShowRefineGuidanceForSong] = useState(null);
+        const [viewingNote, setViewingNote] = useState(null);
+        const [songToTakeTiming, setSongToTakeTiming] = useState(null);
         const currentTutorialAppState = useRef({}); 
         const singleFileRef = useRef(null);
         const sessionFileRef = useRef(null);
@@ -1007,12 +1602,31 @@
         const handleFileAdd = (event) => { const file = event.target.files[0]; if (!file) return; const reader = new FileReader(); reader.onload = (e) => { try { const data = JSON.parse(e.target.result); if (data.lyrics && data.timedLines) { const newSong = { id: Date.now(), title: file.name.replace('.json', ''), lyrics: data.lyrics, timedLines: data.timedLines, gradient: GRADIENTS[practiceSongs.length % GRADIENTS.length], practiceCount: 0 }; setPracticeSongs(prev => [...prev, newSong]); } else { alert("잘못된 파일 형식입니다."); } } catch (error) { alert("파일을 읽는 중 오류가 발생했습니다."); } }; reader.readAsText(file); event.target.value = null; };
         const handleSessionAdd = (event) => { const file = event.target.files[0]; if (!file) return; const reader = new FileReader(); reader.onload = (e) => { try { const data = JSON.parse(e.target.result); if (Array.isArray(data)) { const sanitized = data.map(song => ({ ...song, practiceCount: song.practiceCount || 0 })); setPracticeSongs(sanitized); } else { alert("잘못된 세션 파일 형식입니다."); } } catch (error) { alert("파일을 읽는 중 오류가 발생했습니다."); } }; reader.readAsText(file); event.target.value = null; };
         const handleSessionExport = () => { if(practiceSongs.length === 0) { alert("내보낼 데이터가 없습니다."); return; } const jsonString = `data:text/json;charset=utf-8,${encodeURIComponent(JSON.stringify(practiceSongs, null, 2))}`; const link = document.createElement("a"); link.href = jsonString; link.download = `lyric-flow-session.json`; link.click(); };
-        const handleAddNewSong = (newSongData) => { const newSong = { id: Date.now(), ...newSongData, gradient: GRADIENTS[practiceSongs.length % GRADIENTS.length], practiceCount: 0 }; setPracticeSongs(prev => [...prev, newSong]); setCurrentScreen('library'); };
+        
+        const handleTimingCreationComplete = (newSongData) => {
+            if (songToTakeTiming) {
+                setPracticeSongs(prev => prev.map(s => s.id === songToTakeTiming.id ? { ...s, ...newSongData, id: s.id } : s));
+            } else {
+                const newSong = { id: Date.now(), ...newSongData, gradient: GRADIENTS[practiceSongs.length % GRADIENTS.length], practiceCount: 0 };
+                setPracticeSongs(prev => [...prev, newSong]);
+            }
+            setSongToTakeTiming(null);
+            setCurrentScreen('library');
+        };
         
         const handleStartPractice = (song) => { setActiveSongMenu(null); setPracticeSongs(prev => prev.map(s => s.id === song.id ? {...s, practiceCount: (s.practiceCount || 0) + 1} : s)); setActiveSong(song); };
         const handleEndPractice = () => setActiveSong(null);
-        const handleStartChallenge = (song) => { setActiveSongMenu(null); setChallengeSong(song); };
+        
+        const handleStartChallenge = (song) => {
+            setActiveSongMenu(null);
+            if (song.timingMode === 'word' || song.type === 'word') {
+                setChallengeSong(song);
+            } else {
+                setShowRefineGuidanceForSong(song);
+            }
+        };
         const handleEndChallenge = () => setChallengeSong(null);
+
         const requestDelete = (song) => setSongToDelete(song);
         const confirmDelete = () => { setPracticeSongs(prev => prev.filter(s => s.id !== songToDelete.id)); setSongToDelete(null); setActiveSongMenu(null); };
         
@@ -1030,6 +1644,39 @@
         const handleSaveSong = (updatedSong) => { setPracticeSongs(prev => prev.map(s => s.id === updatedSong.id ? updatedSong : s)); setEditingSong(null); };
         const handleRequestRename = (song) => { setActiveSongMenu(null); setRenamingSong(song); };
         const handleConfirmRename = (songId, newTitle) => { setPracticeSongs(prev => prev.map(s => s.id === songId ? {...s, title: newTitle} : s)); setRenamingSong(null); };
+
+        const handleStartRefine = (song) => {
+            setActiveSongMenu(null);
+            setRefiningSong(song);
+        };
+
+        const handleEndRefine = (updatedSong) => {
+            if (updatedSong) {
+                setPracticeSongs(prev => prev.map(s => s.id === updatedSong.id ? updatedSong : s));
+            }
+            setRefiningSong(null);
+        };
+
+        const handleConfirmRefineGuidance = () => {
+            const songToRefine = showRefineGuidanceForSong;
+            setShowRefineGuidanceForSong(null);
+            if (songToRefine) {
+                handleStartRefine(songToRefine);
+            }
+        };
+
+        const handleViewNote = (note) => {
+            setViewingNote(note);
+        };
+
+        const handleStartTimingFromNote = (note, timingType) => {
+            if (timingType === 'word') {
+                alert("정밀 타이밍을 제작하려면, 먼저 라인 타이밍을 기록해야 합니다. 라인 타이밍 제작 화면으로 이동합니다.");
+            }
+            setSongToTakeTiming(note);
+            setViewingNote(null);
+            setCurrentScreen('creator');
+        };
 
         const handleStartTutorial = () => {
             setTutorialState({ isActive: true, currentStep: 0 });
@@ -1057,17 +1704,20 @@
         if (activeSong) return <FloatingLyricsPlayer activeSong={activeSong} onClose={handleEndPractice} />;
         if (challengeSong) return <ChallengeModePlayer song={challengeSong} onClose={handleEndChallenge} />;
         if (editingSong) return <LibraryTimingEditScreen initialSongData={editingSong} onSave={handleSaveSong} onCancel={() => setEditingSong(null)} />;
+        if (refiningSong) return <RefineTimingScreen song={refiningSong} onDone={handleEndRefine} />;
+        if (viewingNote) return <NoteViewerScreen note={viewingNote} onClose={() => setViewingNote(null)} onStartTiming={handleStartTimingFromNote} />;
 
         return (
             <div className="app-container" {...longPressEvents}>
                 <div className="page-content">
                     <div className="screen" style={{transform: currentScreen === 'library' ? 'translateX(0)' : 'translateX(-100%)', transition: 'transform 0.4s ease-in-out', zIndex: currentScreen === 'library' ? 1 : 0}}>
-                        <LyricsPracticeApp songs={practiceSongs} setPracticeSongs={setPracticeSongs} openSongMenu={setActiveSongMenu} onSongDelete={requestDelete} onSongColorChange={requestColorChange} onSongEdit={handleSongEdit} />
+                        <LyricsPracticeApp songs={practiceSongs} setPracticeSongs={setPracticeSongs} openSongMenu={setActiveSongMenu} onViewNote={handleViewNote} onSongDelete={requestDelete} onSongColorChange={requestColorChange} onSongEdit={handleSongEdit} />
                     </div>
                     <div className="screen" style={{transform: currentScreen === 'creator' ? 'translateX(0)' : 'translateX(100%)', transition: 'transform 0.4s ease-in-out', zIndex: currentScreen === 'creator' ? 1 : 0}}>
                         <TimingAnalyzerApp 
-                            onComplete={handleAddNewSong} 
-                            onBack={() => setCurrentScreen('library')} 
+                            initialData={songToTakeTiming}
+                            onComplete={handleTimingCreationComplete} 
+                            onBack={() => { setCurrentScreen('library'); setSongToTakeTiming(null); }} 
                             isTutorialActive={tutorialState.isActive}
                             onTutorialStep={handleTutorialNext}
                             currentTutorialAppState={currentTutorialAppState}
@@ -1109,84 +1759,26 @@
                 {isColorPickerOpen && <ColorPicker onSelect={confirmColorChange} onClose={() => setIsColorPickerOpen(false)} />}
                 {songToDelete && <ConfirmDeleteModal song={songToDelete} onConfirm={confirmDelete} onCancel={() => setSongToDelete(null)} />}
                 {isThemePickerOpen && <ThemePicker onSelect={changeTheme} onClose={() => setIsThemePickerOpen(false)} />}
-                {activeSongMenu && <SongActionSheet song={activeSongMenu} onPlay={handleStartPractice} onChallenge={handleStartChallenge} onEdit={handleSongEdit} onRename={handleRequestRename} onClose={() => setActiveSongMenu(null)} />}
+                {activeSongMenu && <SongActionSheet song={activeSongMenu} onPlay={handleStartPractice} onChallenge={handleStartChallenge} onEdit={handleSongEdit} onRefine={handleStartRefine} onRename={handleRequestRename} onClose={() => setActiveSongMenu(null)} />}
                 {renamingSong && <RenameSongModal song={renamingSong} onConfirm={handleConfirmRename} onCancel={() => setRenamingSong(null)} />}
+                {showRefineGuidanceForSong && <RefineGuidanceModal song={showRefineGuidanceForSong} onConfirm={handleConfirmRefineGuidance} onCancel={() => setShowRefineGuidanceForSong(null)} />}
             </div>
         );
     }
     
-    const SongActionSheet = ({ song, onPlay, onChallenge, onEdit, onRename, onClose }) => {
+    const SongActionSheet = ({ song, onPlay, onChallenge, onEdit, onRefine, onRename, onClose }) => {
         return (
             <div className="bottom-sheet-backdrop" onClick={onClose}>
                 <div className="bottom-sheet">
                     <h3 className="text-lg font-bold text-center mb-4">{song.title}</h3>
                     <div className="space-y-2">
                         <button onClick={() => onPlay(song)} className="w-full flex items-center p-4 rounded-lg bg-surface-strong-color action-button"><i className="fas fa-book-open w-6 text-center mr-3 text-primary-color"></i><span>연습하기</span></button>
-                         <button onClick={() => onChallenge(song)} className="w-full flex items-center p-4 rounded-lg bg-surface-strong-color action-button"><i className="fas fa-trophy w-6 text-center mr-3 text-amber-color"></i><span>도전하기</span></button>
-                         <button onClick={() => onEdit(song)} className="w-full flex items-center p-4 rounded-lg bg-surface-strong-color action-button"><i className="fas fa-edit w-6 text-center mr-3 text-blue-color"></i><span>타이밍 수정</span></button>
-                         <button onClick={() => onRename(song)} className="w-full flex items-center p-4 rounded-lg bg-surface-strong-color action-button"><i className="fas fa-pencil-alt w-6 text-center mr-3" style={{color: 'var(--yellow-color)'}}></i><span>이름 변경</span></button>
+                        <button onClick={() => onChallenge(song)} className="w-full flex items-center p-4 rounded-lg bg-surface-strong-color action-button"><i className="fas fa-trophy w-6 text-center mr-3 text-amber-color"></i><span>도전하기</span></button>
+                        <button onClick={() => onRefine(song)} className="w-full flex items-center p-4 rounded-lg bg-surface-strong-color action-button"><i className="fas fa-magic w-6 text-center mr-3 text-blue-color"></i><span>정밀 타이밍 제작</span></button>
+                        <button onClick={() => onEdit(song)} className="w-full flex items-center p-4 rounded-lg bg-surface-strong-color action-button"><i className="fas fa-edit w-6 text-center mr-3" style={{color: 'var(--yellow-color)'}}></i><span>타이밍 수정 (기존)</span></button>
+                        <button onClick={() => onRename(song)} className="w-full flex items-center p-4 rounded-lg bg-surface-strong-color action-button"><i className="fas fa-pencil-alt w-6 text-center mr-3" style={{color: 'var(--yellow-color)'}}></i><span>이름 변경</span></button>
                     </div>
                 </div>
-            </div>
-        );
-    };
-
-    const KaraokeLine = React.memo(({ line, elapsedTime, isPreview }) => {
-        const { text, startTime, endTime } = line;
-        const isPhonetic = typeof text === 'object' && text !== null;
-        const originalText = isPhonetic ? text.original : (text || '');
-        const lineDuration = endTime - startTime;
-        let progress = 0;
-        if (!isPreview && lineDuration > 0) { progress = Math.max(0, Math.min(1, (elapsedTime - startTime) / lineDuration)); } else if (!isPreview && elapsedTime >= endTime) { progress = 1; }
-        const highlightUpTo = Math.floor(progress * originalText.length);
-        return (<div><p className="original-lyric"><span className="highlight-char">{originalText.substring(0, highlightUpTo)}</span><span>{originalText.substring(highlightUpTo)}</span></p>{isPhonetic && (<><p className="translation-lyric">{text.translation}</p><p className="pronunciation-lyric">({text.pronunciation})</p></>)}</div>);
-    });
-
-    function FloatingLyricsPlayer({ activeSong, onClose }) {
-        const [isPlaying, setIsPlaying] = useState(false);
-        const [elapsedTime, setElapsedTime] = useState(0);
-        const timerRef = useRef(null);
-        const startTimeRef = useRef(null);
-        
-        const timedLinesWithStartTime = useMemo(() => activeSong.timedLines.map((line, index, arr) => ({...line, startTime: index === 0 ? 0 : arr[index - 1].endTime, endTime: line.endTime})), [activeSong]);
-        const totalDuration = useMemo(() => timedLinesWithStartTime.length > 0 ? timedLinesWithStartTime[timedLinesWithStartTime.length - 1].endTime : 0, [timedLinesWithStartTime]);
-        const currentLineIndex = useMemo(() => { if (!timedLinesWithStartTime || timedLinesWithStartTime.length === 0) return -1; const index = timedLinesWithStartTime.findIndex(line => elapsedTime < line.endTime); if (index === -1 && elapsedTime >= totalDuration && totalDuration > 0) return timedLinesWithStartTime.length; return index; }, [elapsedTime, timedLinesWithStartTime, totalDuration]);
-
-        const animate = useCallback(() => { const newElapsedTime = Date.now() - startTimeRef.current; if (newElapsedTime >= totalDuration) { setElapsedTime(totalDuration); setIsPlaying(false); } else { setElapsedTime(newElapsedTime); timerRef.current = requestAnimationFrame(animate); } }, [totalDuration]);
-        useEffect(() => { if (isPlaying) { startTimeRef.current = Date.now() - elapsedTime; timerRef.current = requestAnimationFrame(animate); } else { cancelAnimationFrame(timerRef.current); } return () => cancelAnimationFrame(timerRef.current); }, [isPlaying, elapsedTime, animate]);
-
-        const handleSeek = (e) => { const rect = e.currentTarget.getBoundingClientRect(); const clickX = e.clientX - rect.left; const newTime = (clickX / rect.width) * totalDuration; setElapsedTime(newTime); };
-        const formatTime = (ms) => { const minutes = String(Math.floor(ms / 60000)).padStart(2, '0'); const seconds = String(Math.floor((ms % 60000) / 1000)).padStart(2, '0'); return `${minutes}:${seconds}`; };
-
-        const currentLine = currentLineIndex >= 0 && currentLineIndex < timedLinesWithStartTime.length ? timedLinesWithStartTime[currentLineIndex] : null;
-        const nextLine = currentLineIndex >= -1 && currentLineIndex + 1 < timedLinesWithStartTime.length ? timedLinesWithStartTime[currentLineIndex + 1] : null;
-
-        return (
-            <div className="player-background flex flex-col text-white">
-                <AppHeader title={activeSong.title} headerLeft={<button onClick={onClose} className="text-secondary-color hover:text-text-color text-xl action-button w-10 h-10 flex items-center justify-center"><i className="fas fa-times"></i></button>} isPlayerHeader={true} />
-                <main className="lyric-container-area">
-                    {currentLine && ( <div key={`current-${currentLineIndex}`} className="lyric-line-wrapper current-lyric-wrapper visible"><KaraokeLine line={currentLine} elapsedTime={elapsedTime} /></div> )}
-                    {nextLine && ( <div key={`next-${currentLineIndex}`} className="lyric-line-wrapper next-lyric-wrapper visible"><KaraokeLine line={nextLine} elapsedTime={elapsedTime} isPreview={true} /></div> )}
-                </main>
-                <div className="player-controls-overlay">
-                    <div className="flex items-center gap-4">
-                        <button onClick={() => setIsPlaying(!isPlaying)} className="w-12 h-12 flex-shrink-0 text-xl rounded-full action-button bg-white/20"><i className={`fas ${isPlaying ? 'fa-pause' : 'fa-play'}`}></i></button>
-                        <div className="w-full flex flex-col gap-1">
-                            <div onClick={handleSeek} className="w-full h-2 rounded-full cursor-pointer bg-white/30"><div style={{backgroundColor: 'var(--amber-color)', width: `${(elapsedTime / totalDuration) * 100}%`}} className="h-full rounded-full"></div></div>
-                            <div className="flex justify-between text-xs font-mono text-white/70"><span>{formatTime(elapsedTime)}</span><span>{formatTime(totalDuration)}</span></div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        );
-    }
-    
-    const LibraryTimingEditScreen = ({ initialSongData, onSave, onCancel }) => {
-        const hook = useLyricsTiming(initialSongData);
-        return (
-            <div className="screen">
-                <AppHeader title="타이밍 수정" headerLeft={<button onClick={onCancel} className="text-secondary-color hover:text-text-color text-xl action-button w-10 h-10 flex items-center justify-center"><i className="fas fa-times"></i></button>} />
-                <TimingEditScreen hook={hook} onDone={onSave} title="타이밍 세부 편집" />
             </div>
         );
     };
