@@ -2,479 +2,171 @@
 <html lang="ko">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>미래 예측 가계부</title>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.16.105/pdf.min.js"></script>
+    <title>Dynamic Multi-framework Test Harness</title>
     <style>
-        @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;700&family=Nanum+Gothic+Coding&display=swap');
-        :root {
-            --background-color: #f0f0f0;
-            --receipt-bg-color: #fdfaf4;
-            --text-color: #2b2b2b;
-            --primary-color: #5a32d1;
-            --secondary-color: #f8f9fa;
-            --border-color: #dee2e6;
-        }
-        body {
-            font-family: 'Nanum Gothic Coding', monospace;
-            background-color: var(--background-color);
-            margin: 0;
-            padding: 2rem 1rem;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-        }
-        .container { max-width: 450px; width: 100%; }
-        header { text-align: center; margin-bottom: 2rem; color: var(--text-color); }
-        header h1 { font-family: 'Noto Sans KR', sans-serif; }
-        .upload-section {
-            background-color: #fff;
-            border-radius: 12px;
-            padding: 2rem;
-            box-shadow: 0 4px 12px rgba(0,0,0,0.05);
-            text-align: center;
-            margin-bottom: 2rem;
-            transition: opacity 0.5s;
-        }
-        .drop-zone {
-            border: 2px dashed #ccc;
-            border-radius: 12px;
-            padding: 2rem;
-            cursor: pointer;
-            transition: background-color 0.2s, border-color 0.2s;
-        }
-        .drop-zone.drag-over { background-color: #e9ecef; border-color: var(--primary-color); }
-        .main-button {
-            border: none; border-radius: 8px; background-color: var(--primary-color);
-            color: white; font-size: 1rem; font-weight: 700; cursor: pointer;
-            width: 100%; padding: 1rem; margin-top: 1rem; transition: background-color 0.2s;
-        }
-        .main-button:disabled { background-color: #999; cursor: not-allowed; }
-        .main-button:hover:not(:disabled) { background-color: #4828a5; }
-
-        .receipt-wrapper { display: none; }
-        .receipt {
-            background-color: var(--receipt-bg-color);
-            color: var(--text-color);
-            padding: 2rem;
-            box-shadow: 5px 5px 15px rgba(0,0,0,0.1);
-            border-bottom: 3px solid #ddd;
-        }
-        .receipt-header, .receipt-footer { text-align: center; }
-        .receipt-header h2 { margin: 0; font-size: 1.2rem; }
-        .receipt-header p { margin: 0.5rem 0; font-size: 0.8rem; }
-        .receipt-info { font-size: 0.8rem; text-align: left; margin: 1rem 0; }
-        .receipt-divider { border: 0; border-top: 2px dashed var(--text-color); margin: 1rem 0; }
-        .receipt-items .item, .receipt-items .header { display: flex; justify-content: space-between; margin-bottom: 0.5rem; }
-        .receipt-items .header { font-weight: 700; }
-        .receipt-total { text-align: right; }
-        .receipt-total p { margin: 0.5rem 0; font-size: 1.1rem; }
-        .receipt-total h3 { margin: 0; font-size: 1.8rem; }
-        .receipt-footer { font-size: 0.8rem; margin-top: 1rem; }
-        .receipt-footer .final-joke { margin-top: 1rem; font-size: 1rem; font-weight: 700; line-height: 1.6; }
-        .receipt-disclaimer { font-size: 0.7rem; color: #999; margin-top: 1.5rem; text-align: center; }
-
-        .action-section {
-            display: none;
-            text-align: center;
-            background-color: #fff;
-            border-radius: 12px;
-            padding: 2rem;
-            margin-top: 2rem;
-            box-shadow: 0 4px 12px rgba(0,0,0,0.05);
-        }
-        .action-section h2 { font-family: 'Noto Sans KR', sans-serif; margin-top: 0; }
-        #action-suggestions { display: none; margin-top: 1.5rem; }
-        #action-suggestions h3 { font-family: 'Noto Sans KR', sans-serif; }
-        .suggestion-card {
-            background-color: var(--secondary-color);
-            border-radius: 8px;
-            padding: 1rem;
-            margin-bottom: 0.5rem;
-            color: var(--text-color);
-            font-size: 1rem;
-            font-weight: 700;
-        }
-        
-        .modal-overlay {
-            position: fixed; top: 0; left: 0; right: 0; bottom: 0;
-            background-color: rgba(0, 0, 0, 0.6);
-            display: none; justify-content: center; align-items: center; z-index: 1000;
-        }
-        .modal-content {
-            background-color: white; padding: 2rem; border-radius: 12px;
-            width: 90%; max-width: 800px; max-height: 90vh;
-            display: flex; flex-direction: column;
-        }
-        .modal-header { text-align: center; margin-bottom: 1.5rem; }
-        .modal-body { flex-grow: 1; overflow-y: auto; border: 1px solid var(--border-color); border-radius: 8px; }
-        #preview-table { width: 100%; border-collapse: collapse; }
-        #preview-table th, #preview-table td { padding: 0.8rem; text-align: left; border-bottom: 1px solid var(--border-color); vertical-align: middle; }
-        #preview-table th { background-color: var(--secondary-color); font-weight: 700; }
-        #preview-table input[type="text"] { width: 100%; border: 1px solid transparent; padding: 0.5rem; border-radius: 4px; background-color: transparent; font-family: 'Noto Sans KR', sans-serif;}
-        #preview-table input[type="text"]:focus { border-color: var(--primary-color); outline: none; background-color: #f0e6ff; }
-        .modal-footer { padding-top: 1.5rem; display: flex; justify-content: flex-end; gap: 1rem; }
-        .secondary-button {
-            display: none;
-            width: 100%;
-            padding: 1rem;
-            margin-top: 1rem;
-            border-radius: 8px;
-            font-size: 1rem;
-            font-weight: 700;
-            cursor: pointer;
-            background-color: transparent;
-            border: 2px solid var(--primary-color);
-            color: var(--primary-color);
-            transition: background-color 0.2s, color 0.2s;
-            font-family: 'Noto Sans KR', sans-serif;
-        }
-        .secondary-button:hover {
-            background-color: var(--primary-color);
-            color: white;
-        }
+        body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif; margin: 0; background-color: #f0f0f0; padding: 20px; }
+        h1 { text-align: center; color: #333; }
+        .main-container { max-width: 1200px; margin: 0 auto; }
+        #html-input { width: 100%; height: 200px; box-sizing: border-box; border: 1px solid #ccc; border-radius: 8px; padding: 10px; font-family: monospace; font-size: 13px; margin-bottom: 20px; resize: vertical; }
+        #run-tests-btn { display: block; width: 250px; margin: 0 auto 20px auto; padding: 12px; background-color: #007bff; color: white; border: none; border-radius: 8px; font-size: 16px; font-weight: bold; cursor: pointer; transition: background-color 0.2s; }
+        #run-tests-btn:hover { background-color: #0056b3; }
+        #dashboard { display: flex; flex-wrap: wrap; justify-content: space-around; gap: 20px; }
+        .test-suite { flex: 1; min-width: 350px; border: 1px solid #ccc; border-radius: 8px; background-color: white; box-shadow: 0 2px 5px rgba(0,0,0,0.1); display: flex; flex-direction: column; }
+        .suite-header { background-color: #444; color: white; padding: 10px; border-top-left-radius: 7px; border-top-right-radius: 7px; font-weight: bold; }
+        .iframe-container { flex-grow: 1; }
+        iframe { width: 100%; height: 100%; border: none; min-height: 400px; }
     </style>
 </head>
 <body>
-    <div class="container">
-        <header>
-            <h1>🔮 미래 예측 가계부</h1>
-            <p id="header-subtitle">토스(Toss) 거래내역 PDF로 10년 뒤 영수증을 미리 받아보세요.</p>
-        </header>
-
-        <main>
-            <section id="upload-screen" class="upload-section">
-                <div id="drop-zone" class="drop-zone">
-                    <p>여기에 PDF 파일을 드래그하세요</p>
-                    <p id="file-name-display" style="color: var(--primary-color); font-weight: 700;"></p>
-                </div>
-                <input type="file" id="file-input" accept=".pdf" style="display: none;">
-                <button id="analyze-button" class="main-button" disabled>미래 청구서 발행하기</button>
-            </section>
-            
-            <section id="result-screen" class="receipt-wrapper">
-                <div class="receipt">
-                    <div class="receipt-header">
-                        <h2>*** 10년 후 미래 청구서 ***</h2>
-                        <p>발행: 🔮미래예측가계부</p>
-                    </div>
-                    <div class="receipt-info">
-                        <p>청구 대상: 미래의 당신</p>
-                        <p id="receipt-date">청구일: 2035년 09월 28일</p>
-                    </div>
-                    <hr class="receipt-divider">
-                    <div class="receipt-items">
-                        <div class="header"><span>항목 (월평균)</span><span>금액</span></div>
-                        <div id="receipt-items-container"></div>
-                    </div>
-                    <hr class="receipt-divider">
-                    <div class="receipt-total">
-                        <p>10년 후 예상 청구 금액</p>
-                        <h3 id="receipt-total-amount">₩ 0</h3>
-                    </div>
-                    <hr class="receipt-divider">
-                    <div class="receipt-footer">
-                        <p>※ 교환 및 환불 절대 불가 ※</p>
-                        <div id="receipt-comparison" class="final-joke"></div>
-                        <p class="receipt-disclaimer">*이번 달 소비 패턴 기준 단순 예측이며, 실제 미래와는 다를 수 있습니다.</p>
-                    </div>
-                </div>
-                <button id="reset-button" class="main-button">새로운 미래 보기</button>
-            </section>
-
-            <button id="compare-beta-button" class="secondary-button">과연 지난달의 나는 얼마나 썼을까?</button>
-            
-            <section id="action-section" class="action-section">
-                <h2>그래서, 이제 뭘 할 수 있을까요?</h2>
-                <button id="action-button" class="main-button" style="background-color: #198754;">이 지출, 10% 줄여보기</button>
-                <div id="action-suggestions">
-                    <h3>여기서부터 시작해보세요!</h3>
-                    <div id="suggestion-container"></div>
-                </div>
-            </section>
-        </main>
-    </div>
-
-    <div id="pdf-preview-modal" class="modal-overlay">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h2>PDF 추출 결과 확인</h2>
-                <p>AI가 추출한 거래 내역입니다. 이벤트성 지출처럼 예측에 포함하고 싶지 않은 항목은 체크 해제해주세요.</p>
+    <div class="main-container">
+        <h1>Dynamic Multi-framework Test Harness</h1>
+        <textarea id="html-input" placeholder="여기에 테스트할 HTML 코드를 붙여넣으세요..."></textarea>
+        <button id="run-tests-btn">Run All Tests</button>
+        <div id="dashboard">
+            <div class="test-suite">
+                <div class="suite-header">QUnit</div>
+                <div id="qunit-container" class="iframe-container"></div>
             </div>
-            <div class="modal-body">
-                <table id="preview-table">
-                    <thead>
-                        <tr>
-                            <th>거래일시</th>
-                            <th>적요</th>
-                            <th>거래금액</th>
-                            <th>예측 포함</th>
-                        </tr>
-                    </thead>
-                    <tbody></tbody>
-                </table>
+            <div class="test-suite">
+                <div class="suite-header">Jasmine</div>
+                <div id="jasmine-container" class="iframe-container"></div>
             </div>
-            <div class="modal-footer">
-                <button id="cancel-preview-btn" class="main-button" style="background-color: #6c757d;">취소</button>
-                <button id="confirm-preview-btn" class="main-button">이 내용으로 분석</button>
+            <div class="test-suite">
+                <div class="suite-header">Mocha</div>
+                <div id="mocha-container" class="iframe-container"></div>
             </div>
         </div>
     </div>
 
-    <script type="module">
-        pdfjsLib.GlobalWorkerOptions.workerSrc = `https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.16.105/pdf.worker.min.js`;
-
-        const CATEGORY_RULES = {
-          '🍔 식비': ['맘스터치', 'BHC', '배달의민족', '요기요', '버거킹', '롯데리아', 'GS25', 'CU', '세븐일레븐', '더베네푸드'],
-          '☕ 카페/간식': ['스타벅스', '이디야', '투썸플레이스', '메가커피', '컴포즈커피', '배스킨라빈스', '던킨', '커피니'],
-          '🚌 교통': ['카카오모빌리티', '코레일', '지하철', '버스', '택시', 'SRT', '주유', '교통카드'],
-          '🛍️ 쇼핑': ['쿠팡', '쿠페이', '네이버페이', '지마켓', '11번가', '올리브영', '무신사', '오늘의집', '스마일페이', '다이소', '알라딘'],
-          '🏠 생활/공과금': ['관리비', '통신', '가스', '전기', '수도', 'KT'],
-          '🎬 문화/여가': ['CGV', '롯데시네마', '메가박스', '넷플릭스', '유튜브', '멜론', '교보문고', '비바노래연습장', 'Google Digital'],
-          '💸 금융/기타': ['오픈뱅킹', '이자', '캐시백', '복권', '지로', '삼성전자', '네이버 파이낸셜'],
-        };
-
-        let selectedFile = null;
-        let currentSummary = {};
-
-        const dropZone = document.getElementById('drop-zone');
-        const fileInput = document.getElementById('file-input');
-        const analyzeButton = document.getElementById('analyze-button');
-        const fileNameDisplay = document.getElementById('file-name-display');
-        const uploadScreen = document.getElementById('upload-screen');
-        const resultScreen = document.getElementById('result-screen');
-        const resetButton = document.getElementById('reset-button');
-        const pdfPreviewModal = document.getElementById('pdf-preview-modal');
-        const previewTbody = document.querySelector('#preview-table tbody');
-        const confirmPreviewBtn = document.getElementById('confirm-preview-btn');
-        const cancelPreviewBtn = document.getElementById('cancel-preview-btn');
-        const actionSection = document.getElementById('action-section');
-        const actionButton = document.getElementById('action-button');
-        const actionSuggestions = document.getElementById('action-suggestions');
-        const suggestionContainer = document.getElementById('suggestion-container');
-        const compareBetaButton = document.getElementById('compare-beta-button');
-        
-        const handleFileSelect = (file) => {
-            if (!file || !file.type.includes('pdf')) return;
-            selectedFile = file;
-            fileNameDisplay.textContent = file.name;
-            analyzeButton.disabled = false;
-        };
-        
-        dropZone.addEventListener('click', () => fileInput.click());
-        fileInput.addEventListener('change', () => handleFileSelect(fileInput.files[0]));
-        ['dragenter', 'dragover', 'dragleave', 'drop'].forEach(eName => dropZone.addEventListener(eName, e => { e.preventDefault(); e.stopPropagation(); }));
-        ['dragenter', 'dragover'].forEach(eName => dropZone.addEventListener(eName, () => dropZone.classList.add('drag-over')));
-        ['dragleave', 'drop'].forEach(eName => dropZone.addEventListener(eName, () => dropZone.classList.remove('drag-over')));
-        dropZone.addEventListener('drop', (e) => handleFileSelect(e.dataTransfer.files[0]));
-
-        analyzeButton.addEventListener('click', () => {
-            if (!selectedFile) return;
-            analyzeButton.textContent = '미래 분석 중...';
-            analyzeButton.disabled = true;
-            parsePdfFile();
-        });
-        
-        resetButton.addEventListener('click', resetApp);
-
-        compareBetaButton.addEventListener('click', () => {
-            alert('이 기능에 관심 있으신가요? 가장 많은 분들이 눌러주신 기능부터 먼저 개발됩니다. 소중한 의견 감사합니다!');
-        });
-
-        async function parsePdfFile() {
-            const reader = new FileReader();
-            reader.onload = async (e) => {
-                try {
-                    const typedarray = new Uint8Array(e.target.result);
-                    const pdf = await pdfjsLib.getDocument(typedarray).promise;
-                    let fullText = '';
-                    for (let i = 1; i <= pdf.numPages; i++) {
-                        const page = await pdf.getPage(i);
-                        const textContent = await page.getTextContent();
-                        fullText += textContent.items.map(item => item.str).join('\n');
+    <script>
+        // Phase 3에서 정의한 데이터 구조
+        const testFrameworks = [
+          {
+            id: 'qunit',
+            name: 'QUnit',
+            containerId: 'qunit-container',
+            config: {
+              css: ['https://code.jquery.com/qunit/qunit-2.20.0.css'],
+              js: ['https://code.jquery.com/qunit/qunit-2.20.0.js'],
+              setup: ''
+            },
+            testSource: `
+              QUnit.module('Lyric Flow App Basic Tests', function() {
+                QUnit.test('DOM Rendering Test', function(assert) {
+                  const done = assert.async();
+                  // React가 렌더링될 시간을 줍니다.
+                  setTimeout(() => {
+                    const root = document.getElementById('root');
+                    assert.ok(root, '#root element should exist');
+                    const appContainer = root.querySelector('.app-container');
+                    assert.ok(appContainer, '.app-container should be rendered inside #root');
+                    done();
+                  }, 1500);
+                });
+              });
+            `
+          },
+          {
+            id: 'jasmine',
+            name: 'Jasmine',
+            containerId: 'jasmine-container',
+            config: {
+              css: ['https://cdnjs.cloudflare.com/ajax/libs/jasmine/4.5.0/jasmine.css'],
+              js: [
+                'https://cdnjs.cloudflare.com/ajax/libs/jasmine/4.5.0/jasmine.js',
+                'https://cdnjs.cloudflare.com/ajax/libs/jasmine/4.5.0/jasmine-html.js',
+                'https://cdnjs.cloudflare.com/ajax/libs/jasmine/4.5.0/boot.js'
+              ],
+              setup: ''
+            },
+            testSource: `
+              describe("Lyric Flow App Basic Tests", function() {
+                it("should have a root element", function(done) {
+                  setTimeout(() => {
+                    const root = document.getElementById('root');
+                    expect(root).not.toBeNull();
+                    done();
+                  }, 1500);
+                });
+              });
+            `
+          },
+          {
+            id: 'mocha',
+            name: 'Mocha',
+            containerId: 'mocha-container',
+            config: {
+              css: ['https://cdnjs.cloudflare.com/ajax/libs/mocha/9.2.2/mocha.min.css'],
+              js: [
+                'https://cdnjs.cloudflare.com/ajax/libs/mocha/9.2.2/mocha.min.js',
+                'https://cdnjs.cloudflare.com/ajax/libs/chai/4.3.6/chai.min.js'
+              ],
+              setup: `
+                mocha.setup('bdd');
+                const expect = chai.expect;
+              `
+            },
+            testSource: `
+              describe('Lyric Flow App Basic Tests', function() {
+                it('should have an app container', function(done) {
+                  this.timeout(2000); // Mocha의 비동기 타임아웃 설정
+                  setTimeout(() => {
+                    const appContainer = document.querySelector('.app-container');
+                    expect(appContainer).to.exist;
+                    done();
+                  }, 1500);
+                });
+                
+                // mocha.run()은 모든 테스트 스크립트가 로드된 후 마지막에 한 번만 호출되어야 합니다.
+                it('should start tests', function() {
+                    window.onload = function() {
+                        mocha.run();
                     }
-                    const extractedData = intelligentParse(fullText);
-                    if (extractedData.length === 0) throw new Error('PDF에서 유효한 거래 내역을 찾지 못했습니다.');
-                    
-                    renderPreviewTable(extractedData);
-                    pdfPreviewModal.style.display = 'flex';
-                } catch (err) {
-                    alert(`오류: ${err.message}`);
-                    resetApp();
-                }
-            };
-            reader.readAsArrayBuffer(selectedFile);
+                });
+              });
+            `
+          }
+        ];
+
+        // --- Main Application Logic ---
+
+        const htmlInput = document.getElementById('html-input');
+        const runTestsBtn = document.getElementById('run-tests-btn');
+
+        // 예시 코드를 textarea에 미리 채워넣습니다.
+        // 실제 사용 시에는 사용자가 직접 붙여넣게 됩니다.
+        htmlInput.value = `<!DOCTYPE html>
+                            <html lang="ko">
+                            <head>
+                                <meta charset="UTF-8" />
+                                <title>Test Target</title>
+                            </head>
+                            <body>
+                                <div id="root"></div>
+                                <script src="https://unpkg.com/react@18/umd/react.development.js"><\/script>
+                                <script src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"><\/script>
+                                <script src="https://unpkg.com/@babel/standalone/babel.min.js"><\/script>
+                                <script type="text/babel">
+                                    function App() {
+                                        return (
+                                            <div className="app-container">
+                                                <h1>Hello from React!</h1>
+                                                <i className="fas fa-folder-open"></i>
+                                            </div>
+                                        );
+                                    }
+                                    ReactDOM.createRoot(document.getElementById('root')).render(<App />);
+                                <\/script>
+                            </body>
+                            </html>`;
+
+        runTestsBtn.addEventListener('click', runAllTests);
+
+        function runAllTests() {
+            console.log('Button clicked. Preparing to run all tests...');
+            // 이 함수는 다음 지시에서 구현될 것입니다.
         }
 
-        function intelligentParse(text) {
-            const lines = text.split('\n').map(line => line.trim()).filter(line => line);
-            const transactions = [];
-            let currentTransactionParts = [];
-            lines.reverse();
-            for (const line of lines) {
-                if (/^\d{4}[-.]\d{2}[-.]\d{2}/.test(line)) {
-                    currentTransactionParts.push(line);
-                    currentTransactionParts.reverse();
-                    const fullLine = currentTransactionParts.join(' ');
-                    const parts = fullLine.split(/\s+/).filter(Boolean);
-                    if (parts.length >= 5) {
-                        const date = parts[0];
-                        const time = parts[1];
-                        const type = parts[2];
-                        const amount = parts[3];
-                        const description = parts.slice(5).join(' ');
-                        if (['체크카드결제', '출금', '지로출금', '오픈뱅킹'].includes(type)) {
-                            const numericAmount = Math.abs(parseInt(amount.replace(/,/g, ''), 10));
-                            if (!isNaN(numericAmount)) {
-                                transactions.push({
-                                    date: `${date} ${time}`,
-                                    description: description,
-                                    amount: `-${numericAmount}`
-                                });
-                            }
-                        }
-                    }
-                    currentTransactionParts = [];
-                } else {
-                    currentTransactionParts.push(line);
-                }
-            }
-            return transactions.reverse();
-        }
-        
-        function renderPreviewTable(data) {
-            previewTbody.innerHTML = '';
-            data.forEach((row, index) => {
-                const tr = document.createElement('tr');
-                tr.innerHTML = `
-                    <td><input type="text" data-field="date" value="${row.date || ''}"></td>
-                    <td><input type="text" data-field="description" value="${row.description || ''}"></td>
-                    <td><input type="text" data-field="amount" value="${row.amount || ''}"></td>
-                    <td style="text-align: center;"><input type="checkbox" data-field="include" checked></td>
-                `;
-                previewTbody.appendChild(tr);
-            });
-        }
-
-        confirmPreviewBtn.addEventListener('click', () => {
-            const confirmedData = Array.from(previewTbody.querySelectorAll('tr')).map(tr => ({
-                '거래일시': tr.querySelector('[data-field="date"]').value,
-                '적요': tr.querySelector('[data-field="description"]').value,
-                '거래금액': tr.querySelector('[data-field="amount"]').value,
-                '예측포함': tr.querySelector('[data-field="include"]').checked,
-            }));
-            pdfPreviewModal.style.display = 'none';
-            processData(confirmedData);
-        });
-
-        cancelPreviewBtn.addEventListener('click', () => {
-            pdfPreviewModal.style.display = 'none';
-            resetApp();
-        });
-
-        function processData(data) {
-            const transactions = data
-                .filter(row => row['예측포함'])
-                .map(row => ({
-                    description: row['적요'] || '',
-                    amount: parseInt(String(row['거래금액']).replace(/,/g, '') || '0', 10),
-                }))
-                .filter(tx => tx.description && !isNaN(tx.amount) && tx.amount < 0);
-
-            if (transactions.length === 0) {
-                alert('유효한 지출 내역을 찾을 수 없습니다.');
-                resetApp();
-                return;
-            }
-
-            const categorized = categorizeTransactions(transactions);
-            currentSummary = calculateCategorySummary(categorized);
-            renderReceiptResults(currentSummary);
-        }
-
-        function categorizeTransactions(transactions) {
-            return transactions.map(tx => {
-                for (const category in CATEGORY_RULES) {
-                    if (CATEGORY_RULES[category].some(keyword => tx.description.toUpperCase().includes(keyword.toUpperCase()))) {
-                        return { ...tx, category };
-                    }
-                }
-                return { ...tx, category: '💸 금융/기타' };
-            });
-        }
-
-        function calculateCategorySummary(transactions) {
-            const summary = {};
-            transactions.forEach(tx => {
-                const category = tx.category || '💸 금융/기타';
-                summary[category] = (summary[category] || 0) + Math.abs(tx.amount);
-            });
-            return summary;
-        }
-
-        function renderReceiptResults(summary) {
-            const monthlySpending = Object.values(summary).reduce((sum, current) => sum + current, 0);
-            const tenYearProjection = monthlySpending * 12 * 10;
-            
-            const futureDate = new Date();
-            futureDate.setFullYear(futureDate.getFullYear() + 10);
-            document.getElementById('receipt-date').textContent = `청구일: ${futureDate.getFullYear()}년 ${futureDate.getMonth() + 1}월 ${futureDate.getDate()}일`;
-
-            const itemsContainer = document.getElementById('receipt-items-container');
-            itemsContainer.innerHTML = '';
-            const top3 = Object.entries(summary).sort(([,a], [,b]) => b - a).slice(0, 3);
-            top3.forEach(([category, amount]) => {
-                const itemDiv = document.createElement('div');
-                itemDiv.className = 'item';
-                itemDiv.innerHTML = `<span>${category}</span><span>${amount.toLocaleString()}</span>`;
-                itemsContainer.appendChild(itemDiv);
-            });
-
-            document.getElementById('receipt-total-amount').textContent = `₩ ${tenYearProjection.toLocaleString()}`;
-
-            const comparisonContainer = document.getElementById('receipt-comparison');
-            const g80Price = 60000000;
-            const burgerPrice = 4600;
-            const g80Count = (tenYearProjection / g80Price).toFixed(1);
-            const burgerCount = Math.floor(tenYearProjection / burgerPrice).toLocaleString();
-            comparisonContainer.innerHTML = `<p>🍔 맘스터치 싸이버거 ${burgerCount}개</p><p style="text-align:center;">또는</p><p>🚗 제네시스 G80 ${g80Count}대</p>`;
-
-            uploadScreen.style.display = 'none';
-            resultScreen.style.display = 'block';
-            compareBetaButton.style.display = 'block';
-            actionSection.style.display = 'block';
-        }
-
-        actionButton.addEventListener('click', () => {
-            actionSuggestions.style.display = 'block';
-            suggestionContainer.innerHTML = '';
-            const top3ToSave = Object.entries(currentSummary).sort(([,a], [,b]) => b - a).slice(0, 3);
-            top3ToSave.forEach(([category, amount]) => {
-                const suggestionDiv = document.createElement('div');
-                suggestionDiv.className = 'suggestion-card';
-                const savings = (amount * 0.1).toLocaleString();
-                suggestionDiv.textContent = `${category} 지출에서 월 ${savings}원 아껴보기`;
-                suggestionContainer.appendChild(suggestionDiv);
-            });
-            actionButton.disabled = true;
-        });
-
-        function resetApp() {
-            selectedFile = null;
-            currentSummary = {};
-            fileInput.value = '';
-            fileNameDisplay.textContent = '';
-            analyzeButton.disabled = true;
-            analyzeButton.textContent = '미래 청구서 발행하기';
-            uploadScreen.style.display = 'block';
-            resultScreen.style.display = 'none';
-            compareBetaButton.style.display = 'none';
-            actionSection.style.display = 'none';
-            actionSuggestions.style.display = 'none';
-            actionButton.disabled = false;
-        }
-        
-        resetApp();
     </script>
 </body>
 </html>
