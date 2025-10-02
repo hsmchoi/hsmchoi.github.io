@@ -1,0 +1,991 @@
+<!DOCTYPE html>
+<html lang="ko" data-theme="golden-hour">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <title>Momentum: Daily Life Logger</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;700&family=Noto+Sans+KR:wght@400;500;700&family=Poppins:wght@700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined" rel="stylesheet" />
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/gsap.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/Draggable.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/Flip.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/lottie-web/5.12.2/lottie.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/driver.js@1.0.1/dist/driver.js.iife.js"></script>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/driver.js@1.0.1/dist/driver.css"/>
+    
+    <style>
+        :root {
+            --phi: 1.618;
+            --font-size-base: 1rem;
+            --font-size-s: calc(var(--font-size-base) / var(--phi));
+            --font-size-m: var(--font-size-base);
+            --font-size-l: calc(var(--font-size-base) * var(--phi));
+            --font-size-xl: calc(var(--font-size-base) * var(--phi) * var(--phi));
+            --space-unit: 8px;
+            --space-xs: calc(var(--space-unit) / var(--phi));
+            --space-s: var(--space-unit);
+            --space-m: calc(var(--space-unit) * var(--phi));
+            --space-l: calc(var(--space-unit) * var(--phi) * var(--phi));
+            --space-xl: calc(var(--space-unit) * var(--phi) * var(--phi) * var(--phi));
+            --space-xxl: calc(var(--space-unit) * var(--phi) * var(--phi) * var(--phi) * var(--phi));
+            --radius-s: var(--space-s);
+            --radius-m: var(--space-m);
+            --radius-l: var(--space-l);
+            --radius-full: 9999px; 
+            --anim-dur-fast: 0.15s; 
+            --anim-dur-norm: 0.25s; 
+            --anim-dur-slow: 0.4s;
+        }
+        
+        [data-theme="minimal-ink"] { --c-bg-primary: #FFFFFF; --c-bg-secondary: #F0F0F0; --c-bg-tertiary: #E0E0E0; --c-text-primary: #000000; --c-text-secondary: #555555; --c-accent-primary: #000000; --c-accent-secondary: #000000; --c-accent-tertiary: #000000; --c-accent-push: #000000; --c-accent-pull: #000000; --c-accent-leg: #000000; --c-border: #DDDDDD; --c-green: #000000; --c-shadow: rgba(0,0,0,0.1); --c-modal-backdrop: rgba(255, 255, 255, 0.8); --c-particle: #000000; --c-positive-glow: #757575; }
+        [data-theme="material-expressive"] { --c-bg-primary: #1D1B20; --c-bg-secondary: #302D33; --c-bg-tertiary: #49454F; --c-text-primary: #F7F2FA; --c-text-secondary: #CAC4D0; --c-accent-primary: #BEA4F3; --c-accent-secondary: #F392B0; --c-accent-tertiary: #FFB593; --c-accent-push: var(--c-accent-secondary); --c-accent-pull: var(--c-accent-tertiary); --c-accent-leg: #97D7E4; --c-border: #49454F; --c-green: #81C784; --c-shadow: rgba(0,0,0,0.4); --c-modal-backdrop: rgba(29, 27, 32, 0.8); --c-particle: var(--c-accent-primary); --c-positive-glow: #FFE082; }
+        [data-theme="material-you"] { --c-bg-primary: #1C1B1F; --c-bg-secondary: #49454E; --c-bg-tertiary: #36343B; --c-text-primary: #E6E1E5; --c-text-secondary: #CAC4CF; --c-accent-primary: #6750A4; --c-accent-push: #B3261E; --c-accent-pull: #625B71; --c-accent-leg: #7D5260; --c-border: #948F99; --c-green: #66BB6A; --c-shadow: rgba(0,0,0,0.3); --c-modal-backdrop: rgba(0,0,0,0.6); --c-particle: #D0BCFF; --c-positive-glow: #FFD700; }
+        [data-theme="golden-hour"] { --c-bg-primary: #1C1B1A; --c-bg-secondary: #2C2A29; --c-bg-tertiary: #413E3C; --c-text-primary: #FDE8C9; --c-text-secondary: #A99F91; --c-accent-primary: #FF9500; --c-accent-push: #FF453A; --c-accent-pull: #00A9FF; --c-accent-leg: #AF52DE; --c-border: #524F4C; --c-green: #32D74B; --c-shadow: rgba(0,0,0,0.3); --c-modal-backdrop: rgba(0,0,0,0.85); --c-particle: var(--c-accent-primary); --c-positive-glow: #FFD700; }
+        [data-theme="blueprint"] { --c-bg-primary: #0A192F; --c-bg-secondary: #172A46; --c-bg-tertiary: #303C55; --c-text-primary: #CCD6F6; --c-text-secondary: #8892B0; --c-accent-primary: #64FFDA; --c-accent-push: #FF6B6B; --c-accent-pull: #4EC9B0; --c-accent-leg: #C586C0; --c-border: #233554; --c-green: #64FFDA; --c-shadow: rgba(2,12,27,0.7); --c-modal-backdrop: rgba(10, 25, 47, 0.85); --c-particle: var(--c-accent-primary); --c-positive-glow: #FFFF00; }
+        [data-theme="zen-ink"] { --c-bg-primary: #F5F5F5; --c-bg-secondary: #FFFFFF; --c-bg-tertiary: #E8E8E8; --c-text-primary: #1E1E1E; --c-text-secondary: #7A7A7A; --c-accent-primary: #B71C1C; --c-accent-push: #D32F2F; --c-accent-pull: #1976D2; --c-accent-leg: #388E3C; --c-border: #D1D1D1; --c-green: #43A047; --c-shadow: rgba(0,0,0,0.1); --c-modal-backdrop: rgba(255, 255, 255, 0.85); --c-particle: #424242; --c-positive-glow: #B71C1C; }
+        [data-theme="evergreen"] { --c-bg-primary: #1A2E28; --c-bg-secondary: #244038; --c-bg-tertiary: #36594C; --c-text-primary: #E6EBE9; --c-text-secondary: #A2B5AD; --c-accent-primary: #A3BF60; --c-accent-push: #E87D3E; --c-accent-pull: #5E9887; --c-accent-leg: #C7A58F; --c-border: #3F6B5C; --c-green: #A3BF60; --c-shadow: rgba(0,0,0,0.3); --c-modal-backdrop: rgba(26, 46, 40, 0.85); --c-particle: var(--c-accent-primary); --c-positive-glow: #E6EBE9; }
+        [data-theme="dopamine-rush"] { --c-bg-primary: #101010; --c-bg-secondary: #1F1F1F; --c-bg-tertiary: #333333; --c-text-primary: #EAEAEA; --c-text-secondary: #AAAAAA; --c-accent-primary: #F000B8; --c-accent-push: #FF005C; --c-accent-pull: #00F6FF; --c-accent-leg: #00FF94; --c-border: #444444; --c-green: #00FF94; --c-shadow: rgba(0,0,0,0.5); --c-modal-backdrop: rgba(16, 16, 16, 0.9); --c-particle: #FFFFFF; --c-positive-glow: #F000B8; }
+
+        * { box-sizing: border-box; }
+        html, body { overscroll-behavior: none; width: 100%; height: 100%; overflow: hidden; margin: 0; padding: 0; }
+        body { font-family: 'Inter', 'Noto Sans KR', sans-serif; background-color: var(--c-bg-primary); color: var(--c-text-primary); -webkit-tap-highlight-color: transparent; transition: background-color var(--anim-dur-norm), color var(--anim-dur-norm); font-size: var(--font-size-base); }
+        h1, h2, h3, h4, .modal-headline { font-family: 'Poppins', 'Inter', 'Noto Sans KR', sans-serif; margin: 0; font-weight: 700; }
+        p { margin: 0; }
+        input, button, textarea { font-family: inherit; font-size: inherit; }
+        button { background: none; border: none; padding: 0; cursor: pointer; }
+
+        #background-canvas { position: fixed; top: 0; left: 0; z-index: 0; width: 100%; height: 100%; }
+        #app-container { position: fixed; top: 0; left: 0; width: 100%; height: 100%; z-index: 1; perspective: 1000px; display: flex; flex-direction: column; }
+        .view-container { flex-grow: 1; position: relative; }
+        .day-pair { position: absolute; top: 0; left: 0; width: 100%; height: 100%; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: var(--space-l); padding: var(--space-l); }
+        
+        .day-card-content { width: 100%; max-width: 480px; min-height: calc(480px * 0.618); margin: 0 auto; background-color: var(--c-bg-secondary); padding: var(--space-l); border-radius: var(--radius-l); box-shadow: none; border: 1px solid var(--c-border); display: flex; flex-direction: column; transition: all var(--anim-dur-norm); touch-action: none; position: relative; }
+        .today-card .day-card-content { height: auto; max-height: calc(100vh - (var(--space-xl) * 2)); overflow-y: auto; cursor: grab; }
+        .date-picker-trigger h2 { font-size: var(--font-size-xl); line-height: 1; }
+        .date-picker-trigger p { font-size: var(--font-size-s); }
+        .card-inner-content { display: flex; flex-direction: column; flex-grow: 1; }
+
+        .modal-backdrop { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background-color: var(--c-modal-backdrop); display: flex; flex-direction: column; justify-content: center; align-items: center; z-index: 1000; opacity: 0; pointer-events: none; transition: opacity var(--anim-dur-norm); }
+        .modal-backdrop.visible { opacity: 1; pointer-events: auto; }
+        .modal-content { background: var(--c-bg-secondary); border: 1px solid var(--c-border); padding: var(--space-xl); border-radius: var(--radius-l); width: 90%; max-width: 400px; box-shadow: 0 10px 25px -5px var(--c-shadow); display: flex; flex-direction: column; transform: scale(0.95); opacity: 0; }
+        .modal-backdrop.visible .modal-content { animation: fadeInScale var(--anim-dur-slow) cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards; }
+        @keyframes fadeInScale { to { transform: scale(1); opacity: 1; } }
+        .modal-headline { font-size: var(--font-size-l); text-align: center; color: var(--c-text-primary); margin-bottom: var(--space-l); }
+        .modal-actions { display: flex; justify-content: flex-end; gap: var(--space-s); margin-top: auto; }
+
+        .action-button { background-color: var(--c-accent-primary); color: var(--c-bg-primary); font-weight: 700; font-size: var(--font-size-m); border: none; border-radius: var(--radius-full); padding: var(--space-m) var(--space-l); cursor: pointer; transition: all var(--anim-dur-fast) ease; display: inline-flex; align-items: center; justify-content: center; gap: var(--space-s); }
+        .action-button:hover { transform: scale(1.05); filter: brightness(1.1); }
+        .action-button.tertiary { background-color: var(--c-bg-tertiary); color: var(--c-text-primary); }
+        .icon-button { background: none; border: none; padding: var(--space-xs); border-radius: 50%; cursor: pointer; color: var(--c-text-secondary); transition: background-color 0.2s, color 0.2s; display: inline-flex; align-items: center; justify-content: center; }
+        .icon-button:hover { background-color: var(--c-bg-tertiary); color: var(--c-text-primary); }
+        .input-field { width: 100%; padding: var(--space-m); border-radius: var(--radius-s); background-color: var(--c-bg-tertiary); border: 1px solid var(--c-border); transition: all var(--anim-dur-fast); }
+        .input-field:focus { outline: none; ring: 2px; border-color: var(--c-accent-primary); box-shadow: 0 0 0 2px var(--c-accent-primary); }
+        .form-group { display: flex; flex-direction: column; gap: var(--space-s); }
+        .form-label { font-size: var(--font-size-s); font-weight: 500; color: var(--c-text-secondary); }
+
+        #bottom-app-bar { position: fixed; bottom: var(--space-l); left: 50%; transform: translateX(-50%); width: calc(100% - var(--space-l)*2); max-width: 480px; background-color: var(--c-bg-secondary); border-radius: var(--radius-l); padding: var(--space-s); display: flex; justify-content: space-around; align-items: center; box-shadow: 0 4px 12px var(--c-shadow); z-index: 500; transition: transform var(--anim-dur-slow) cubic-bezier(0.175, 0.885, 0.32, 1.275); }
+        #bottom-app-bar.hidden { transform: translateX(-50%) translateY(150%); }
+        #bottom-app-bar .menu-button { display: flex; flex-direction: column; align-items: center; color: var(--c-text-secondary); font-size: var(--font-size-s); padding: var(--space-xs); border-radius: var(--radius-s); flex-grow: 1; gap: var(--space-xs); }
+        #bottom-app-bar .menu-button.active { color: var(--c-accent-primary); }
+        #bottom-app-bar .menu-button .material-symbols-outlined { transition: transform var(--anim-dur-slow) cubic-bezier(0.175, 0.885, 0.32, 1.275); font-size: calc(var(--font-size-l) * 0.9); }
+        
+        #retrospective-modal .modal-content { max-width: 800px; display: flex; flex-direction: column; height: 85vh; max-height: 700px; }
+        .retrospective-body { display: flex; flex-grow: 1; gap: var(--space-l); min-height: 0; }
+        .retrospective-sidebar { flex-basis: 38.2%; display: flex; flex-direction: column; gap: var(--space-m); }
+        .retrospective-main { flex-basis: 61.8%; display: flex; flex-direction: column; min-width: 0; }
+        #retro-list { flex-grow: 1; overflow-y: auto; display: flex; flex-direction: column; gap: var(--space-s); padding: var(--space-s); background-color: var(--c-bg-primary); border-radius: var(--radius-m); }
+        #retro-month-nav { display: flex; justify-content: space-between; align-items: center; gap: var(--space-m); }
+        #retro-current-month { font-size: var(--font-size-l); font-weight: 700; text-align: center; flex-grow: 1; }
+        #retro-type-filter { display: flex; flex-direction: column; align-items: stretch; gap: var(--space-s); }
+        .retro-filter-btn { opacity: 0.5; transition: opacity 0.2s; display: flex; justify-content: flex-start; align-items: center; gap: var(--space-s); padding: var(--space-m); border-radius: var(--radius-s); }
+        .retro-filter-btn.active { opacity: 1; background-color: var(--c-bg-tertiary); }
+        .retrospective-list-item { background-color: var(--c-bg-tertiary); border-left-width: 4px; cursor: pointer; transition: background-color var(--anim-dur-fast); padding: var(--space-m); border-radius: var(--radius-s); display: flex; align-items: center; gap: var(--space-m); }
+        .retrospective-list-item:hover { background-color: var(--c-border); }
+        .retrospective-list-item .date-indicator { font-weight: 700; font-size: var(--font-size-m); }
+        .retrospective-list-item .text-content p:first-child { font-weight: 500; color: var(--c-text-primary); }
+        .retrospective-list-item .text-content p:last-child { font-size: var(--font-size-s); color: var(--c-text-secondary); }
+
+        .completion-stats-container { width: 100%; margin-top: var(--space-l); display: flex; flex-direction: column; gap: var(--space-xs); }
+        .stat-bar-wrapper { display: flex; align-items: center; gap: var(--space-sm); position: relative; }
+        .stat-bar { height: 24px; border-radius: var(--radius-sm); background-color: var(--c-bg-tertiary); transition: width var(--anim-dur-slow) ease-in-out; }
+        .stat-bar-label { position: absolute; left: var(--space-sm); color: var(--c-text-primary); font-size: var(--font-sm); font-weight: 500; text-shadow: 0 1px 2px rgba(0,0,0,0.3); pointer-events: none; }
+        .stat-bar-tooltip { position: absolute; top: 100%; left: 50%; transform: translateX(-50%); background-color: var(--c-bg-primary); color: var(--c-text-primary); padding: var(--space-xs) var(--space-sm); border-radius: var(--radius-sm); font-size: var(--font-sm); opacity: 0; visibility: hidden; transition: all var(--anim-dur-fast); white-space: nowrap; z-index: 10; }
+        .stat-bar-wrapper:hover .stat-bar-tooltip { opacity: 1; visibility: visible; transform: translateX(-50%) translateY(var(--space-xs)); }
+
+        .lottie-container { width: 80px; height: 80px; cursor: pointer; }
+        .driver-popover { background-color: var(--c-bg-secondary); color: var(--c-text-primary); border-radius: var(--radius-l); }
+        .driver-popover-title { font-size: var(--font-size-l); font-weight: bold; color: var(--c-accent-primary); }
+        .driver-popover-arrow-side-left .driver-popover-arrow { border-left-color: var(--c-bg-secondary); }
+        .driver-popover-arrow-side-right .driver-popover-arrow { border-right-color: var(--c-bg-secondary); }
+        .driver-popover-arrow-side-top .driver-popover-arrow { border-top-color: var(--c-bg-secondary); }
+        .driver-popover-arrow-side-bottom .driver-popover-arrow { border-bottom-color: var(--c-bg-secondary); }
+        .driver-popover-navigation-btns button { text-shadow: none; background-color: var(--c-bg-tertiary); color: var(--c-text-primary); border-radius: var(--radius-m); }
+        .driver-popover-navigation-btns .driver-popover-next-btn { background-color: var(--c-accent-primary); color: var(--c-bg-primary); }
+
+        .dragging { opacity: 0.7; }
+        .drag-handle { cursor: grab; }
+
+        @media (max-width: 768px) {
+            #retrospective-modal .modal-content {
+                height: 90vh;
+                max-height: 800px;
+                padding: var(--space-m);
+            }
+            .retrospective-body {
+                flex-direction: column;
+                overflow-y: auto;
+            }
+            .retrospective-sidebar, .retrospective-main {
+                flex-basis: auto;
+            }
+            #retro-type-filter {
+                flex-direction: row;
+                overflow-x: auto;
+                padding-bottom: var(--space-s);
+                -ms-overflow-style: none;
+                scrollbar-width: none;
+            }
+            #retro-type-filter::-webkit-scrollbar {
+                display: none;
+            }
+            .retro-filter-btn {
+                flex-direction: column;
+                flex: 0 0 auto;
+                width: 90px;
+            }
+        }
+
+    </style>
+</head>
+<body>
+    <div id="lottie-animation-container" style="position: fixed; top: 0; left: 0; width: 100%; height: 100%; z-index: 9999; pointer-events: none; display: flex; justify-content: center; align-items: center;"></div>
+    <canvas id="background-canvas"></canvas>
+    <div id="app-container">
+        <div id="pair-view-container" class="view-container"></div>
+        
+        <div id="bottom-app-bar">
+            <button data-menu-action="retrospective" class="menu-button"><span class="material-symbols-outlined">history</span><span>회고록</span></button>
+            <button data-menu-action="today" class="menu-button"><span class="material-symbols-outlined">today</span><span>오늘로</span></button>
+            <button data-menu-action="routine-manager" class="menu-button"><span class="material-symbols-outlined">assignment</span><span>루틴 관리</span></button>
+            <button data-menu-action="settings" class="menu-button"><span class="material-symbols-outlined">settings</span><span>설정</span></button>
+        </div>
+    </div>
+    
+    <div id="event-modal" class="modal-backdrop">
+         <div class="modal-content">
+            <h3 class="modal-headline">인생의 특별한 순간을 조각하세요</h3>
+            <p style="text-align: center; font-weight: 500; font-size: var(--font-size-m); color: var(--c-text-secondary); margin-top: calc(-1 * var(--space-m)); margin-bottom: var(--space-m);">기억하고 싶은 그날을 표시해두세요.</p>
+            <div style="display: flex; flex-direction: column; gap: var(--space-l);">
+                 <input type="text" id="event-name" placeholder="이벤트 이름 (예: 친구와 약속)" class="input-field">
+                 <input type="date" id="event-date" class="input-field" style="text-align: center;">
+                 <div style="display: flex; align-items: center; gap: var(--space-s);"><input type="time" id="event-time" class="input-field" style="text-align: center;"><label style="display: flex; align-items: center; gap: var(--space-s); font-size: var(--font-size-s); color: var(--c-text-secondary);"><input type="checkbox" id="event-time-later"><span>나중에</span></label></div>
+                 <div style="font-size: var(--font-size-s); text-align: center; color: var(--c-text-secondary);">모양 선택</div><div id="event-shape-palette" style="display: flex; justify-content: center; flex-wrap: wrap; gap: var(--space-m);"></div>
+                 <div style="font-size: var(--font-size-s); text-align: center; color: var(--c-text-secondary);">색상 선택</div><div id="event-color-palette" style="display: flex; justify-content: center; flex-wrap: wrap; gap: var(--space-m);"></div>
+            </div>
+            <div class="modal-actions"><button class="action-button tertiary" style="padding: var(--space-s) var(--space-m);" data-action="close"><span class="material-symbols-outlined">close</span></button><button class="action-button" data-action="save">저장</button></div>
+        </div>
+    </div>
+
+    <div id="retrospective-modal" class="modal-backdrop">
+         <div class="modal-content">
+            <h3 class="modal-headline">회고록</h3>
+            <div class="retrospective-body">
+                <div class="retrospective-sidebar">
+                    <div id="retro-month-nav">
+                        <button id="retro-prev-month" class="icon-button"><span class="material-symbols-outlined">chevron_left</span></button>
+                        <h4 id="retro-current-month"></h4>
+                        <button id="retro-next-month" class="icon-button"><span class="material-symbols-outlined">chevron_right</span></button>
+                    </div>
+                    <div id="retro-type-filter">
+                        <button data-filter="all" class="retro-filter-btn active"><span class="material-symbols-outlined">select_all</span><span>모두 보기</span></button>
+                        <button data-filter="event" class="retro-filter-btn"><span class="material-symbols-outlined">celebration</span><span>이벤트</span></button>
+                        <button data-filter="routine" class="retro-filter-btn"><span class="material-symbols-outlined">routine</span><span>반복 행동</span></button>
+                        <button data-filter="memo" class="retro-filter-btn"><span class="material-symbols-outlined">edit_note</span><span>메모</span></button>
+                        <button data-filter="workout" class="retro-filter-btn"><span class="material-symbols-outlined">fitness_center</span><span>운동 기록</span></button>
+                    </div>
+                    <button data-action="show_filter_help" class="icon-button" style="margin-top: auto; align-self: center; color: var(--c-accent-primary);"><span class="material-symbols-outlined">help_outline</span></button>
+                </div>
+                <div class="retrospective-main">
+                    <div id="retro-list"></div>
+                </div>
+            </div>
+            <div class="modal-actions" style="margin-top: var(--space-l);"><button class="action-button tertiary" style="padding: var(--space-s) var(--space-m);" data-action="close"><span class="material-symbols-outlined">close</span></button></div>
+        </div>
+    </div>
+
+    <div id="memo-modal" class="modal-backdrop">
+        <div class="modal-content">
+            <h3 class="modal-headline">Memo</h3>
+            <textarea id="memo-input" rows="3" class="input-field" style="resize: none;"></textarea>
+            <div class="modal-actions"><button class="action-button tertiary" style="padding: var(--space-s) var(--space-m);" data-action="close"><span class="material-symbols-outlined">close</span></button><button class="action-button" data-action="save">저장</button></div>
+        </div>
+    </div>
+    
+    <div id="memo-feed-modal" class="modal-backdrop">
+        <div class="modal-content" style="max-width: 800px; height: 83.33%;">
+            <h3 class="modal-headline">메모 모아보기</h3>
+            <div id="memo-feed-list" style="flex: 1; overflow-y: auto; display: flex; flex-direction: column; gap: var(--space-s); padding: var(--space-s); background-color: var(--c-bg-primary); border-radius: var(--radius-m);"></div>
+            <div class="modal-actions"><button class="action-button tertiary" style="padding: var(--space-s) var(--space-m);" data-action="close"><span class="material-symbols-outlined">close</span></button></div>
+        </div>
+    </div>
+    
+    <div id="settings-modal" class="modal-backdrop">
+        <div class="modal-content">
+            <h3 class="modal-headline">설정</h3>
+            <div id="settings-tabs" style="display: flex; border-bottom: 1px solid var(--c-border);">
+                <button class="tab-button active" data-tab="display" style="flex: 1; padding: var(--space-m); border-bottom: 2px solid var(--c-accent-primary);">표시</button>
+                <button class="tab-button" data-tab="data" style="flex: 1; padding: var(--space-m); border-bottom: 2px solid transparent;">데이터</button>
+            </div>
+            <div id="settings-tab-content-display" class="tab-content" style="padding-top: var(--space-l);">
+                <div style="display: flex; flex-direction: column; gap: var(--space-xl);">
+                    <div class="form-group">
+                        <label for="font-size-slider" class="form-label">글자 크기</label>
+                        <input id="font-size-slider" type="range" min="12" max="20" step="1" style="width: 100%;">
+                    </div>
+                    <div class="form-group">
+                        <label for="spacing-slider" class="form-label">여백 크기</label>
+                        <input id="spacing-slider" type="range" min="6" max="12" step="1" style="width: 100%;">
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">기본 휴식 시간</label>
+                        <div id="settings-rest-time-options" style="display: grid; grid-template-columns: repeat(4, 1fr); gap: var(--space-s);">
+                            <button class="action-button tertiary" data-time="60">60초</button>
+                            <button class="action-button tertiary" data-time="90">90초</button>
+                            <button class="action-button tertiary" data-time="120">120초</button>
+                            <button class="action-button tertiary" data-time="180">180초</button>
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">테마</label>
+                        <div class="theme-options-grid" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(80px, 1fr)); gap: var(--space-l);"></div>
+                    </div>
+                </div>
+            </div>
+            <div id="settings-tab-content-data" class="tab-content" style="display: none; padding-top: var(--space-l);">
+                <p class="form-label" style="margin-bottom: var(--space-l);">모든 데이터를 파일로 저장하거나, 파일에서 불러옵니다. 기기를 변경할 때 유용합니다.</p>
+                <div style="display: flex; flex-direction: column; gap: var(--space-m);">
+                    <button class="action-button tertiary" data-action="export-data" style="width: 100%;">백업 파일 생성하기</button>
+                    <button class="action-button tertiary" data-action="import-data" style="width: 100%;">백업에서 복원하기</button>
+                </div>
+            </div>
+            <div class="modal-actions">
+                <button data-action="close" class="action-button tertiary">닫기</button>
+                <button data-action="save" class="action-button">저장</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="add-exercise-modal" class="modal-backdrop">
+        <div class="modal-content">
+            <h3 class="modal-headline">운동 종목 추가</h3>
+            <div style="display: flex; flex-direction: column; gap: var(--space-l);">
+                <div class="form-group">
+                    <label for="exercise-name-input" class="form-label">이름</label>
+                    <input type="text" id="exercise-name-input" placeholder="예: 벤치 프레스" class="input-field">
+                </div>
+                <div class="form-group">
+                    <label for="exercise-desc-input" class="form-label">설명 (선택 사항)</label>
+                    <textarea id="exercise-desc-input" rows="2" placeholder="예: 3세트 12회" class="input-field" style="resize: none;"></textarea>
+                </div>
+            </div>
+            <div class="modal-actions">
+                <button class="action-button tertiary" data-action="close">취소</button>
+                <button class="action-button" data-action="save-exercise">저장</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="routine-manager-modal" class="modal-backdrop">
+        <div class="modal-content" style="max-width: 500px; height: 80vh; max-height: 600px;">
+            <h3 class="modal-headline">루틴 관리</h3>
+            <div id="routine-list-container" style="flex-grow: 1; overflow-y: auto; padding: var(--space-s) 0; display: flex; flex-direction: column; gap: var(--space-m);">
+            </div>
+            <div class="modal-actions" style="flex-direction: column; gap: var(--space-m);">
+                <button class="action-button" data-action="create-new-routine" style="width: 100%;">
+                    <span class="material-symbols-outlined">add</span>
+                    <span>새 루틴 만들기</span>
+                </button>
+                <button class="action-button tertiary" data-action="import-routine" style="width: 100%;">
+                    <span class="material-symbols-outlined">file_upload</span>
+                    <span>루틴 가져오기</span>
+                </button>
+                <button class="action-button tertiary" data-action="close" style="width: 100%;">닫기</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="routine-designer-modal" class="modal-backdrop">
+        <div class="modal-content" style="max-width: 500px; height: 80vh; max-height: 600px; display: flex; flex-direction: column;">
+            <div id="view-cycle-setup" style="display: flex; flex-direction: column; height: 100%;">
+                <h3 class="modal-headline">새 루틴 설계</h3>
+                <div style="display: flex; flex-direction: column; gap: var(--space-l); margin-top: var(--space-l);">
+                    <div class="form-group">
+                        <label for="routine-name-input" class="form-label">루틴 이름</label>
+                        <input type="text" id="routine-name-input" placeholder="예: 나의 3분할 루틴" class="input-field">
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">휴식 주기</label>
+                        <div id="cycle-options-container" style="display: grid; grid-template-columns: 1fr 1fr; gap: var(--space-s);">
+                            <button class="action-button tertiary" data-cycle-days="1">매일 휴식</button>
+                            <button class="action-button tertiary" data-cycle-days="2">2일마다 휴식</button>
+                            <button class="action-button" data-cycle-days="3">3일마다 휴식</button>
+                            <button class="action-button tertiary" data-cycle-days="0">휴식 없음</button>
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">주기 미리보기</label>
+                        <div id="timeline-preview-container" style="display: flex; gap: 4px; width: 100%; background-color: var(--c-bg-primary); padding: var(--space-s); border-radius: var(--radius-m);">
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-actions" style="margin-top: auto;">
+                    <button class="action-button tertiary" data-action="close">취소</button>
+                    <button class="action-button" data-action="next-to-template-setup">다음</button>
+                </div>
+            </div>
+            <div id="view-template-assignment" style="display: none; flex-direction: column; height: 100%;">
+                <h3 class="modal-headline">운동일 설정</h3>
+                <div id="template-assignment-container" style="flex-grow: 1; overflow-y: auto; display: flex; flex-direction: column; gap: var(--space-m); margin-top: var(--space-l);">
+                </div>
+                <div id="template-selector-popover" style="position: absolute; z-index: 10; background-color: var(--c-bg-primary); border: 1px solid var(--c-border); border-radius: var(--radius-m); padding: var(--space-s); box-shadow: 0 8px 16px var(--c-shadow); display: none;">
+                </div>
+                <div class="modal-actions" style="margin-top: auto;">
+                    <button class="action-button tertiary" data-action="back-to-cycle-setup">이전</button>
+                    <button class="action-button" data-action="save-routine">저장</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div id="record-set-modal" class="modal-backdrop">
+        <div class="modal-content">
+            <h3 id="record-set-headline" class="modal-headline">운동 기록</h3>
+            <p id="record-set-exercise-name" style="text-align: center; color: var(--c-text-secondary); margin-top: calc(-1 * var(--space-s)); margin-bottom: var(--space-m);"></p>
+            <div id="set-list-container" style="display: flex; flex-direction: column; gap: var(--space-s); margin-bottom: var(--space-l); max-height: 150px; overflow-y: auto; background-color: var(--c-bg-primary); padding: var(--space-s); border-radius: var(--radius-m);">
+            </div>
+            <div style="display: flex; gap: var(--space-m); align-items: flex-end;">
+                <div class="form-group" style="flex: 1;">
+                    <label for="set-weight-input" class="form-label">중량 (kg)</label>
+                    <input type="number" id="set-weight-input" class="input-field" placeholder="80">
+                </div>
+                <div class="form-group" style="flex: 1;">
+                    <label for="set-reps-input" class="form-label">횟수</label>
+                    <input type="number" id="set-reps-input" class="input-field" placeholder="5">
+                </div>
+                <button class="action-button" data-action="add-set" style="height: 45px; padding: 0 var(--space-m);"><span class="material-symbols-outlined">add</span></button>
+            </div>
+            <div class="modal-actions">
+                <button class="action-button tertiary" data-action="close">취소</button>
+                <button class="action-button" data-action="save-sets">기록 저장</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="re-log-modal" class="modal-backdrop">
+        <div class="modal-content" style="max-width: 320px;">
+            <h3 class="modal-headline">작업 선택</h3>
+            <p style="text-align: center; color: var(--c-text-secondary); margin-bottom: var(--space-l);">이미 완료된 운동입니다.</p>
+            <div style="display: flex; flex-direction: column; gap: var(--space-s);">
+                <button class="action-button" data-action="resume-exercise">이어서 측정 (세트 추가)</button>
+                <button class="action-button tertiary" data-action="restart-exercise">처음부터 다시 측정</button>
+                <button class="action-button tertiary" data-action="close">취소</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="routine-action-modal" class="modal-backdrop">
+        <div class="modal-content" style="max-width: 360px;">
+            <h3 id="routine-action-headline" class="modal-headline"></h3>
+            <p style="text-align: center; color: var(--c-text-secondary); margin-top: calc(-1 * var(--space-s)); margin-bottom: var(--space-l);">어떤 작업을 하시겠습니까?</p>
+            <div style="display: flex; flex-direction: column; gap: var(--space-s);">
+                <button class="action-button" data-action="activate-routine">이 루틴으로 활성화</button>
+                <div style="display: flex; gap: var(--space-s);">
+                    <button class="action-button tertiary" data-action="edit-routine" style="flex: 1;">편집</button>
+                    <button class="action-button tertiary" data-action="export-routine" style="flex: 1;">공유</button>
+                </div>
+                <button class="action-button tertiary" data-action="delete-routine" style="color: #FF453A;">삭제하기</button>
+            </div>
+            <div class="modal-actions" style="margin-top: var(--space-l);">
+                <button class="action-button tertiary" data-action="close">닫기</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="template-editor-modal" class="modal-backdrop">
+        <div class="modal-content">
+            <h3 class="modal-headline">새 템플릿 만들기</h3>
+            <div class="form-group">
+                <label for="template-name-input" class="form-label">템플릿 이름</label>
+                <input type="text" id="template-name-input" class="input-field">
+            </div>
+            <div class="form-group">
+                <label class="form-label">아이콘</label>
+                <div id="template-icon-selector" style="display: flex; gap: var(--space-m);">
+                </div>
+            </div>
+            <div class="form-group">
+                <label class="form-label">운동 목록</label>
+                <div id="template-exercise-list" style="min-height: 150px; background-color: var(--c-bg-primary); border-radius: var(--radius-m); padding: var(--space-s); display: flex; flex-direction: column; gap: var(--space-s);"></div>
+                <button class="action-button tertiary" data-action="add-exercise-to-template" style="width: 100%;"><span class="material-symbols-outlined">add</span>운동 추가</button>
+            </div>
+            <div class="modal-actions">
+                <button class="action-button tertiary" data-action="close">취소</button>
+                <button class="action-button" data-action="save-template">저장</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="template-library-modal" class="modal-backdrop">
+        <div class="modal-content">
+            <h3 class="modal-headline">템플릿 라이브러리</h3>
+            <p style="text-align: center; color: var(--c-text-secondary); margin-top: calc(-1 * var(--space-s)); margin-bottom: var(--space-l);">어떻게 시작하시겠습니까?</p>
+            <div id="template-library-list" style="flex-grow: 1; overflow-y: auto; display: flex; flex-direction: column; gap: var(--space-m);">
+            </div>
+            <div class="modal-actions" style="flex-direction: column; margin-top: var(--space-l); gap: var(--space-s);">
+                <button class="action-button tertiary" data-action="start-with-blank-template" style="width: 100%;">+ 빈 템플릿으로 시작</button>
+                <button class="action-button tertiary" data-action="close" style="width: 100%;">닫기</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="smart-coach-modal" class="modal-backdrop">
+        <div class="modal-content">
+            <h3 class="modal-headline">스마트 코치 분석</h3>
+            <p id="smart-coach-exercise-name" style="text-align: center; font-weight: 700; color: var(--c-text-primary); margin-top: calc(-1 * var(--space-s)); margin-bottom: var(--space-l);"></p>
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: var(--space-m); margin-bottom: var(--space-l);">
+                <div style="text-align: center;">
+                    <p class="form-label" id="smart-coach-prev-date">이전 기록</p>
+                    <div style="background-color: var(--c-bg-primary); border-radius: var(--radius-m); padding: var(--space-s); margin-top: var(--space-s);">
+                        <p id="smart-coach-prev-max-weight" style="font-weight: 700;"></p>
+                        <p class="form-label">최고 중량</p>
+                    </div>
+                    <div style="background-color: var(--c-bg-primary); border-radius: var(--radius-m); padding: var(--space-s); margin-top: var(--space-s);">
+                        <p id="smart-coach-prev-volume" style="font-weight: 700;"></p>
+                        <p class="form-label">총 볼륨</p>
+                    </div>
+                </div>
+                <div style="text-align: center;">
+                    <p class="form-label" id="smart-coach-today-date">오늘 기록</p>
+                    <div style="background-color: var(--c-bg-primary); border-radius: var(--radius-m); padding: var(--space-s); margin-top: var(--space-s);">
+                        <p id="smart-coach-today-max-weight" style="font-weight: 700;"></p>
+                        <p class="form-label">최고 중량</p>
+                    </div>
+                    <div style="background-color: var(--c-bg-primary); border-radius: var(--radius-m); padding: var(--space-s); margin-top: var(--space-s);">
+                        <p id="smart-coach-today-volume" style="font-weight: 700;"></p>
+                        <p class="form-label">총 볼륨</p>
+                    </div>
+                </div>
+            </div>
+            <div style="background-color: var(--c-bg-primary); border-radius: var(--radius-m); padding: var(--space-m); display: flex; align-items: center; gap: var(--space-m);">
+                <span class="material-symbols-outlined" style="color: var(--c-accent-primary); font-size: 28px;">lightbulb</span>
+                <p id="smart-coach-recommendation" style="font-size: var(--font-size-s); color: var(--c-text-primary); line-height: 1.5;"></p>
+            </div>
+            <div class="modal-actions">
+                <button class="action-button" data-action="close">확인</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="workout-summary-modal" class="modal-backdrop">
+        <div class="modal-content" style="text-align: center;">
+            <span class="material-symbols-outlined" style="font-size: 48px; color: var(--c-accent-primary);">military_tech</span>
+            <h3 class="modal-headline" style="margin-top: var(--space-s);">오늘의 운동 요약</h3>
+            <div style="margin: var(--space-l) 0;">
+                <p id="summary-total-volume" style="font-family: 'Poppins', sans-serif; font-weight: 700; font-size: 48px; color: var(--c-text-primary); line-height: 1;">
+                    <span class="value"></span>
+                    <span style="font-size: 20px; color: var(--c-text-secondary);">kg</span>
+                </p>
+                <p class="form-label">총 볼륨</p>
+            </div>
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: var(--space-m); margin-bottom: var(--space-l);">
+                <div>
+                    <p id="summary-total-sets" class="summary-sub-value"></p>
+                    <p class="form-label">총 세트</p>
+                </div>
+                <div>
+                    <p id="summary-total-reps" class="summary-sub-value"></p>
+                    <p class="form-label">총 횟수</p>
+                </div>
+            </div>
+            <div id="summary-comparison-section" style="border-top: 1px solid var(--c-border); padding-top: var(--space-l);">
+                <p id="summary-comparison-text" class="form-label"></p>
+                <p id="summary-comparison-value" style="font-size: 24px; font-weight: 700; color: var(--c-green); margin-top: var(--space-s);"></p>
+            </div>
+            <div class="modal-actions" style="margin-top: var(--space-l);">
+                <button class="action-button" data-action="close" style="width: 100%;">확인</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="retrospective-detail-modal" class="modal-backdrop">
+        <div class="modal-content" style="max-height: 90vh;">
+            <h3 id="retro-detail-headline" class="modal-headline"></h3>
+            <p id="retro-detail-date" style="text-align: center; color: var(--c-text-secondary); margin-top: calc(-1 * var(--space-s)); margin-bottom: var(--space-l);"></p>
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: var(--space-m); margin-bottom: var(--space-l);">
+                <div style="background-color: var(--c-bg-primary); border-radius: var(--radius-m); padding: var(--space-m); text-align: center;">
+                    <p id="retro-detail-volume" style="font-weight: 700; font-size: var(--font-size-l); color: var(--c-text-primary);"></p>
+                    <p style="font-size: var(--font-size-s); color: var(--c-text-secondary);">총 볼륨</p>
+                </div>
+                <div style="background-color: var(--c-bg-primary); border-radius: var(--radius-m); padding: var(--space-m); text-align: center;">
+                    <p id="retro-detail-max-weight" style="font-weight: 700; font-size: var(--font-size-l); color: var(--c-text-primary);"></p>
+                    <p style="font-size: var(--font-size-s); color: var(--c-text-secondary);">최고 중량</p>
+                </div>
+            </div>
+            <div class="form-group" style="margin-top: var(--space-l);">
+                <label class="form-label">성장 그래프 (총 볼륨)</label>
+                <div style="background-color: var(--c-bg-primary); border-radius: var(--radius-m); padding: var(--space-m);">
+                    <canvas id="retro-detail-chart"></canvas>
+                </div>
+            </div>
+            <div class="form-group" style="margin-top: var(--space-l);">
+                <label class="form-label">이 날의 세트 기록</label>
+                <div id="retro-detail-set-list" style="display: flex; flex-direction: column; gap: var(--space-s); max-height: 150px; overflow-y: auto;">
+                </div>
+            </div>
+            <div class="modal-actions">
+                <button class="action-button tertiary" data-action="close">닫기</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        gsap.registerPlugin(Draggable, Flip);
+        const REAL_TODAY = new Date(); 
+        REAL_TODAY.setHours(0, 0, 0, 0);
+        const CYCLE_ANCHOR_DATE = new Date('2025-09-08T00:00:00');
+
+        const AppState = { 
+            currentDate: new Date(REAL_TODAY), 
+            draggableInstance: null, 
+            activeCardWrapper: null,
+            activeLotties: {}, 
+            activeTimers: {},
+            activeRestTimer: {
+                exerciseName: null,
+                endTime: null,
+                intervalId: null
+            },
+            retrospective: {
+                currentMonth: new Date(REAL_TODAY.getFullYear(), REAL_TODAY.getMonth(), 1),
+                activeFilter: 'all',
+            },
+            palettes: {
+                routine: ['#82B1FF', '#C792EA', '#FF5252', '#40C4FF', '#FFD740', '#9CCC65'],
+                eventShapes: ['star', 'diamond', 'favorite', 'verified', 'rocket_launch', 'emoji_events'],
+                eventColors: ['#FF8A80', '#FFD180', '#FFFF8D', '#A7FFEB', '#80D8FF', '#B388FF']
+            },
+            animSpeeds: {},
+            quickTo: {}
+        };
+
+        const DOMElements = {}; 
+
+        const PRESET_TEMPLATE_LIBRARY = [
+          {
+            id: 'preset_starting_strength',
+            title: 'Starting Strength (3분할 입문자)',
+            description: '근력 증대에 초점을 맞춘 가장 유명하고 검증된 초보자용 프로그램입니다. 3개의 핵심 운동일을 2일 운동 1일 휴식 주기로 반복합니다.',
+            recommendedCycleDays: 2,
+            templates: [
+              {
+                title: 'A - 스쿼트 중심',
+                icon: 'fitness_center',
+                exercises: [
+                  { name: '스쿼트', description: '5세트 5회' },
+                  { name: '벤치 프레스', description: '5세트 5회' },
+                  { name: '바벨 로우', description: '5세트 5회' }
+                ]
+              },
+              {
+                title: 'B - 데드리프트 중심',
+                icon: 'weightlifting',
+                exercises: [
+                  { name: '스쿼트', description: '5세트 5회' },
+                  { name: '오버헤드 프레스', description: '5세트 5회' },
+                  { name: '데드리프트', description: '1세트 5회' }
+                ]
+              }
+            ]
+          },
+          {
+            id: 'preset_ppl',
+            title: 'Push/Pull/Leg (4분할 중급자)',
+            description: '근비대를 목표로 하는 가장 대중적인 분할 방식입니다. 각 부위를 주 2회 타격하여 볼륨을 극대화합니다.',
+            recommendedCycleDays: 3,
+            templates: [
+              {
+                title: 'Push (가슴/어깨/삼두)',
+                icon: 'upload',
+                exercises: [ { name: '벤치 프레스' }, { name: '오버헤드 프레스' }, { name: '딥스' } ]
+              },
+              {
+                title: 'Pull (등/이두)',
+                icon: 'download',
+                exercises: [ { name: '풀업' }, { name: '바벨 로우' }, { name: '바벨 컬' } ]
+              },
+              {
+                title: 'Leg (하체)',
+                icon: 'fitness_center',
+                exercises: [ { name: '스쿼트' }, { name: '레그 프레스' }, { name: '레그 컬' } ]
+              }
+            ]
+          },
+          {
+            id: 'preset_fullbody',
+            title: 'Full Body Conditioning (무분할)',
+            description: '주 2-3회 운동으로 전신의 근력과 심폐지구력을 함께 단련하고 싶은 사람들을 위한 루틴입니다.',
+            recommendedCycleDays: 1,
+            templates: [
+              {
+                title: '전신 운동',
+                icon: 'bolt',
+                exercises: [ { name: '스쿼트' }, { name: '푸쉬업' }, { name: '케틀벨 스윙' }, { name: '플랭크' } ]
+              }
+            ]
+          }
+        ];
+
+        const LOTTIE_ANIMATIONS = {
+          CONFETTI: 'https://lottie.host/b2207b81-a818-4613-900c-a81f1c735b9f/rW40s3j2Py.json',
+          TROPHY: 'https://lottie.host/9012b4f0-a947-47d3-9f1a-8282d2357271/N4iJ4aC31M.json'
+        };
+
+        const formatDate = date => `${date.getFullYear()}-${(date.getMonth() + 1).toString().padStart(2, '0')}-${date.getDate().toString().padStart(2, '0')}`;
+        const safeJSONParse = (key, defaultValue) => { try { const item = localStorage.getItem(key); return item ? JSON.parse(item) : defaultValue; } catch (e) { return defaultValue; } };
+
+        const DataManager = {
+            init() {
+                const hasNewData = localStorage.getItem('activeRoutineId');
+                const hasOldData = localStorage.getItem('user_workouts');
+
+                if (!hasNewData && hasOldData) {
+                    this.migrateFromV1();
+                } else if (!hasNewData && !hasOldData) {
+                    this.initializeDefaultData();
+                }
+            },
+
+            migrateFromV1() {
+                const oldWorkouts = safeJSONParse('user_workouts', {});
+                const workoutTemplates = {};
+                Object.keys(oldWorkouts).forEach(key => {
+                    if (key !== 'rest') {
+                        const templateId = `template_${key}`;
+                        workoutTemplates[templateId] = {
+                            id: templateId,
+                            title: oldWorkouts[key].title,
+                            icon: oldWorkouts[key].icon,
+                            exercises: oldWorkouts[key].exercises || []
+                        };
+                    }
+                });
+                this.saveTemplates(workoutTemplates);
+
+                const defaultRoutine = {
+                    id: 'default_migrated_routine',
+                    name: '기본 3분할 (자동 생성)',
+                    startDate: formatDate(REAL_TODAY),
+                    cycle: ['template_push', 'template_pull', 'template_leg', 'rest']
+                };
+                this.saveRoutines([defaultRoutine]);
+                this.setActiveRoutineId(defaultRoutine.id);
+
+                localStorage.setItem('user_workouts_v1_migrated', JSON.stringify(oldWorkouts));
+                localStorage.removeItem('user_workouts');
+            },
+
+            initializeDefaultData() {
+                const defaultTemplates = {
+                    'template_push': { id: 'template_push', title: 'Push Day', icon: 'upload', exercises: [{ name: '푸쉬업' }, { name: '딥스' }] },
+                    'template_pull': { id: 'template_pull', title: 'Pull & Core', icon: 'download', exercises: [{ name: '턱걸이' }, { name: '덤벨로우' }] },
+                    'template_leg': { id: 'template_leg', title: 'Leg Day', icon: 'fitness_center', exercises: [{ name: '맨몸 스쿼트' }, { name: '계단 오르기' }] }
+                };
+                this.saveTemplates(defaultTemplates);
+
+                const defaultRoutine = {
+                    id: 'default_initial_routine',
+                    name: '기본 3분할',
+                    startDate: formatDate(CYCLE_ANCHOR_DATE),
+                    cycle: ['template_push', 'template_pull', 'template_leg', 'rest']
+                };
+                this.saveRoutines([defaultRoutine]);
+                this.setActiveRoutineId(defaultRoutine.id);
+            },
+
+            getActiveRoutine() {
+                const activeId = localStorage.getItem('activeRoutineId');
+                if (!activeId) return null;
+                const allRoutines = this.getAllRoutines();
+                return allRoutines.find(r => r.id === activeId);
+            },
+
+            getWorkoutTemplate(templateId) {
+                if (!templateId || templateId === 'rest') return null;
+                const allTemplates = this.getAllTemplates();
+                return allTemplates[templateId];
+            },
+
+            getAllRoutines: () => safeJSONParse('userRoutines', []),
+            getAllTemplates: () => safeJSONParse('workoutTemplates', {}),
+            saveRoutines: (routines) => localStorage.setItem('userRoutines', JSON.stringify(routines)),
+            saveTemplates: (templates) => localStorage.setItem('workoutTemplates', JSON.stringify(templates)),
+            setActiveRoutineId: (id) => localStorage.setItem('activeRoutineId', id),
+            getWorkoutLog: (date) => safeJSONParse(`workout_log_${formatDate(date)}`, []),
+            saveWorkoutLog: (date, log) => localStorage.setItem(`workout_log_${formatDate(date)}`, JSON.stringify(log)),
+            getMemos: (date) => safeJSONParse(`memos_${formatDate(date)}`, []),
+            saveMemos: (date, log) => localStorage.setItem(`memos_${formatDate(date)}`, JSON.stringify(log)),
+            getEvents: () => safeJSONParse('user-events', []),
+            saveEvents: (events) => localStorage.setItem('user-events', JSON.stringify(events)),
+            getSettings: () => safeJSONParse('user-settings', { fontSize: 16, spacing: 8, defaultRestTime: 90 }),
+            saveSettings: (settings) => localStorage.setItem('user-settings', JSON.stringify(settings)),
+            getTheme: () => localStorage.getItem('app-theme') || 'golden-hour',
+            setTheme: (themeName) => localStorage.setItem('app-theme', themeName),
+            getPersonalRecords: () => safeJSONParse('personal_records', {}),
+            updatePersonalRecord(exerciseName, newMetrics) {
+                const records = this.getPersonalRecords();
+                if (!records[exerciseName]) {
+                    records[exerciseName] = { maxWeight: { value: 0 }, maxVolume: { value: 0 } };
+                }
+                let updated = false;
+                if (newMetrics.maxWeight > (records[exerciseName].maxWeight.value || 0)) {
+                    records[exerciseName].maxWeight = {
+                        value: newMetrics.maxWeight,
+                        date: formatDate(new Date())
+                    };
+                    updated = true;
+                }
+                if (newMetrics.totalVolume > (records[exerciseName].maxVolume.value || 0)) {
+                    records[exerciseName].maxVolume = {
+                        value: newMetrics.totalVolume,
+                        date: formatDate(new Date())
+                    };
+                    updated = true;
+                }
+                if (updated) {
+                    localStorage.setItem('personal_records', JSON.stringify(records));
+                }
+                return updated;
+            },
+            deleteRoutine(routineId) {
+                let routines = this.getAllRoutines();
+                routines = routines.filter(r => r.id !== routineId);
+                this.saveRoutines(routines);
+                if (localStorage.getItem('activeRoutineId') === routineId) {
+                    const newActiveId = routines.length > 0 ? routines[0].id : null;
+                    this.setActiveRoutineId(newActiveId);
+                }
+            },
+            updateRoutine(updatedRoutine) {
+                let routines = this.getAllRoutines();
+                const routineIndex = routines.findIndex(r => r.id === updatedRoutine.id);
+                if (routineIndex > -1) {
+                    routines[routineIndex] = updatedRoutine;
+                    this.saveRoutines(routines);
+                }
+            },
+            exportAllData() {
+                const allData = {};
+                const keysToExport = [
+                    'activeRoutineId', 'app-theme', 'personal_records', 'user-settings',
+                    'userRoutines', 'workoutTemplates', 'user-events'
+                ];
+                keysToExport.forEach(key => {
+                    const data = localStorage.getItem(key);
+                    if (data) allData[key] = JSON.parse(data);
+                });
+                for (let i = 0; i < localStorage.length; i++) {
+                    const key = localStorage.key(i);
+                    if (key.startsWith('workout_log_') || key.startsWith('memos_')) {
+                        allData[key] = JSON.parse(localStorage.getItem(key));
+                    }
+                }
+                const backupObject = {
+                    appVersion: "2.0",
+                    backupDate: new Date().toISOString(),
+                    data: allData
+                };
+                const blob = new Blob([JSON.stringify(backupObject, null, 2)], { type: 'application/json' });
+                const url = URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = `Momentum_Backup_${formatDate(new Date())}.json`;
+                document.body.appendChild(a);
+                a.click();
+                document.body.removeChild(a);
+                URL.revokeObjectURL(url);
+            },
+            importAllData() {
+                const input = document.createElement('input');
+                input.type = 'file';
+                input.accept = '.json';
+                input.onchange = e => {
+                    const file = e.target.files[0];
+                    if (!file) return;
+                    const reader = new FileReader();
+                    reader.onload = readerEvent => {
+                        try {
+                            const backupObject = JSON.parse(readerEvent.target.result);
+                            if (!backupObject.data || !backupObject.appVersion) {
+                                throw new Error('Invalid backup file format.');
+                            }
+                            if (confirm('경고: 복원을 진행하시겠습니까?\n\n백업 파일의 데이터로 현재 앱의 모든 데이터를 완전히 덮어쓰게 됩니다. 이 작업은 되돌릴 수 없습니다.')) {
+                                localStorage.clear();
+                                Object.entries(backupObject.data).forEach(([key, value]) => {
+                                    localStorage.setItem(key, JSON.stringify(value));
+                                });
+                                alert('복원이 완료되었습니다. 앱을 새로고침합니다.');
+                                window.location.reload();
+                            }
+                        } catch (error) {
+                            alert('백업 파일을 읽는 중 오류가 발생했습니다: ' + error.message);
+                        }
+                    };
+                    reader.readAsText(file);
+                };
+                input.click();
+            },
+            exportRoutine(routineId) {
+                const allRoutines = this.getAllRoutines();
+                const routineToExport = allRoutines.find(r => r.id === routineId);
+                if (!routineToExport) {
+                    alert('내보낼 루틴을 찾을 수 없습니다.');
+                    return;
+                }
+                const allTemplates = this.getAllTemplates();
+                const requiredTemplateIds = new Set(routineToExport.cycle.filter(id => id !== 'rest'));
+                const templatesToExport = Object.values(allTemplates).filter(t => requiredTemplateIds.has(t.id));
+                const exportObject = {
+                    exportFormatVersion: "1.0",
+                    exportedAt: new Date().toISOString(),
+                    routine: routineToExport,
+                    templates: templatesToExport
+                };
+                const blob = new Blob([JSON.stringify(exportObject, null, 2)], { type: 'application/json' });
+                const url = URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                const safeName = routineToExport.name.replace(/[^a-z0-9]/gi, '_').toLowerCase();
+                a.download = `Momentum_Routine_${safeName}.json`;
+                document.body.appendChild(a);
+                a.click();
+                document.body.removeChild(a);
+                URL.revokeObjectURL(url);
+            },
+            importRoutine() {
+                const input = document.createElement('input');
+                input.type = 'file';
+                input.accept = '.json';
+                input.onchange = e => {
+                    const file = e.target.files[0];
+                    if (!file) return;
+                    const reader = new FileReader();
+                    reader.onload = readerEvent => {
+                        try {
+                            const importObject = JSON.parse(readerEvent.target.result);
+                            if (!importObject.routine || !importObject.templates || importObject.exportFormatVersion !== '1.0') {
+                                throw new Error('유효하지 않은 루틴 파일입니다.');
+                            }
+                            const confirmMessage = `'${importObject.routine.name}' 루틴을 추가하시겠습니까? (템플릿 ${importObject.templates.length}개 포함)\n\n이 작업은 기존 데이터를 변경하지 않습니다.`;
+                            if (confirm(confirmMessage)) {
+                                const allRoutines = this.getAllRoutines();
+                                const allTemplates = this.getAllTemplates();
+                                const idMapping = {};
+                                importObject.templates.forEach(tpl => {
+                                    const oldId = tpl.id;
+                                    const newId = `template_${Date.now()}_${tpl.title.replace(/\s/g, '')}`;
+                                    idMapping[oldId] = newId;
+                                    tpl.id = newId;
+                                    allTemplates[newId] = tpl;
+                                });
+                                const importedRoutine = importObject.routine;
+                                importedRoutine.id = `routine_${Date.now()}`;
+                                importedRoutine.cycle = importedRoutine.cycle.map(oldId => idMapping[oldId] || oldId);
+                                allRoutines.push(importedRoutine);
+                                this.saveTemplates(allTemplates);
+                                this.saveRoutines(allRoutines);
+                                alert(`루틴 1개와 템플릿 ${importObject.templates.length}개를 성공적으로 추가했습니다!`);
+                                DOMElements.modals.routineManager.classList.remove('visible');
+                                RoutineManager.show();
+                            }
+                        } catch (error) {
+                            alert('루틴 파일을 읽는 중 오류가 발생했습니다: ' + error.message);
+                        }
+                    };
+                    reader.readAsText(file);
+                };
+                input.click();
+            }
+        };
+        
+        const AnimationManager = {
+            container: null,
+            animation: null,
+            init() {
+                this.container = document.getElementById('lottie-animation-container');
+            },
+            play(animationDataPath, loop = false, size = { width: '100%', height: '100%' }) {
+                if (this.animation) {
+                    this.animation.destroy();
+                    this.container.innerHTML = '';
+                }
+                this.container.style.pointerEvents = 'auto';
+                const animationWrapper = document.createElement('div');
+                animationWrapper.style.width = size.width;
+                animationWrapper.style.height = size.height;
+                this.container.appendChild(animationWrapper);
+                this.animation = lottie.loadAnimation({
+                    container: animationWrapper,
+                    renderer: 'svg',
+                    loop: loop,
+                    autoplay: true,
+                    path: animationDataPath
+                });
+                this.animation.addEventListener('complete', () => {
+                    this.stop();
+                });
+            },
+            stop() {
+                if (this.animation) {
+                    this.animation.destroy();
+                    this.animation = null;
+                    this.container.innerHTML = '';
+                    this.container.style.pointerEvents = 'none';
+                }
+            }
+        };
+
+        function getWorkoutTemplateForDate(targetDate) {
+            const activeRoutine = DataManager.getActiveRoutine();
+            if (!activeRoutine) {
+                return { type: 'rest', title: '루틴 없음', icon: 'error', exercises: [] };
+            }
+            const cleanTargetDate = new Date(targetDate);
+            cleanTargetDate.setHours(0, 0, 0, 0);
+            const startDate = new Date(activeRoutine.startDate);
+            startDate.setHours(0, 0, 0, 0);
+            const diffTime = cleanTargetDate.getTime() - startDate.getTime();
+            const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24));
+            const cycle = activeRoutine.cycle;
+            if (diffDays < 0 || cycle.length === 0) {
+                 return { type: 'rest', title: '휴식일', icon: 'self_improvement', exercises: [] };
+            }
+            const cycleIndex = diffDays % cycle.length;
+            const templateId = cycle[cycleIndex];
+            if (templateId === 'rest') {
+                return { type: 'rest', title: '휴식일', icon: 'self_improvement', exercises: [] };
+            }
+            const template = DataManager.getWorkoutTemplate(templateId);
+            if (!template) {
+                return { type: 'rest', title: '템플릿 없음', icon: 'help', exercises: [] };
+            }
+            const type = template.id.replace('template_', '');
+            return { ...template, type: type };
+        }
+        
+        window.addEventListener('DOMContentLoaded', init);
+    </script>
+</body>
+</html>
